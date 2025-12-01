@@ -814,7 +814,7 @@
             color: var(--bg-primary);
         }
 
-        /* Delivery Summary */
+        /* Delivery Organizer */
         .delivery-summary {
             background-color: var(--bg-secondary);
             border: 1px solid var(--border-color);
@@ -827,14 +827,60 @@
             color: var(--color-primary);
             text-transform: uppercase;
             letter-spacing: 2px;
-            margin-bottom: 20px;
+            margin: 0;
             font-weight: 300;
         }
 
+        .btn-toggle-layout {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+
+        .btn-toggle-layout:hover {
+            background-color: var(--color-primary);
+            border-color: var(--color-primary);
+            transform: scale(1.05);
+        }
+
+        #deliverySummary {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        #deliverySummary.two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
         .delivery-location {
-            margin-bottom: 20px;
+            margin-bottom: 0;
             display: flex;
             gap: 12px;
+            cursor: grab;
+            padding: 10px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .delivery-location:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .delivery-location.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .delivery-location.drag-over {
+            border-top: 2px solid var(--color-primary);
         }
 
         .location-marker {
@@ -1106,6 +1152,25 @@
             padding: 40px;
         }
 
+        /* Footer */
+        .footer {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 11px;
+            padding: 30px 20px 20px 20px;
+            line-height: 1.6;
+        }
+
+        .footer a {
+            color: var(--color-accent);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer a:hover {
+            color: var(--color-primary);
+        }
+
         /* Scrollable container for missions */
         .missions-scroll {
             max-height: calc(100vh - 300px);
@@ -1156,7 +1221,7 @@
                 <select id="categorySelect" onchange="updateCategory()">
                     <option value="">Select Category</option>
                     <option value="planetary">Planetary</option>
-                    <option value="local">Local (Coming Soon)</option>
+                    <option value="local">Local</option>
                     <option value="stellar">Stellar (Coming Soon)</option>
                 </select>
             </div>
@@ -1187,9 +1252,20 @@
                 <button class="btn-add-mission" onclick="addMissionPanel()">+ Add Mission</button>
             </div>
 
-            <!-- Column 2: Delivery Summary -->
+            <!-- Column 2: Delivery Organizer -->
             <div class="delivery-summary">
-                <h2>Delivery Summary</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Delivery Organizer</h2>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <select id="organizerGroupBy" onchange="changeOrganizerGrouping()" style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 10px; border-radius: 4px; font-size: 12px;">
+                            <option value="location">By Location</option>
+                            <option value="commodity">By Commodity</option>
+                        </select>
+                        <button class="btn-toggle-layout" onclick="toggleDeliveryLayout()" title="Toggle layout">
+                            <span id="layoutIcon">⚏</span>
+                        </button>
+                    </div>
+                </div>
                 <div id="deliverySummary">
                     <div class="empty-state">No deliveries planned</div>
                 </div>
@@ -1238,6 +1314,9 @@
         let selectedCategory = null;
         let missions = [];
         let locationColors = {};
+        let deliveryOrder = []; // Track custom order of delivery locations
+        let commodityOrder = []; // Track custom order of commodities
+        let organizerGroupBy = 'location'; // Track grouping method: 'location' or 'commodity'
         let currentColorTarget = null;
 
         // Theme color palettes
@@ -1273,29 +1352,62 @@
                 "mT Depot S4LD01", "mT Depot S4LD13", "New Babbage", "Port Tressler",
                 "Rayari Anvik", "Rayari Cantwell", "Rayari Keltag", "Rayari McGrath",
                 "Sakura Sun Goldenrod", "Shubin SMCa-6", "Shubin SMCa-8"
+            ],
+            local: [
+                "MT Logistics S4LD13", "Rayari Deltana", "Rayari Keltag",
+                "SMO S4DC10", "SMO S4DC13", "SMO S4DC18", "SMO S4DC22"
             ]
         };
 
         // Commodities database
-        const commodities = [
-            "Agri Supplies", "Aluminum", "C Materials", "Carbon", "Corundum", "Hydrogen",
-            "Press Ice", "Proc Food", "Quantum Fuel", "Quartz", "Scrap", "Ship Ammo",
-            "Silicon", "Stims", "Tin", "Titanium", "Tungsten", "Waste"
-        ];
+        const commodities = {
+            planetary: [
+                "Agri Supplies", "Aluminum", "C Materials", "Carbon", "Corundum", "Hydrogen",
+                "Press Ice", "Proc Food", "Quantum Fuel", "Quartz", "Scrap", "Ship Ammo",
+                "Silicon", "Stims", "Tin", "Titanium", "Tungsten", "Waste"
+            ],
+            local: [
+                "Corundum", "Hydrogen Fuel", "Press Ice", "Proc Food", "Quantum Fuel",
+                "Quartz", "Scrap", "Ship Ammo", "Stims", "Waste"
+            ]
+        };
 
         // Payouts database
-        const payouts = [
-            "30k", "37k", "43k", "45k", "48k", "50k", "56k", "59k", "61k", "62k", "65k",
-            "76k", "83k", "84k", "90k", "95k", "99k", "121k", "123k", "160k", "163k",
-            "207k", "332k", "394k"
-        ];
+        const payouts = {
+            planetary: [
+                "30k", "37k", "43k", "45k", "48k", "50k", "56k", "59k", "61k", "62k", "65k",
+                "76k", "83k", "84k", "90k", "95k", "99k", "121k", "123k", "160k", "163k",
+                "207k", "332k", "394k"
+            ],
+            local: [
+                "52.5k", "60.75k", "139k", "150.5k", "153.25k", "163.75k"
+            ]
+        };
 
         // Initialize
         function init() {
             populateShipSelect();
             loadSession();
             loadTheme();
+            loadDeliveryLayout();
+            loadDeliveryOrder();
+            loadCommodityOrder();
+            loadOrganizerGrouping();
             updateColorPalette();
+        }
+
+        // Load delivery layout preference
+        function loadDeliveryLayout() {
+            const savedLayout = localStorage.getItem('haulerHelperDeliveryLayout');
+            const container = document.getElementById('deliverySummary');
+            const icon = document.getElementById('layoutIcon');
+            
+            if (savedLayout === 'two-column') {
+                container.classList.add('two-column');
+                icon.textContent = '☰';
+            } else {
+                icon.textContent = '⚏';
+            }
         }
 
         // Populate ship select
@@ -1336,6 +1448,132 @@
             document.body.setAttribute('data-theme', theme);
             localStorage.setItem('haulerHelperTheme', theme);
             updateColorPalette();
+        }
+
+        // Toggle delivery organizer layout
+        function toggleDeliveryLayout() {
+            const container = document.getElementById('deliverySummary');
+            const icon = document.getElementById('layoutIcon');
+            
+            if (container.classList.contains('two-column')) {
+                container.classList.remove('two-column');
+                icon.textContent = '⚏'; // Single column icon
+                localStorage.setItem('haulerHelperDeliveryLayout', 'single');
+            } else {
+                container.classList.add('two-column');
+                icon.textContent = '☰'; // Two column icon
+                localStorage.setItem('haulerHelperDeliveryLayout', 'two-column');
+            }
+        }
+
+        // Drag and drop handlers for delivery organizer
+        let draggedElement = null;
+
+        function handleDragStart(e) {
+            draggedElement = e.target;
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', e.target.innerHTML);
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            
+            // Remove drag-over class from all elements
+            document.querySelectorAll('.delivery-location').forEach(el => {
+                el.classList.remove('drag-over');
+            });
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDragLeave(e) {
+            e.target.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            e.preventDefault();
+
+            const dropTarget = e.target.closest('.delivery-location');
+            if (draggedElement && dropTarget && draggedElement !== dropTarget) {
+                const draggedItem = draggedElement.getAttribute('data-location');
+                const targetItem = dropTarget.getAttribute('data-location');
+                
+                // Determine which order array to use based on current grouping mode
+                const orderArray = organizerGroupBy === 'commodity' ? commodityOrder : deliveryOrder;
+                
+                // Reorder the appropriate array
+                const draggedIndex = orderArray.indexOf(draggedItem);
+                const targetIndex = orderArray.indexOf(targetItem);
+                
+                orderArray.splice(draggedIndex, 1);
+                orderArray.splice(targetIndex, 0, draggedItem);
+                
+                // Save order and refresh display
+                if (organizerGroupBy === 'commodity') {
+                    saveCommodityOrder();
+                } else {
+                    saveDeliveryOrder();
+                }
+                updateDeliverySummary();
+            }
+
+            return false;
+        }
+
+        function saveDeliveryOrder() {
+            localStorage.setItem('haulerHelperDeliveryOrder', JSON.stringify(deliveryOrder));
+        }
+
+        function saveCommodityOrder() {
+            localStorage.setItem('haulerHelperCommodityOrder', JSON.stringify(commodityOrder));
+        }
+
+        function loadDeliveryOrder() {
+            const saved = localStorage.getItem('haulerHelperDeliveryOrder');
+            if (saved) {
+                try {
+                    deliveryOrder = JSON.parse(saved);
+                } catch (e) {
+                    deliveryOrder = [];
+                }
+            }
+        }
+
+        function loadCommodityOrder() {
+            const saved = localStorage.getItem('haulerHelperCommodityOrder');
+            if (saved) {
+                try {
+                    commodityOrder = JSON.parse(saved);
+                } catch (e) {
+                    commodityOrder = [];
+                }
+            }
+        }
+
+        // Change organizer grouping method
+        function changeOrganizerGrouping() {
+            organizerGroupBy = document.getElementById('organizerGroupBy').value;
+            localStorage.setItem('haulerHelperOrganizerGroupBy', organizerGroupBy);
+            updateDeliverySummary();
+        }
+
+        // Load organizer grouping preference
+        function loadOrganizerGrouping() {
+            const saved = localStorage.getItem('haulerHelperOrganizerGroupBy');
+            if (saved) {
+                organizerGroupBy = saved;
+                document.getElementById('organizerGroupBy').value = saved;
+            }
         }
 
         // Load theme
@@ -1392,6 +1630,10 @@
             panel.className = 'mission-panel';
             panel.id = missionId;
             
+            // Get category-specific payouts
+            const category = selectedCategory || 'planetary';
+            const categoryPayouts = Array.isArray(payouts) ? payouts : (payouts[category] || payouts.planetary);
+            
             panel.innerHTML = `
                 <div class="mission-header">
                     <div class="mission-title">Mission ${missionNumber}</div>
@@ -1400,7 +1642,7 @@
                             <label>Payout:</label>
                             <select onchange="updateMissionPayout('${missionId}', this.value)">
                                 <option value="">-</option>
-                                ${payouts.map(p => `<option value="${p}">${p}</option>`).join('')}
+                                ${categoryPayouts.map(p => `<option value="${p}">${p}</option>`).join('')}
                             </select>
                         </div>
                         <button class="btn-remove-mission" onclick="removeMissionPanel('${missionId}')">Remove</button>
@@ -1421,19 +1663,30 @@
                 return;
             }
             
+            // Get previous commodity for defaults
+            const previousCommodity = mission.commodities[mission.commodities.length - 1];
+            
             const commodityId = `${missionId}_commodity_${mission.commodities.length}`;
             mission.commodities.push({
                 id: commodityId,
-                pickup: '',
-                commodity: '',
+                pickup: previousCommodity?.pickup || '',
+                commodity: previousCommodity?.commodity || '',
                 quantity: '',
-                maxBoxSize: '4',
-                destination: ''
+                maxBoxSize: previousCommodity?.maxBoxSize || '4',
+                destination: previousCommodity?.destination || ''
             });
             
             const container = document.getElementById(`${missionId}_commodities`);
             const row = createCommodityRow(missionId, commodityId, mission.commodities.length > 1);
             container.appendChild(row);
+            
+            // Set default values in the new row
+            const newCommodity = mission.commodities[mission.commodities.length - 1];
+            const selects = row.querySelectorAll('select');
+            if (selects[0]) selects[0].value = newCommodity.pickup;
+            if (selects[1]) selects[1].value = newCommodity.commodity;
+            if (selects[2]) selects[2].value = newCommodity.maxBoxSize;
+            if (selects[3]) selects[3].value = newCommodity.destination;
             
             saveSession();
         }
@@ -1444,14 +1697,19 @@
             row.className = 'commodity-row';
             row.id = commodityId;
             
+            // Get category-specific locations and commodities
+            const category = selectedCategory || 'planetary';
+            const categoryLocations = locations[category] || locations.planetary;
+            const categoryCommodities = Array.isArray(commodities) ? commodities : (commodities[category] || commodities.planetary);
+            
             row.innerHTML = `
                 <select onchange="updateCommodity('${commodityId}', 'pickup', this.value)">
                     <option value="">Pickup Location</option>
-                    ${locations.planetary.map(loc => `<option value="${loc}">${loc}</option>`).join('')}
+                    ${categoryLocations.map(loc => `<option value="${loc}">${loc}</option>`).join('')}
                 </select>
                 <select onchange="updateCommodity('${commodityId}', 'commodity', this.value)">
                     <option value="">Commodity</option>
-                    ${commodities.map(c => `<option value="${c}">${c}</option>`).join('')}
+                    ${categoryCommodities.map(c => `<option value="${c}">${c}</option>`).join('')}
                 </select>
                 <input type="number" placeholder="SCU" min="1" onchange="updateCommodity('${commodityId}', 'quantity', this.value)">
                 <select onchange="updateCommodity('${commodityId}', 'maxBoxSize', this.value)">
@@ -1465,7 +1723,7 @@
                 </select>
                 <select onchange="updateCommodity('${commodityId}', 'destination', this.value)">
                     <option value="">Destination</option>
-                    ${locations.planetary.map(loc => `<option value="${loc}">${loc}</option>`).join('')}
+                    ${categoryLocations.map(loc => `<option value="${loc}">${loc}</option>`).join('')}
                 </select>
                 ${showRemove ? 
                     `<button class="btn-remove-commodity" onclick="removeCommodityRow('${missionId}', '${commodityId}')">-</button>` :
@@ -1542,6 +1800,16 @@
         // Update delivery summary
         function updateDeliverySummary() {
             const container = document.getElementById('deliverySummary');
+            
+            if (organizerGroupBy === 'commodity') {
+                updateDeliverySummaryByCommodity(container);
+            } else {
+                updateDeliverySummaryByLocation(container);
+            }
+        }
+
+        // Group deliveries by location
+        function updateDeliverySummaryByLocation(container) {
             const deliveries = {};
             
             // Group by destination
@@ -1580,11 +1848,31 @@
                 }
             });
             
-            container.innerHTML = Object.entries(deliveries).map(([location, items]) => {
+            // Update delivery order array if new locations added
+            const currentLocations = Object.keys(deliveries);
+            deliveryOrder = deliveryOrder.filter(loc => currentLocations.includes(loc));
+            currentLocations.forEach(loc => {
+                if (!deliveryOrder.includes(loc)) {
+                    deliveryOrder.push(loc);
+                }
+            });
+            
+            // Sort deliveries by custom order
+            const sortedDeliveries = deliveryOrder
+                .filter(loc => deliveries[loc])
+                .map(loc => [loc, deliveries[loc]]);
+            
+            container.innerHTML = sortedDeliveries.map(([location, items]) => {
                 const markerData = locationColors[location];
+                const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
                 
                 return `
-                    <div class="delivery-location">
+                    <div class="delivery-location" draggable="true" data-location="${location}"
+                         ondragstart="handleDragStart(event)" 
+                         ondragend="handleDragEnd(event)"
+                         ondragover="handleDragOver(event)"
+                         ondrop="handleDrop(event)"
+                         ondragleave="handleDragLeave(event)">
                         <div class="location-marker">
                             <div class="marker-color" style="background-color: ${markerData.color}" 
                                  onclick="openColorPicker('${location}')">
@@ -1597,7 +1885,7 @@
                             </div>
                         </div>
                         <div class="location-details">
-                            <div class="location-name">${location}</div>
+                            <div class="location-name">${location} (${totalQuantity} SCU Total)</div>
                             ${items.map(item => {
                                 const boxes = calculateBoxBreakdown(item.quantity, item.maxBoxSize);
                                 return `
@@ -1614,6 +1902,104 @@
                                     </div>
                                 `;
                             }).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Group deliveries by commodity
+        function updateDeliverySummaryByCommodity(container) {
+            const deliveries = {};
+            
+            // Group by commodity
+            missions.forEach(mission => {
+                mission.commodities.forEach(commodity => {
+                    if (commodity.destination && commodity.commodity && commodity.quantity) {
+                        if (!deliveries[commodity.commodity]) {
+                            deliveries[commodity.commodity] = [];
+                        }
+                        deliveries[commodity.commodity].push({
+                            destination: commodity.destination,
+                            quantity: parseInt(commodity.quantity) || 0,
+                            maxBoxSize: parseInt(commodity.maxBoxSize) || 4
+                        });
+                    }
+                });
+            });
+            
+            if (Object.keys(deliveries).length === 0) {
+                container.innerHTML = '<div class="empty-state">No deliveries planned</div>';
+                return;
+            }
+            
+            // Assign colors to commodities (reuse locationColors structure)
+            const theme = document.body.getAttribute('data-theme');
+            const palette = themeColorPalettes[theme] || themeColorPalettes['stardust'];
+            let colorIndex = 0;
+            
+            Object.keys(deliveries).forEach(commodity => {
+                if (!locationColors[commodity]) {
+                    locationColors[commodity] = {
+                        color: palette[colorIndex % palette.length],
+                        label: (Object.keys(locationColors).length + 1).toString()
+                    };
+                    colorIndex++;
+                }
+            });
+            
+            // Update commodity order array if new commodities added
+            const currentCommodities = Object.keys(deliveries);
+            commodityOrder = commodityOrder.filter(com => currentCommodities.includes(com));
+            currentCommodities.forEach(com => {
+                if (!commodityOrder.includes(com)) {
+                    commodityOrder.push(com);
+                }
+            });
+            
+            // Sort by custom order
+            const sortedDeliveries = commodityOrder
+                .filter(com => deliveries[com])
+                .map(com => [com, deliveries[com]]);
+            
+            container.innerHTML = sortedDeliveries.map(([commodity, items]) => {
+                const markerData = locationColors[commodity];
+                const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+                const boxes = calculateBoxBreakdown(totalQuantity, Math.max(...items.map(i => i.maxBoxSize)));
+                
+                return `
+                    <div class="delivery-location" draggable="true" data-location="${commodity}"
+                         ondragstart="handleDragStart(event)" 
+                         ondragend="handleDragEnd(event)"
+                         ondragover="handleDragOver(event)"
+                         ondrop="handleDrop(event)"
+                         ondragleave="handleDragLeave(event)">
+                        <div class="location-marker">
+                            <div class="marker-color" style="background-color: ${markerData.color}" 
+                                 onclick="openColorPicker('${commodity}')">
+                                <input type="text" 
+                                       class="marker-label" 
+                                       value="${markerData.label}" 
+                                       onchange="updateMarkerLabel('${commodity}', this.value)"
+                                       onclick="event.stopPropagation()"
+                                       maxlength="3">
+                            </div>
+                        </div>
+                        <div class="location-details">
+                            <div class="location-name">${commodity} (${totalQuantity} SCU Total)</div>
+                            ${items.map(item => `
+                                <div class="delivery-item">
+                                    <span class="commodity-name">${item.destination} (${item.quantity} SCU)</span>
+                                </div>
+                            `).join('')}
+                            <div class="box-breakdown">
+                                ${Object.entries(boxes).map(([size, count]) => `
+                                    <div class="box-icon">
+                                        <span class="box-number">${size}</span>
+                                        <span>× ${count}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1784,5 +2170,11 @@
         // Initialize on load
         window.onload = init;
     </script>
+
+    <footer class="footer">
+        This is an unofficial Star Citizen fansite, not affiliated with the Cloud Imperium group of companies.<br>
+        © 2025 Wednesdaywoe<br>
+        <a href="https://www.youtube.com/@wednesdaywoeplays" target="_blank">https://www.youtube.com/@wednesdaywoeplays</a>
+    </footer>
 </body>
 </html>
