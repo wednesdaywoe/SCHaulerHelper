@@ -642,7 +642,8 @@
             letter-spacing: 1px;
         }
 
-        .control-group select {
+        .control-group select,
+        .control-group input[type="text"] {
             background-color: var(--bg-tertiary);
             color: var(--text-primary);
             border: 1px solid var(--border-color);
@@ -653,8 +654,14 @@
             transition: border-color 0.3s;
         }
 
+        .control-group input[type="text"] {
+            cursor: text;
+        }
+
         .control-group select:hover,
-        .control-group select:focus {
+        .control-group select:focus,
+        .control-group input[type="text"]:hover,
+        .control-group input[type="text"]:focus {
             border-color: var(--color-primary);
             outline: none;
         }
@@ -1159,6 +1166,7 @@
             font-size: 11px;
             padding: 30px 20px 20px 20px;
             line-height: 1.6;
+            position: relative;
         }
 
         .footer a {
@@ -1169,6 +1177,30 @@
 
         .footer a:hover {
             color: var(--color-primary);
+        }
+
+        /* Reset button */
+        .btn-reset {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+            z-index: 1000;
+        }
+
+        .btn-reset:hover {
+            background-color: var(--color-danger);
+            border-color: var(--color-danger);
+            color: #ffffff;
+            transform: scale(1.05);
         }
 
         /* Scrollable container for missions */
@@ -1205,9 +1237,9 @@
         <div class="controls">
             <div class="control-group">
                 <label>Ship</label>
-                <select id="shipSelect" onchange="updateShip()">
-                    <option value="">Select Ship</option>
-                </select>
+                <input type="text" id="shipSelect" list="shipList" placeholder="Search or select ship..." onchange="updateShip()" autocomplete="off">
+                <datalist id="shipList">
+                </datalist>
             </div>
             <div class="control-group">
                 <label>System</label>
@@ -1222,7 +1254,7 @@
                     <option value="">Select Category</option>
                     <option value="planetary">Planetary</option>
                     <option value="local">Local</option>
-                    <option value="stellar">Stellar (Coming Soon)</option>
+                    <option value="stellar">Stellar</option>
                 </select>
             </div>
             <div class="control-group">
@@ -1335,13 +1367,53 @@
 
         // Ships database
         const ships = [
-            { id: "nomad", name: "Consolidated Outland Nomad", capacity: 24 },
-            { id: "starlancer-max", name: "Misc Starlancer MAX", capacity: 224 },
-            { id: "hull-c", name: "MISC Hull C", capacity: 4608 },
-            { id: "c2-hercules", name: "Crusader C2 Hercules", capacity: 624 },
-            { id: "cutlass-black", name: "Drake Cutlass Black", capacity: 46 },
-            { id: "freelancer-max", name: "MISC Freelancer MAX", capacity: 120 },
-            { id: "caterpillar", name: "Drake Caterpillar", capacity: 576 }
+            {id: "aegis_avenger_titan", name: "Aegis Avenger Titan", capacity: 8},
+            {id: "aegis_reclaimer", name: "Aegis Reclaimer", capacity: 420},
+            {id: "anvil_carrack", name: "Anvil Carrack", capacity: 456, grids: 9},
+            {id: "anvil_valkyrie", name: "Anvil Valkyrie", capacity: 90},
+            {id: "argo_raft", name: "Argo RAFT", capacity: 96},
+            {id: "consolidated_outland_nomad", name: "Consolidated Outland Nomad", capacity: 24},
+            {id: "crusader_hercules_a2", name: "Crusader Hercules A2", capacity: 216},
+            {id: "crusader_hercules_c2", name: "Crusader Hercules C2", capacity: 696},
+            {id: "crusader_hercules_m2", name: "Crusader Hercules M2", capacity: 522},
+            {id: "crusader_intrepid", name: "Crusader Intrepid", capacity: 8},
+            {id: "crusader_mercury_star_runner", name: "Crusader Mercury Star Runner", capacity: 114},
+            {id: "crusader_spirit_c1", name: "Crusader Spirit C1", capacity: 64},
+            {id: "crusader_starlancer_max", name: "Crusader Starlancer MAX", capacity: 224, grids: 4},
+            {id: "crusader_starlancer_tac", name: "Crusader Starlancer TAC", capacity: 96},
+            {id: "drake_caterpillar", name: "Drake Caterpillar", capacity: 576, grids: 5},
+            {id: "drake_clipper", name: "Drake Clipper", capacity: 12},
+            {id: "drake_corsair", name: "Drake Corsair", capacity: 72},
+            {id: "drake_cutlass_black", name: "Drake Cutlass Black", capacity: 46},
+            {id: "drake_cutter_rambler", name: "Drake Cutter Rambler", capacity: 2},
+            {id: "drake_cutter_scout", name: "Drake Cutter Scout", capacity: 4},
+            {id: "drake_vulture", name: "Drake Vulture", capacity: 12},
+            {id: "gatac_syulen", name: "Gatac Syulen", capacity: 6},
+            {id: "misc_freelancer", name: "MISC Freelancer", capacity: 66},
+            {id: "misc_freelancer_dur", name: "MISC Freelancer DUR", capacity: 36},
+            {id: "misc_freelancer_max", name: "MISC Freelancer MAX", capacity: 122},
+            {id: "misc_hull_a", name: "MISC Hull A", capacity: 64},
+            {id: "misc_hull_c", name: "MISC Hull C", capacity: 4608},
+            {id: "misc_odyssey", name: "MISC Odyssey", capacity: 252},
+            {id: "misc_reliant_kore", name: "MISC Reliant Kore", capacity: 6},
+            {id: "misc_reliant_tana", name: "MISC Reliant Tana", capacity: 1},
+            {id: "misc_starfarer", name: "MISC Starfarer", capacity: 291},
+            {id: "misc_starfarer_gemini", name: "MISC Starfarer Gemini", capacity: 291},
+            {id: "origin_125a", name: "Origin 125a", capacity: 2},
+            {id: "origin_300i", name: "Origin 300i", capacity: 8},
+            {id: "origin_315p", name: "Origin 315p", capacity: 12},
+            {id: "origin_325a", name: "Origin 325a", capacity: 4},
+            {id: "origin_400i", name: "Origin 400i", capacity: 42},
+            {id: "origin_600i_explorer", name: "Origin 600i Explorer", capacity: 48},
+            {id: "origin_600i_touring", name: "Origin 600i Touring", capacity: 20},
+            {id: "origin_890_jump", name: "Origin 890 Jump", capacity: 388},
+            {id: "rsi_constellation_andromeda", name: "RSI Constellation Andromeda", capacity: 96},
+            {id: "rsi_constellation_aquila", name: "RSI Constellation Aquila", capacity: 96},
+            {id: "rsi_constellation_phoenix", name: "RSI Constellation Phoenix", capacity: 84},
+            {id: "rsi_constellation_taurus", name: "RSI Constellation Taurus", capacity: 174},
+            {id: "rsi_polaris", name: "RSI Polaris", capacity: 576},
+            {id: "rsi_zeus_cl", name: "RSI Zeus CL", capacity: 128},
+            {id: "rsi_zeus_es", name: "RSI Zeus ES", capacity: 32}
         ];
 
         // Locations database (Microtech Planetary)
@@ -1356,6 +1428,10 @@
             local: [
                 "MT Logistics S4LD13", "Rayari Deltana", "Rayari Keltag",
                 "SMO S4DC10", "SMO S4DC13", "SMO S4DC18", "SMO S4DC22"
+            ],
+            stellar: [
+                "ARC-L1", "ARC-L2", "ARC-L5", "Baijini", "CRU-L1", "CRU-L4", "CRU-L5",
+                "Everus", "HUR-L1", "MIC-L1", "MIC-L2", "Seraphim", "Tressler"
             ]
         };
 
@@ -1369,6 +1445,11 @@
             local: [
                 "Corundum", "Hydrogen Fuel", "Press Ice", "Proc Food", "Quantum Fuel",
                 "Quartz", "Scrap", "Ship Ammo", "Stims", "Waste"
+            ],
+            stellar: [
+                "Agricultural Supplies", "Aluminum", "Beryl", "Carbon", "Corundum", "Hydrogen",
+                "Pressurized Ice", "Processed Food", "Quartz", "Scrap", "Tin", "Titanium",
+                "Tungsten", "Waste"
             ]
         };
 
@@ -1381,6 +1462,12 @@
             ],
             local: [
                 "52.5k", "60.75k", "139k", "150.5k", "153.25k", "163.75k"
+            ],
+            stellar: [
+                "51.5k", "55.75k", "56.25k", "57k", "59.5k", "63k", "63.25k", "64k", "64.25k",
+                "68.25k", "79.25k", "81.25k", "124.75k", "126.25k", "127.25k", "136.5k",
+                "137.5k", "142k", "162.25k", "245.5k", "247.75k", "276.25k", "282.5k",
+                "289k", "313.25k", "314k", "319k", "339.5k", "383k"
             ]
         };
 
@@ -1412,20 +1499,32 @@
 
         // Populate ship select
         function populateShipSelect() {
-            const select = document.getElementById('shipSelect');
-            select.innerHTML = '<option value="">Select Ship</option>';
+            const datalist = document.getElementById('shipList');
+            datalist.innerHTML = '';
             ships.forEach(ship => {
                 const option = document.createElement('option');
-                option.value = ship.id;
-                option.textContent = ship.name;
-                select.appendChild(option);
+                option.value = ship.name;
+                option.setAttribute('data-id', ship.id);
+                datalist.appendChild(option);
             });
         }
 
         // Update ship
         function updateShip() {
-            const shipId = document.getElementById('shipSelect').value;
-            selectedShip = ships.find(s => s.id === shipId);
+            const input = document.getElementById('shipSelect');
+            const selectedName = input.value;
+            
+            // Find ship by name
+            const ship = ships.find(s => s.name === selectedName);
+            
+            if (ship) {
+                selectedShip = ship;
+                input.value = ship.name; // Set to full name
+            } else {
+                selectedShip = null;
+                input.value = ''; // Clear invalid input
+            }
+            
             updateStats();
             saveSession();
         }
@@ -2107,8 +2206,10 @@
                 
                 // Restore selections
                 if (session.ship) {
-                    document.getElementById('shipSelect').value = session.ship;
                     selectedShip = ships.find(s => s.id === session.ship);
+                    if (selectedShip) {
+                        document.getElementById('shipSelect').value = selectedShip.name;
+                    }
                 }
                 if (session.system) {
                     document.getElementById('systemSelect').value = session.system;
@@ -2169,7 +2270,25 @@
 
         // Initialize on load
         window.onload = init;
+
+        // Reset function
+        function resetAll() {
+            if (confirm('Reset everything? This will clear all missions, selections, colors, and preferences. This cannot be undone.')) {
+                // Clear all localStorage
+                localStorage.removeItem('haulerHelperSession');
+                localStorage.removeItem('haulerHelperTheme');
+                localStorage.removeItem('haulerHelperDeliveryLayout');
+                localStorage.removeItem('haulerHelperDeliveryOrder');
+                localStorage.removeItem('haulerHelperCommodityOrder');
+                localStorage.removeItem('haulerHelperOrganizerGroupBy');
+                
+                // Reload the page to reset everything
+                location.reload();
+            }
+        }
     </script>
+
+    <button class="btn-reset" onclick="resetAll()" title="Reset all data and preferences">🔄 Reset All</button>
 
     <footer class="footer">
         This is an unofficial Star Citizen fansite, not affiliated with the Cloud Imperium group of companies.<br>
