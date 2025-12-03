@@ -5,1779 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hauler Helper - Star Citizen</title>
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --bg-primary: #0a0e1a;
-            --bg-secondary: #141b2d;
-            --bg-tertiary: #1a2332;
-            --color-primary: #4dd4ac;
-            --color-accent: #7ee7c4;
-            --color-success: #4ade80;
-            --color-warning: #fbbf24;
-            --color-danger: #ef4444;
-            --border-color: #2d3d54;
-            --text-primary: #e5e5e5;
-            --text-secondary: #8b92a8;
-        }
-
-        /* Theme: Stardust (default - teal/cyan) */
-        body[data-theme="stardust"] {
-            --color-primary: #4dd4ac;
-            --color-accent: #7ee7c4;
-        }
-
-        /* Theme: Lux (lime green) - Comprehensive palette */
-        body[data-theme="lux"] {
-            /* Backgrounds */
-            --bg-primary: #0e160f;      /* Deep Forest - Main page background (dark green tint) */
-            --bg-secondary: #1a2318;    /* Dark Olive - Panels (medium green) */
-            --bg-tertiary: #283525;     /* Forest Shadow - Dropdowns/Inputs (lighter green) */
-            
-            /* Primary brand colors */
-            --color-primary: #B4F500;   /* Electric Lime - Headers, capacity fills */
-            --color-accent: #9DFF00;    /* Vibrant Chartreuse - Hover states */
-            
-            /* Functional colors */
-            --color-success: #32CD32;   /* Fresh Lime - Add buttons */
-            --color-warning: #FFD600;   /* Golden Yellow - Warnings */
-            --color-danger: #FF4757;    /* Sunset Coral - Danger states */
-            --color-info: #00D9FF;      /* Electric Blue - High-contrast elements */
-            
-            /* Structural */
-            --border-color: #7FE800;    /* Neon Green - Borders, panel outlines */
-            
-            /* Text */
-            --text-primary: #FFFFFF;    /* Pure White - Main readable text */
-            --text-secondary: #ADB5BD;  /* Cool Gray - Dimmed text, labels, hints */
-            --text-highlight: #00D9FF;  /* Electric Blue - important values */
-        }
-        
-        /* Lux theme - Payout dropdown special styling */
-        body[data-theme="lux"] .mission-payout select {
-            color: var(--color-info);
-            font-weight: 700;
-        }
-        
-        /* Lux theme - Stat values use cyan for high contrast */
-        body[data-theme="lux"] .stat-value {
-            color: var(--color-info);
-        }
-        
-        /* Lux theme - Location names use bright accent */
-        body[data-theme="lux"] .location-name {
-            color: var(--color-accent);
-        }
-        
-        /* Lux theme - Mission titles use info color */
-        body[data-theme="lux"] .mission-title {
-            color: var(--text-highlight);
-        }
-
-        /* Theme: Cruz Red */
-        /* Theme: Pulse (hot magenta) - Comprehensive palette */
-        body[data-theme="pulse"] {
-            /* Backgrounds */
-            --bg-primary: #1a1118;
-            --bg-secondary: #2a1a24;
-            --bg-tertiary: #3d2535;
-            
-            /* Primary brand colors */
-            --color-primary: #FF006E;      /* Hot Magenta - headers, main accents */
-            --color-accent: #FF1B8D;       /* Neon Fuchsia - hover states, highlights */
-            
-            /* Functional colors */
-            --color-success: #00FFA3;      /* Neon Mint - success states, add buttons */
-            --color-warning: #FF8800;      /* Bright Orange - warnings */
-            --color-danger: #E63946;       /* Vibrant Red - danger states */
-            --color-info: #00D4FF;         /* Bright Cyan - info, special highlights */
-            
-            /* Structural */
-            --border-color: #5d3d52;       /* Magenta-tinted mauve - borders */
-            
-            /* Text */
-            --text-primary: #FFFFFF;       /* Pure White - main text */
-            --text-secondary: #ADB5BD;     /* Cool Gray - secondary text */
-            --text-highlight: #00D4FF;     /* Cyan - important values (payouts, numbers) */
-            
-            /* Additional accent colors */
-            --accent-purple: #8B5CF6;      /* Premium purple */
-            --accent-yellow: #FFC837;      /* Golden yellow */
-            --accent-coral: #FF6B6B;       /* Coral red */
-            --accent-pink-light: #FFB3D9;  /* Light pink */
-        }
-        
-        /* Pulse theme - Payout dropdown special styling */
-        body[data-theme="pulse"] .mission-payout select {
-            color: var(--color-info);
-            font-weight: 700;
-        }
-        
-        /* Pulse theme - Stat values use cyan for high contrast */
-        body[data-theme="pulse"] .stat-value {
-            color: var(--color-info);
-        }
-        
-        /* Pulse theme - Location names use bright accent */
-        body[data-theme="pulse"] .location-name {
-            color: var(--color-accent);
-        }
-        
-        /* Pulse theme - Mission titles use info color */
-        body[data-theme="pulse"] .mission-title {
-            color: var(--text-highlight);
-        }
-
-        /* Theme: Flow (blue) - Comprehensive palette */
-        body[data-theme="flow"] {
-            /* Backgrounds */
-            --bg-primary: #0a0e1a;      /* Deep Ocean - Main page background (dark blue tint) */
-            --bg-secondary: #141b2d;    /* Midnight Blue - Panels (medium blue) */
-            --bg-tertiary: #1a2332;     /* Slate Blue - Dropdowns/Inputs (lighter blue) */
-            
-            /* Primary brand colors */
-            --color-primary: #1E90FF;   /* Sky Blue - Headers, capacity fills */
-            --color-accent: #00D4FF;    /* Electric Aqua - Hover states */
-            
-            /* Functional colors */
-            --color-success: #00FFA3;   /* Neon Mint - Add buttons */
-            --color-warning: #FFD600;   /* Golden Yellow - Warnings */
-            --color-danger: #FF4757;    /* Sunset Coral - Danger states */
-            --color-info: #00BFFF;      /* Bright Cyan - High-contrast elements */
-            
-            /* Structural */
-            --border-color: #2d5a80;    /* Deep Sky - Borders, panel outlines */
-            
-            /* Text */
-            --text-primary: #FFFFFF;    /* Pure White - Main readable text */
-            --text-secondary: #ADB5BD;  /* Cool Gray - Dimmed text, labels, hints */
-            --text-highlight: #00BFFF;  /* Bright Cyan - important values */
-        }
-        
-        /* Flow theme - Payout dropdown special styling */
-        body[data-theme="flow"] .mission-payout select {
-            color: var(--color-info);
-            font-weight: 700;
-        }
-        
-        /* Flow theme - Stat values use cyan for high contrast */
-        body[data-theme="flow"] .stat-value {
-            color: var(--color-info);
-        }
-        
-        /* Flow theme - Location names use bright accent */
-        body[data-theme="flow"] .location-name {
-            color: var(--color-accent);
-        }
-        
-        /* Flow theme - Mission titles use info color */
-        body[data-theme="flow"] .mission-title {
-            color: var(--text-highlight);
-        }
-
-        /* Theme: Dark (purple) - Comprehensive palette */
-        body[data-theme="dark"] {
-            /* Backgrounds */
-            --bg-primary: #1e0c27;      /* Deep Void - Main page background (dark magenta tint) */
-            --bg-secondary: #3b1957;    /* Dark Plum - Panels (medium magenta) */
-            --bg-tertiary: #3d164e;     /* Mystic Purple - Dropdowns/Inputs (lighter magenta) */
-            
-            /* Primary brand colors */
-            --color-primary: #f0daff;   /* Electric Purple - Headers, capacity fills */
-            --color-accent: #cf9bff;    /* Bright Violet - Hover states */
-            
-            /* Functional colors */
-            --color-success: #00FFA3;   /* Neon Mint - Add buttons */
-            --color-warning: #FF8800;   /* Bright Orange - Warnings */
-            --color-danger: #E63946;    /* Vibrant Red - Danger states */
-            --color-info: #00D4FF;      /* Electric Cyan - High-contrast elements */
-            
-            /* Structural */
-            --border-color: #ca4af8;    /* Royal Violet - Borders, panel outlines */
-            
-            /* Text */
-            --text-primary: #FFFFFF;    /* Pure White - Main readable text */
-            --text-secondary: #ADB5BD;  /* Cool Gray - Dimmed text, labels, hints */
-            --text-highlight: #00D4FF;  /* Cyan - important values */
-        }
-        
-        /* Dark theme - Payout dropdown special styling */
-        body[data-theme="dark"] .mission-payout select {
-            color: var(--color-info);
-            font-weight: 700;
-        }
-        
-        /* Dark theme - Stat values use cyan for high contrast */
-        body[data-theme="dark"] .stat-value {
-            color: var(--color-info);
-        }
-        
-        /* Dark theme - Location names use bright accent */
-        body[data-theme="dark"] .location-name {
-            color: var(--color-accent);
-        }
-        
-        /* Dark theme - Mission titles use info color */
-        body[data-theme="dark"] .mission-title {
-            color: var(--text-highlight);
-        }
-
-        /* Theme: Wednesday (gothic wine/jade) - Comprehensive palette */
-        body[data-theme="wednesday"] {
-            /* Backgrounds - Deep burgundy-tinted */
-            --bg-primary: #1f001a;      /* Midnight Burgundy - Main page background (deep wine-black) */
-            --bg-secondary: #18091b;    /* Velvet Wine - Panels (medium burgundy) */
-            --bg-tertiary: #221531;     /* Plum Shadow - Dropdowns/Inputs (plum-purple) */
-            
-            /* Primary brand colors - Rich wine and purple */ 
-            --color-primary: #ff2793;   /* Burgundy Wine - Headers, capacity fills */
-            --color-accent: #3f6a7b;    /* Royal Purple - Hover states */
-            
-            /* Functional colors - Elegant jade and metallics */
-            --color-success: #2D7C7B;   /* Mystic Jade - Add buttons */
-            --color-warning: #a0ff61;   /* Antique Gold - Warnings */
-            --color-danger: #a0ff61;    /* Crimson Blood - Danger states */
-            --color-info: #a0ff61;      /* Jade Teal - High-contrast elements */
-            
-            /* Structural */
-            --border-color: #5B2C6F;    /* Deep Violet - Borders, panel outlines */
-            
-            /* Text */
-            --text-primary: #a0ff61;    /* Rose White - Main readable text (warm soft white) */
-            --text-secondary: #B8A5AB;  /* Dusty Mauve - Dimmed text */
-            --text-highlight: #88ff00;  /* Jade Teal - important values */
-            
-            /* Special accents */
-            --accent-amethyst: #9966CC; /* Amethyst - Special highlights */
-            --accent-rose-gold: #B76E79; /* Rose Gold - Elegant accents */
-            --accent-emerald: #a0ff61;   /* Emerald Teal - Additional depth */
-        }
-        
-        /* Wednesday theme - Jade teal for high-value elements */
-        body[data-theme="wednesday"] .mission-payout select {
-            color: var(--color-info);
-            font-weight: 700;
-        }
-        
-        body[data-theme="wednesday"] .stat-value {
-            color: var(--color-info);
-        }
-        
-        body[data-theme="wednesday"] .location-name {
-            color: var(--color-accent);
-        }
-        
-        body[data-theme="wednesday"] .mission-title {
-            color: var(--text-highlight);
-        }
-
-        /* Theme: Moonshine (silver/blue) - Comprehensive palette */
-        body[data-theme="moonshine"] {
-            /* Backgrounds */
-            --bg-primary: #0f1419;      /* Midnight Steel - Main page background (dark blue-gray) */
-            --bg-secondary: #1a1f2e;    /* Deep Slate - Panels (medium blue-gray) */
-            --bg-tertiary: #2a3342;     /* Storm Gray - Dropdowns/Inputs (lighter slate-blue) */
-            
-            /* Primary brand colors */
-            --color-primary: #8BA5C1;   /* Moonlight Silver - Headers, capacity fills */
-            --color-accent: #B8D4E8;    /* Pale Sky - Hover states */
-            
-            /* Functional colors */
-            --color-success: #5FBAA7;   /* Soft Teal - Add buttons */
-            --color-warning: #D4AF6A;   /* Pale Gold - Warnings */
-            --color-danger: #D97777;    /* Dusty Rose - Danger states */
-            --color-info: #7CB8E8;      /* Ice Blue - High-contrast elements */
-            
-            /* Structural */
-            --border-color: #3d4a5c;    /* Steel Blue - Borders, panel outlines */
-            
-            /* Text */
-            --text-primary: #E8EDF2;    /* Silver White - Main readable text (softer than pure white) */
-            --text-secondary: #8B95A5;  /* Cool Silver - Dimmed text, labels, hints */
-            --text-highlight: #7CB8E8;  /* Ice Blue - important values */
-        }
-        
-        /* Moonshine theme - Payout dropdown special styling */
-        body[data-theme="moonshine"] .mission-payout select {
-            color: var(--color-info);
-            font-weight: 700;
-        }
-        
-        /* Moonshine theme - Stat values use ice blue for high contrast */
-        body[data-theme="moonshine"] .stat-value {
-            color: var(--color-info);
-        }
-        
-        /* Moonshine theme - Location names use pale sky accent */
-        body[data-theme="moonshine"] .location-name {
-            color: var(--color-accent);
-        }
-        
-        /* Moonshine theme - Mission titles use info color */
-        body[data-theme="moonshine"] .mission-title {
-            color: var(--text-highlight);
-        }
-
-        /* Theme: ARGO (industrial orange) - Comprehensive palette */
-        body[data-theme="argo"] {
-            /* Backgrounds */
-            --bg-primary: #1a1612;      /* Industrial Black - Main page background (dark warm-gray) */
-            --bg-secondary: #2a2520;    /* Charcoal Steel - Panels (medium warm-gray) */
-            --bg-tertiary: #3d3832;     /* Concrete Gray - Dropdowns/Inputs (lighter warm-gray) */
-            
-            /* Primary brand colors */
-            --color-primary: #FF6600;   /* Construction Orange - Headers, capacity fills */
-            --color-accent: #FF8C42;    /* Safety Barrier - Hover states */
-            
-            /* Functional colors */
-            --color-success: #4CAF50;   /* Industrial Green - Add buttons */
-            --color-warning: #FFC107;   /* Caution Yellow - Warnings */
-            --color-danger: #D32F2F;    /* Danger Red - Danger states */
-            --color-info: #2196F3;      /* Blueprint Blue - High-contrast elements */
-            
-            /* Structural */
-            --border-color: #5a5248;    /* Weathered Steel - Borders, panel outlines */
-            
-            /* Text */
-            --text-primary: #F5F5F5;    /* Industrial White - Main readable text */
-            --text-secondary: #9E9E9E;  /* Concrete - Dimmed text, labels, hints */
-            --text-highlight: #FFC107;  /* Caution Yellow - important values */
-        }
-        
-        /* ARGO theme - Payout dropdown special styling */
-        body[data-theme="argo"] .mission-payout select {
-            color: var(--color-warning);
-            font-weight: 700;
-        }
-        
-        /* ARGO theme - Stat values use caution yellow for high contrast */
-        body[data-theme="argo"] .stat-value {
-            color: var(--color-warning);
-        }
-        
-        /* ARGO theme - Location names use safety barrier orange */
-        body[data-theme="argo"] .location-name {
-            color: var(--color-accent);
-        }
-        
-        /* ARGO theme - Mission titles use caution yellow */
-        body[data-theme="argo"] .mission-title {
-            color: var(--text-highlight);
-        }
-
-        /* Theme: Starkitten (starkitten) - Comprehensive palette with neon glow effects */
-        body[data-theme="starkitten"] {
-            /* Backgrounds - Pure void blacks */
-            --bg-primary: #85e9ff;      /* Void Black - Main page background (pure deep void) */
-            --bg-secondary: #b14b7b;    /* Shadow Panel - Panels (pure black) */
-            --bg-tertiary: #004c5e;     /* Dark Input - Dropdowns/Inputs (dark gray) */
-            
-            /* Primary brand colors - Hot magenta */
-            --color-primary: #ffffff;   /* Hot Magenta - Headers, capacity fills */
-            --color-accent: #ffffff;    /* Neon Fuchsia - Hover states */
-            
-            /* Functional colors - Electric neons */
-            --color-success: #69ABB9;   /* Neon Mint - Add buttons */
-            --color-warning: #ffffff;   /* Cyber Orange - Warnings */
-            --color-danger: #ffffff;    /* Vibrant Red - Danger states */
-            --color-info: #ffffff;      /* Electric Cyan - High-contrast elements */
-            
-            /* Structural */
-            --border-color: #69ABB9;    /* Hot Magenta - Glowing borders */
-            
-            /* Text */
-            --text-primary: #ffffff;    /* Pure White - Main readable text */
-            --text-secondary: #ffffff;  /* Cool Gray - Dimmed text */
-            --text-highlight: #ffffff;  /* Electric Cyan - important values */
-            
-            /* Special accents */
-            --accent-purple: #ffffff;   /* Neon Purple - Special highlights */
-        }
-        
-        /* Starkitten theme - Special styling without glows */
-        body[data-theme="starkitten"] .mission-payout select {
-            color: var(--color-info);
-            font-weight: 700;
-        }
-        
-        body[data-theme="starkitten"] .stat-value {
-            color: var(--color-info);
-        }
-        
-        body[data-theme="starkitten"] .location-name {
-            color: var(--color-accent);
-        }
-        
-        body[data-theme="starkitten"] .mission-title {
-            color: var(--text-highlight);
-        }
-        body[data-theme="cargo-explorer"] {
-            /* Backgrounds */
-            --bg-primary: #000000;      /* Blood Iron - Main page background (dark red-black) */
-            --bg-secondary: #110000;    /* Dark Crimson - Panels (medium dark red) */
-            --bg-tertiary: #240000;     /* Wine Shadow - Dropdowns/Inputs (lighter red-gray) */
-            
-            /* Primary brand colors */
-            --color-primary: #ff0000;   /* Angry Crimson - Headers, capacity fills */
-            --color-accent: #B91C1C;    /* Blood Red - Hover states */
-            
-            /* Functional colors */
-            --color-success: #fffd84;   /* Pirate Gold - Add buttons */
-            --color-warning: #FF6B35;   /* Flame Orange - Warnings */
-            --color-danger: #a5a5a5;    /* Dark Blood - Danger states */
-            --color-info: #60A5FA;      /* Steel Blue - High-contrast elements */
-            
-            /* Structural */
-            --border-color: #a70000;    /* Cold Iron - Borders, panel outlines */
-            
-            /* Text */
-            --text-primary: #c8dbff;    /* Steel White - Main readable text */
-            --text-secondary: #9CA3AF;  /* Weathered Steel - Dimmed text, labels, hints */
-            --text-highlight: #fffd84;  /* Pirate Gold - important values */
-        }
-        
-        /* Cargo Explorer theme - Payout dropdown special styling */
-        body[data-theme="cargo-explorer"] .mission-payout select {
-            color: var(--color-success);
-            font-weight: 700;
-        }
-        
-        /* Cargo Explorer theme - Stat values use pirate gold */
-        body[data-theme="cargo-explorer"] .stat-value {
-            color: var(--color-success);
-        }
-        
-        /* Cargo Explorer theme - Location names use blood red */
-        body[data-theme="cargo-explorer"] .location-name {
-            color: var(--color-accent);
-        }
-        
-        /* Cargo Explorer theme - Mission titles use pirate gold */
-        body[data-theme="cargo-explorer"] .mission-title {
-            color: var(--text-highlight);
-        }
-
-        /* Default color palette for delivery markers (changes per theme) */
-        .theme-colors {
-            --marker-1: #4dd4ac;
-            --marker-2: #ec4899;
-            --marker-3: #fbbf24;
-            --marker-4: #8b5cf6;
-            --marker-5: #3b82f6;
-            --marker-6: #f97316;
-            --marker-7: #84cc16;
-            --marker-8: #06b6d4;
-        }
-
-        body[data-theme="lux"] .theme-colors {
-            --marker-1: #B4F500;    /* Electric Lime */
-            --marker-2: #9DFF00;    /* Vibrant Chartreuse */
-            --marker-3: #32CD32;    /* Fresh Lime */
-            --marker-4: #00D9FF;    /* Electric Blue */
-            --marker-5: #FFD600;    /* Golden Yellow */
-            --marker-6: #FF4757;    /* Sunset Coral */
-            --marker-7: #7FE800;    /* Neon Green */
-            --marker-8: #d9f99d;    /* Pale Lime */
-        }
-
-        body[data-theme="pulse"] .theme-colors {
-            --marker-1: #FF006E;    /* Hot Magenta */
-            --marker-2: #00D4FF;    /* Bright Cyan */
-            --marker-3: #00FFA3;    /* Neon Mint */
-            --marker-4: #FFC837;    /* Golden Yellow */
-            --marker-5: #8B5CF6;    /* Purple */
-            --marker-6: #FF8800;    /* Orange */
-            --marker-7: #E63946;    /* Vibrant Red */
-            --marker-8: #FFB3D9;    /* Light Pink */
-        }
-
-        body[data-theme="flow"] .theme-colors {
-            --marker-1: #1E90FF;    /* Sky Blue */
-            --marker-2: #00D4FF;    /* Electric Aqua */
-            --marker-3: #00BFFF;    /* Bright Cyan */
-            --marker-4: #00FFA3;    /* Neon Mint */
-            --marker-5: #FFD600;    /* Golden Yellow */
-            --marker-6: #FF4757;    /* Sunset Coral */
-            --marker-7: #93c5fd;    /* Light Blue */
-            --marker-8: #60a5fa;    /* Soft Sky */
-        }
-
-        body[data-theme="dark"] .theme-colors {
-            --marker-1: #8B3FBF;
-            --marker-2: #A855F7;
-            --marker-3: #00D4FF;
-            --marker-4: #00FFA3;
-            --marker-5: #FF8800;
-            --marker-6: #E63946;
-            --marker-7: #c084fc;
-            --marker-8: #e9d5ff;
-        }
-
-        body[data-theme="moonshine"] .theme-colors {
-            --marker-1: #8BA5C1;
-            --marker-2: #B8D4E8;
-            --marker-3: #7CB8E8;
-            --marker-4: #5FBAA7;
-            --marker-5: #D4AF6A;
-            --marker-6: #D97777;
-            --marker-7: #cbd5e1;
-            --marker-8: #94a3b8;
-        }
-
-        body[data-theme="argo"] .theme-colors {
-            --marker-1: #FF6600;    /* Construction Orange */
-            --marker-2: #FF8C42;    /* Safety Barrier */
-            --marker-3: #FFC107;    /* Caution Yellow */
-            --marker-4: #4CAF50;    /* Industrial Green */
-            --marker-5: #2196F3;    /* Blueprint Blue */
-            --marker-6: #D32F2F;    /* Danger Red */
-            --marker-7: #fb923c;    /* Light Orange */
-            --marker-8: #fdba74;    /* Pale Orange */
-        }
-
-        body[data-theme="cargo-explorer"] .theme-colors {
-            --marker-1: #DC143C;    /* Angry Crimson */
-            --marker-2: #B91C1C;    /* Blood Red */
-            --marker-3: #D4AF37;    /* Pirate Gold */
-            --marker-4: #FF6B35;    /* Flame Orange */
-            --marker-5: #60A5FA;    /* Steel Blue */
-            --marker-6: #991B1B;    /* Dark Blood */
-            --marker-7: #EF4444;    /* Bright Red */
-            --marker-8: #FCD34D;    /* Golden Yellow */
-        }
-
-        body[data-theme="starkitten"] .theme-colors {
-            --marker-1: #ffffff;    /* Hot Magenta */
-            --marker-2: #f0cbff;    /* Electric Cyan */
-            --marker-3: #d2afff;    /* Neon Mint */
-            --marker-4: #9be3ff;    /* Neon Purple */
-            --marker-5: #eaffb8;    /* Cyber Orange */
-            --marker-6: #b0ffb0;    /* Neon Fuchsia */
-            --marker-7: #ffa2c1;    /* Vibrant Red */
-            --marker-8: #000000;    /* Bright Cyan */
-        }
-
-        body[data-theme="wednesday"] .theme-colors {
-            --marker-1: #830027;    /* Burgundy Wine */
-            --marker-2: #3DA9A5;    /* Jade Teal */
-            --marker-3: #7B3F6D;    /* Royal Purple */
-            --marker-4: #2D7C7B;    /* Mystic Jade */
-            --marker-5: #722d53;    /* Satin Rose */
-            --marker-6: #9966CC;    /* Amethyst */
-            --marker-7: #6a6277;    /* Grey Lavender */
-            --marker-8: #50C878;    /* Emerald Teal */
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, var(--bg-primary) 0%, #0d1424 100%);
-            color: var(--text-primary);
-            line-height: 1.6;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1800px;
-            margin: 0 auto;
-        }
-
-        /* Header */
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            font-size: 48px;
-            font-weight: 900;
-            letter-spacing: 8px;
-            color: var(--color-primary);
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            position: relative;
-        }
-        
-        .header h1::after {
-            content: 'v3.2.5 - COLOR CONFIRM FIX';
-            position: absolute;
-            top: -15px;
-            right: 0;
-            font-size: 10px;
-            color: var(--color-success);
-            letter-spacing: 2px;
-            font-weight: 400;
-        }
-
-        .header .subtitle {
-            font-size: 14px;
-            color: var(--text-secondary);
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            padding-bottom: 15px;
-        }
-
-
-
-        /* Top Controls */
-        .controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .control-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .control-group label {
-            font-size: 11px;
-            color: var(--text-secondary);
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .control-group select,
-        .control-group input[type="text"] {
-            background-color: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-            padding: 12px;
-            font-size: 14px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: border-color 0.3s;
-        }
-
-        .control-group input[type="text"] {
-            cursor: text;
-        }
-
-        .control-group select:hover,
-        .control-group select:focus,
-        .control-group input[type="text"]:hover,
-        .control-group input[type="text"]:focus {
-            border-color: var(--color-primary);
-            outline: none;
-        }
-
-        /* Main Layout */
-        .main-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr 300px;
-            gap: 20px;
-        }
-
-        /* Mission Panels Column */
-        .missions-column {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .mission-panel {
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
-        }
-
-        .mission-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .mission-title {
-            font-size: 12px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .mission-payout {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .mission-payout label {
-            font-size: 11px;
-            color: var(--text-secondary);
-        }
-
-        .mission-payout select {
-            background-color: var(--bg-tertiary);
-            color: var(--color-primary);
-            border: 1px solid var(--border-color);
-            padding: 6px 10px;
-            font-size: 13px;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-
-        .commodity-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr 80px 100px 1fr 40px;
-            gap: 10px;
-            margin-bottom: 10px;
-            align-items: center;
-        }
-
-        .commodity-row select,
-        .commodity-row input[type="number"] {
-            background-color: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-            padding: 10px;
-            font-size: 13px;
-            border-radius: 4px;
-        }
-
-        .commodity-row input[type="number"] {
-            text-align: center;
-            font-weight: 600;
-        }
-
-        .btn-remove-commodity {
-            background-color: transparent;
-            color: var(--color-danger);
-            border: 1px solid var(--color-danger);
-            padding: 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: all 0.2s;
-        }
-
-        .btn-remove-commodity:hover {
-            background-color: var(--color-danger);
-            color: var(--bg-primary);
-        }
-
-        .btn-add-commodity {
-            background-color: transparent;
-            color: var(--color-primary);
-            border: 1px dashed var(--color-primary);
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 5px;
-            transition: all 0.2s;
-        }
-
-        .btn-add-commodity:hover {
-            background-color: var(--color-primary);
-            color: var(--bg-primary);
-            border-style: solid;
-        }
-
-        .btn-add-mission {
-            background-color: transparent;
-            color: var(--color-primary);
-            border: 2px dashed var(--color-primary);
-            padding: 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            transition: all 0.2s;
-            font-weight: 600;
-        }
-
-        .btn-add-mission:hover {
-            background-color: var(--color-primary);
-            color: var(--bg-primary);
-            border-style: solid;
-        }
-
-        .btn-remove-mission {
-            background-color: transparent;
-            color: var(--color-danger);
-            border: 1px solid var(--color-danger);
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.2s;
-        }
-
-        .btn-remove-mission:hover {
-            background-color: var(--color-danger);
-            color: var(--bg-primary);
-        }
-
-        /* Delivery Manager (formerly Delivery Organizer) */
-        .delivery-summary {
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
-        }
-
-        .delivery-summary h2 {
-            font-size: 16px;
-            color: var(--color-primary);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin: 0;
-            font-weight: 300;
-        }
-
-        /* Tab Navigation */
-        .delivery-tabs {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid var(--border-color);
-        }
-
-        .tab-button {
-            background-color: transparent;
-            color: var(--text-secondary);
-            border: none;
-            padding: 12px 24px;
-            cursor: pointer;
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.2s;
-            border-bottom: 2px solid transparent;
-            margin-bottom: -2px;
-        }
-
-        .tab-button:hover {
-            color: var(--color-primary);
-        }
-
-        .tab-button.active {
-            color: var(--color-primary);
-            border-bottom-color: var(--color-primary);
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .route-action-section {
-            margin-bottom: 15px;
-        }
-
-        .route-action-header {
-            font-size: 13px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-            padding: 8px 12px;
-            background-color: rgba(255, 255, 255, 0.05);
-            border-radius: 4px;
-        }
-
-
-        /* Route Planner Styles */
-        .route-stop {
-            background-color: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 15px;
-            margin-bottom: 15px;
-            cursor: grab;
-            transition: all 0.2s;
-        }
-
-        .route-stop:hover {
-            background-color: rgba(255, 255, 255, 0.03);
-        }
-
-        .route-stop.dragging {
-            opacity: 0.5;
-            cursor: grabbing;
-        }
-
-        .route-stop-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .route-stop-title {
-            font-size: 14px;
-            color: var(--color-primary);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .route-cargo-status {
-            font-size: 11px;
-            color: var(--text-secondary);
-            background-color: var(--bg-primary);
-            padding: 4px 10px;
-            border-radius: 4px;
-        }
-
-        .route-group {
-            margin-bottom: 12px;
-            padding-left: 15px;
-            border-left: 3px solid var(--color-primary);
-        }
-
-        .route-group-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
-        }
-
-        .route-group-label {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-
-        .route-group-destination {
-            font-size: 12px;
-            color: var(--color-accent);
-            font-weight: 600;
-        }
-
-        .route-group-total {
-            font-size: 11px;
-            color: var(--text-secondary);
-        }
-
-        .route-mission-item {
-            font-size: 11px;
-            color: var(--text-secondary);
-            padding: 4px 0;
-            padding-left: 10px;
-        }
-
-        .route-mission-item .mission-number {
-            color: var(--color-primary);
-            font-weight: 600;
-        }
-
-        .route-mission-item .commodity {
-            color: var(--text-primary);
-        }
-
-        .route-action-label {
-            font-size: 11px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-
-        /* Cargo Grid Cells */
-        .cargo-group-cell {
-            min-height: 150px;
-            border: 2px dashed var(--border-color);
-            border-radius: 8px;
-            background-color: rgba(255, 255, 255, 0.02);
-        }
-
-        .cargo-group-cell.empty-cell {
-            transition: all 0.2s;
-        }
-
-        .cargo-group-cell.empty-cell:hover {
-            border-color: var(--color-primary);
-            background-color: rgba(255, 255, 255, 0.05);
-        }
-
-
-        .cargo-drag-handle {
-            color: var(--text-secondary);
-            font-size: 16px;
-            cursor: grab;
-            user-select: none;
-            opacity: 0.5;
-            transition: opacity 0.2s;
-            pointer-events: none;  /* Let drag events pass through to parent */
-        }
-
-        .cargo-drag-handle:hover {
-            opacity: 1;
-        }
-
-        .cargo-group-card:active .cargo-drag-handle {
-            cursor: grabbing;
-        }
-
-        .cargo-group-card {
-            background-color: var(--bg-tertiary);
-            border: 2px solid;
-            border-radius: 8px;
-            padding: 15px;
-            min-height: 150px;
-            cursor: grab;
-            transition: all 0.2s;
-        }
-
-        .cargo-group-card:active {
-            cursor: grabbing;
-        }
-
-        .cargo-group-card:hover {
-            background-color: rgba(255, 255, 255, 0.05);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-
-        .cargo-group-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .cargo-group-label-edit {
-            font-size: 24px;
-            font-weight: 900;
-            letter-spacing: 2px;
-            transition: opacity 0.2s;
-        }
-
-        .cargo-group-label-edit:hover {
-            opacity: 0.7;
-        }
-
-        .cargo-group-scu {
-            font-size: 14px;
-            color: var(--text-secondary);
-            font-weight: 600;
-        }
-
-        .cargo-group-color-edit {
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.2s;
-        }
-
-        .cargo-group-color-edit:hover {
-            border-color: rgba(255, 255, 255, 0.5);
-            transform: scale(1.1);
-        }
-
-        .cargo-group-destination {
-            font-size: 13px;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-
-        .expand-indicator {
-            font-size: 11px;
-            color: var(--color-primary);
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin: 8px 0;
-            transition: color 0.2s;
-        }
-
-        .expand-indicator:hover {
-            color: var(--color-accent);
-        }
-
-        .cargo-group-details {
-            display: none;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .cargo-group-card.expanded .cargo-group-details {
-            display: block;
-        }
-
-        .cargo-group-card.expanded .expand-indicator::after {
-            content: ' ▼';
-        }
-
-        .cargo-group-card:not(.expanded) .expand-indicator::after {
-            content: ' ▶';
-        }
-
-        .cargo-group-details-item {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-        }
-
-        .cargo-group-details-item .mission-num {
-            color: var(--color-primary);
-            font-weight: 600;
-        }
-
-        .cargo-group-details-item .commodity {
-            color: var(--text-primary);
-        }
-
-
-        /* Cargo Grid Styles */
-        .grid-layout-selector {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            align-items: center;
-        }
-
-        .grid-layout-btn {
-            background-color: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            color: var(--text-secondary);
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.2s;
-        }
-
-        .grid-layout-btn:hover {
-            border-color: var(--color-primary);
-            color: var(--color-primary);
-        }
-
-        .grid-layout-btn.active {
-            background-color: var(--color-primary);
-            border-color: var(--color-primary);
-            color: var(--bg-primary);
-        }
-
-        .cargo-grid-container {
-            display: grid;
-            gap: 15px;
-            padding: 10px;
-        }
-
-        /* Grid layout - dynamic via JavaScript */
-        .cargo-grid-container {
-            grid-template-columns: repeat(2, 1fr); /* Default, overridden by JS */
-        }
-
-        .cargo-group-card {
-            background-color: var(--bg-tertiary);
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            padding: 15px;
-            cursor: grab;
-            transition: all 0.2s;
-            min-height: 80px;
-        }
-
-        .cargo-group-card:hover {
-            border-color: var(--color-primary);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
-
-        .cargo-group-card.dragging {
-            opacity: 0.5;
-            cursor: grabbing;
-        }
-
-        .cargo-group-card.drag-over {
-            border-color: var(--color-primary);
-            background-color: rgba(77, 212, 172, 0.1);
-        }
-
-        .cargo-group-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .cargo-group-label {
-            font-size: 18px;
-            font-weight: 900;
-            letter-spacing: 2px;
-        }
-
-        .cargo-group-scu {
-            font-size: 13px;
-            color: var(--text-secondary);
-            font-weight: 600;
-        }
-
-        .cargo-group-destination {
-            font-size: 13px;
-            color: var(--color-accent);
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .cargo-group-details {
-            display: none;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .cargo-group-card.expanded .cargo-group-details {
-            display: block;
-        }
-
-        .cargo-group-details-item {
-            font-size: 11px;
-            color: var(--text-secondary);
-            padding: 4px 0;
-        }
-
-        .cargo-group-details-item .mission-num {
-            color: var(--color-primary);
-            font-weight: 600;
-        }
-
-        .cargo-group-details-item .commodity {
-            color: var(--text-primary);
-        }
-
-        .expand-indicator {
-            font-size: 10px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 5px;
-            user-select: none;
-        }
-
-        /* Screenshot OCR Section */
-        .ocr-section {
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 15px;
-        }
-
-        .ocr-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .ocr-title {
-            font-size: 13px;
-            color: var(--color-primary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 600;
-        }
-
-        .ocr-toggle {
-            background-color: transparent;
-            color: var(--text-secondary);
-            border: 1px solid var(--border-color);
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 11px;
-            transition: all 0.2s;
-        }
-
-        .ocr-toggle:hover {
-            border-color: var(--color-primary);
-            color: var(--color-primary);
-        }
-
-        .ocr-content {
-            display: none;
-        }
-
-        .ocr-content.active {
-            display: block;
-        }
-
-        .ocr-upload-area {
-            border: 2px dashed var(--border-color);
-            border-radius: 8px;
-            padding: 30px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .ocr-upload-area:hover {
-            border-color: var(--color-primary);
-            background-color: rgba(77, 212, 172, 0.05);
-        }
-
-        .ocr-upload-area.processing {
-            border-color: var(--color-warning);
-            background-color: rgba(251, 191, 36, 0.05);
-            cursor: wait;
-        }
-
-        .ocr-upload-icon {
-            font-size: 48px;
-            color: var(--text-secondary);
-            margin-bottom: 10px;
-        }
-
-        .ocr-upload-text {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-bottom: 5px;
-        }
-
-        .ocr-upload-hint {
-            font-size: 11px;
-            color: var(--text-secondary);
-            opacity: 0.7;
-        }
-
-        .ocr-status {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            text-align: center;
-        }
-
-        .ocr-status.processing {
-            background-color: rgba(251, 191, 36, 0.1);
-            color: var(--color-warning);
-        }
-
-        .ocr-status.success {
-            background-color: rgba(74, 222, 128, 0.1);
-            color: var(--color-success);
-        }
-
-        .ocr-status.error {
-            background-color: rgba(239, 68, 68, 0.1);
-            color: var(--color-danger);
-        }
-
-        .ocr-file-input {
-            display: none;
-        }
-
-        .btn-toggle-layout {
-            background-color: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 18px;
-            transition: all 0.2s;
-        }
-
-        .btn-toggle-layout:hover {
-            background-color: var(--color-primary);
-            border-color: var(--color-primary);
-            transform: scale(1.05);
-        }
-
-        #deliverySummary {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        #deliverySummary.two-column {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .delivery-location {
-            margin-bottom: 0;
-            display: flex;
-            gap: 12px;
-            cursor: grab;
-            padding: 10px;
-            border-radius: 6px;
-            transition: all 0.2s;
-        }
-
-        .delivery-location:hover {
-            background-color: rgba(255, 255, 255, 0.05);
-        }
-
-        .delivery-location.dragging {
-            opacity: 0.5;
-            cursor: grabbing;
-        }
-
-        .delivery-location.drag-over {
-            border-top: 2px solid var(--color-primary);
-        }
-
-        .location-marker {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0;
-            min-width: 50px;
-        }
-
-        .marker-color {
-            width: 50px;
-            height: 100%;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-            display: flex;
-            align-items: flex-start;
-            justify-content: center;
-            padding-top: 10px;
-        }
-
-        .marker-color:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
-        }
-
-        .marker-label {
-            color: #ffffff;
-            font-size: 13px;
-            font-weight: 700;
-            text-align: center;
-            text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
-            cursor: text;
-            min-width: 20px;
-            background: transparent;
-            border: none;
-            outline: none;
-        }
-
-        .marker-label:focus {
-            outline: 2px solid rgba(255, 255, 255, 0.5);
-            outline-offset: 2px;
-            border-radius: 2px;
-        }
-
-        .location-details {
-            flex: 1;
-        }
-
-        .location-name {
-            font-size: 13px;
-            color: var(--color-accent);
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-
-        .delivery-item {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-            padding-left: 10px;
-        }
-
-        .delivery-item .commodity-name {
-            color: var(--text-primary);
-        }
-
-        .box-breakdown {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            margin-top: 4px;
-            padding-left: 10px;
-            flex-wrap: wrap;
-        }
-
-        .box-icon {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .box-icon-svg {
-            width: 28px;
-            height: 28px;
-            color: var(--color-primary);
-            flex-shrink: 0;
-        }
-
-        .box-count {
-            font-weight: 600;
-            color: var(--text-primary);
-            font-size: 13px;
-        }
-
-        /* Stats Column */
-        .stats-column {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .stat-panel {
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-        }
-
-        .stat-label {
-            font-size: 11px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-        }
-
-        .stat-value {
-            font-size: 36px;
-            color: var(--color-primary);
-            font-weight: 900;
-            letter-spacing: 1px;
-        }
-
-        .capacity-meter {
-            margin-top: 15px;
-        }
-
-        .capacity-bar {
-            height: 30px;
-            background-color: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .capacity-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
-            transition: width 0.3s ease;
-            position: relative;
-        }
-
-        .capacity-fill.over-capacity {
-            background: linear-gradient(90deg, var(--color-danger), #dc2626);
-            animation: flash 1s infinite;
-        }
-
-        @keyframes flash {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-
-        .capacity-text {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-top: 8px;
-        }
-
-        /* Color Picker Modal */
-        .color-picker-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .color-picker-modal.active {
-            display: flex;
-        }
-
-        .color-picker-content {
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 30px;
-            max-width: 400px;
-        }
-
-        .color-picker-title {
-            font-size: 16px;
-            color: var(--color-primary);
-            margin-bottom: 20px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .color-palette {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .color-option {
-            width: 60px;
-            height: 60px;
-            border-radius: 8px;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: all 0.2s;
-        }
-
-        .color-option:hover {
-            border-color: var(--color-primary);
-            transform: scale(1.1);
-        }
-
-        .custom-color-input {
-            width: 100%;
-            height: 60px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            cursor: pointer;
-            margin-bottom: 15px;
-        }
-
-        .color-picker-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        .btn-color-picker {
-            flex: 1;
-            padding: 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.2s;
-        }
-
-        .btn-cancel {
-            background-color: transparent;
-            color: var(--text-secondary);
-            border: 1px solid var(--border-color);
-        }
-
-        .btn-cancel:hover {
-            background-color: var(--bg-tertiary);
-        }
-
-        .btn-confirm {
-            background-color: var(--color-primary);
-            color: var(--bg-primary);
-            border: 1px solid var(--color-primary);
-        }
-
-        .btn-confirm:hover {
-            opacity: 0.9;
-        }
-
-        /* Hidden state */
-        .hidden {
-            display: none !important;
-        }
-
-        /* Empty state */
-        .empty-state {
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 13px;
-            padding: 40px;
-        }
-
-        /* Footer */
-        .footer {
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 11px;
-            padding: 30px 20px 20px 20px;
-            line-height: 1.6;
-            position: relative;
-        }
-
-        .footer a {
-            color: var(--color-accent);
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-
-        .footer a:hover {
-            color: var(--color-primary);
-        }
-
-        /* Reset button */
-        .btn-reset {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background-color: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            color: var(--text-secondary);
-            padding: 12px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            transition: all 0.2s;
-            z-index: 1000;
-        }
-
-        .btn-reset:hover {
-            background-color: var(--color-danger);
-            border-color: var(--color-danger);
-            color: #ffffff;
-            transform: scale(1.05);
-        }
-
-        /* Scrollable container for missions */
-        .missions-scroll {
-            max-height: calc(100vh - 300px);
-            overflow-y: auto;
-            padding-right: 10px;
-        }
-
-        .missions-scroll::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .missions-scroll::-webkit-scrollbar-track {
-            background: var(--bg-tertiary);
-            border-radius: 4px;
-        }
-
-        .missions-scroll::-webkit-scrollbar-thumb {
-            background: var(--color-primary);
-            border-radius: 4px;
-        }
-    </style>
+    <link rel="stylesheet" href="css/themes.css">
+    <link rel="stylesheet" href="css/main.css">
 </head>
 <body data-theme="stardust">
     <div class="container">
@@ -1952,6 +181,12 @@
         </div>
     </div>
 
+    <script src="js/data/theme-colors.js"></script>
+    <script src="js/data/ships.js"></script>
+    <script src="js/data/locations.js"></script>
+    <script src="js/data/commodities.js"></script>
+    <script src="js/data/payouts.js"></script>
+    
     <script>
         // Data
         let missionCounter = 0;
@@ -1968,142 +203,19 @@
         let currentColorTarget = null;
 
         // Theme color palettes
-        const themeColorPalettes = {
-            'stardust': ['#4dd4ac', '#ec4899', '#fbbf24', '#8b5cf6', '#3b82f6', '#f97316', '#84cc16', '#06b6d4'],
-            'lux': ['#B4F500', '#9DFF00', '#32CD32', '#00D9FF', '#FFD600', '#FF4757', '#7FE800', '#d9f99d'],
-            'pulse': ['#FF006E', '#00D4FF', '#00FFA3', '#FFC837', '#8B5CF6', '#FF8800', '#E63946', '#FFB3D9'],
-            'flow': ['#1E90FF', '#00D4FF', '#00BFFF', '#00FFA3', '#FFD600', '#FF4757', '#93c5fd', '#60a5fa'],
-            'dark': ['#8B3FBF', '#A855F7', '#00D4FF', '#00FFA3', '#FF8800', '#E63946', '#c084fc', '#e9d5ff'],
-            'starkitten': ['#FF006E', '#00D4FF', '#00FFA3', '#B026FF', '#FF8800', '#FF1B8D', '#E63946', '#00BFFF'],
-            'wednesday': ['#A0153E', '#3DA9A5', '#7B3F6D', '#2D7C7B', '#D4A017', '#9966CC', '#B76E79', '#50C878'],
-            'moonshine': ['#8BA5C1', '#B8D4E8', '#7CB8E8', '#5FBAA7', '#D4AF6A', '#D97777', '#cbd5e1', '#94a3b8'],
-            'argo': ['#FF6600', '#FF8C42', '#FFC107', '#4CAF50', '#2196F3', '#D32F2F', '#fb923c', '#fdba74'],
-            'cargo-explorer': ['#DC143C', '#B91C1C', '#D4AF37', '#FF6B35', '#60A5FA', '#991B1B', '#EF4444', '#FCD34D']
-        };
+        const themeColorPalettes = THEME_COLOR_PALETTES;
 
         // Ships database (sorted alphabetically by name)
-        const ships = [
-            {id: "aegis_avenger_titan", name: "Aegis Avenger Titan", capacity: 8},
-            {id: "aegis_reclaimer", name: "Aegis Reclaimer", capacity: 420},
-            {id: "anvil_carrack", name: "Anvil Carrack", capacity: 456, grids: 9},
-            {id: "anvil_valkyrie", name: "Anvil Valkyrie", capacity: 90},
-            {id: "argo_raft", name: "Argo RAFT", capacity: 96},
-            {id: "consolidated_outland_nomad", name: "Consolidated Outland Nomad", capacity: 24},
-            {id: "crusader_hercules_a2", name: "Crusader Hercules A2", capacity: 216},
-            {id: "crusader_hercules_c2", name: "Crusader Hercules C2", capacity: 696},
-            {id: "crusader_hercules_m2", name: "Crusader Hercules M2", capacity: 522},
-            {id: "crusader_intrepid", name: "Crusader Intrepid", capacity: 8},
-            {id: "crusader_mercury_star_runner", name: "Crusader Mercury Star Runner", capacity: 114},
-            {id: "crusader_spirit_c1", name: "Crusader Spirit C1", capacity: 64},
-            {id: "crusader_starlancer_max", name: "Crusader Starlancer MAX", capacity: 224, grids: 4},
-            {id: "crusader_starlancer_tac", name: "Crusader Starlancer TAC", capacity: 96},
-            {id: "drake_caterpillar", name: "Drake Caterpillar", capacity: 576, grids: 5},
-            {id: "drake_clipper", name: "Drake Clipper", capacity: 12},
-            {id: "drake_corsair", name: "Drake Corsair", capacity: 72},
-            {id: "drake_cutlass_black", name: "Drake Cutlass Black", capacity: 46},
-            {id: "drake_cutter_rambler", name: "Drake Cutter Rambler", capacity: 2},
-            {id: "drake_cutter_scout", name: "Drake Cutter Scout", capacity: 4},
-            {id: "drake_vulture", name: "Drake Vulture", capacity: 12},
-            {id: "gatac_syulen", name: "Gatac Syulen", capacity: 6},
-            {id: "misc_freelancer", name: "MISC Freelancer", capacity: 66},
-            {id: "misc_freelancer_dur", name: "MISC Freelancer DUR", capacity: 36},
-            {id: "misc_freelancer_max", name: "MISC Freelancer MAX", capacity: 122},
-            {id: "misc_hull_a", name: "MISC Hull A", capacity: 64},
-            {id: "misc_hull_c", name: "MISC Hull C", capacity: 4608},
-            {id: "misc_odyssey", name: "MISC Odyssey", capacity: 252},
-            {id: "misc_reliant_kore", name: "MISC Reliant Kore", capacity: 6},
-            {id: "misc_reliant_tana", name: "MISC Reliant Tana", capacity: 1},
-            {id: "misc_starfarer", name: "MISC Starfarer", capacity: 291},
-            {id: "misc_starfarer_gemini", name: "MISC Starfarer Gemini", capacity: 291},
-            {id: "origin_125a", name: "Origin 125a", capacity: 2},
-            {id: "origin_300i", name: "Origin 300i", capacity: 8},
-            {id: "origin_315p", name: "Origin 315p", capacity: 12},
-            {id: "origin_325a", name: "Origin 325a", capacity: 4},
-            {id: "origin_400i", name: "Origin 400i", capacity: 42},
-            {id: "origin_600i_explorer", name: "Origin 600i Explorer", capacity: 48},
-            {id: "origin_600i_touring", name: "Origin 600i Touring", capacity: 20},
-            {id: "origin_890_jump", name: "Origin 890 Jump", capacity: 388},
-            {id: "rsi_constellation_andromeda", name: "RSI Constellation Andromeda", capacity: 96},
-            {id: "rsi_constellation_aquila", name: "RSI Constellation Aquila", capacity: 96},
-            {id: "rsi_constellation_phoenix", name: "RSI Constellation Phoenix", capacity: 84},
-            {id: "rsi_constellation_taurus", name: "RSI Constellation Taurus", capacity: 174},
-            {id: "rsi_polaris", name: "RSI Polaris", capacity: 576},
-            {id: "rsi_zeus_cl", name: "RSI Zeus CL", capacity: 128},
-            {id: "rsi_zeus_es", name: "RSI Zeus ES", capacity: 32}
-        ];
+        const ships = SHIPS_DATABASE;
 
         // Locations database (sorted alphabetically)
-        const locations = {
-            planetary: [
-                "Covalex S4DC05", "Cry-Astro 19-02", "Cry-Astro 34-12", "Devlin Scrapyard",
-                "Greycat Complex A", "MT Depot S4C05", "MT Depot S4LD01", "MT Depot S4LD13",
-                "MT L1", "MT L2", "MT L3", "MT L4", "New Babbage", "Port Tressler",
-                "Rayari Anvik", "Rayari Cantwell", "Rayari Keltag", "Rayari McGrath",
-                "Sakura Sun Goldenrod", "Shubin SMCa-6", "Shubin SMCa-8"
-            ],
-            local: [
-                "Covalex S4DC05", "MT Logistics S4LD13", "Rayari Deltana", "Rayari Keltag",
-                "SMO S4DC10", "SMO S4DC13", "SMO S4DC18", "SMO S4DC22"
-            ],
-            stellar: [
-                "ARC-L1", "ARC-L2", "ARC-L5", "Baijini", "CRU-L1", "CRU-L4", "CRU-L5",
-                "Everus", "HUR-L1", "MIC-L1", "MIC-L2", "Seraphim", "Tressler"
-            ],
-            interstellar: [
-                "ARC 048 - Wala", "Baijini - Arc", "Brio's Breaker Yrd - Daymar",
-                "Bueno Ravine - Pyro III", "Canard View - Pyro VI", "Chawla Beach - Pyro IV",
-                "Deakins RO - Yela", "Everus - Hurston", "HDMS-Hahn - Magda",
-                "Jackson's Swap - Pyro II", "Levski - Nyx", "Port Tressler - MicroT",
-                "Rayari McGrath - Clio", "Ruin Station - Pyro IV", "Sacren's Plot - Pyro IV",
-                "Shephrds Rest - Pyro III", "Shubin SAL-5 - Lyria", "Shubin SMO-18 - MicroT"
-            ]
-        };
+        const locations = LOCATIONS_DATABASE;
 
         // Commodities database (sorted alphabetically)
-        const commodities = {
-            planetary: [
-                "Agri Supplies", "Aluminum", "C Materials", "Carbon", "Corundum", "Hydrogen",
-                "Press Ice", "Proc Food", "Quantum Fuel", "Quartz", "Scrap", "Ship Ammo",
-                "Silicon", "Stims", "Tin", "Titanium", "Tungsten", "Waste"
-            ],
-            local: [
-                "Agri Supplies", "Corundum", "Hydrogen", "Hydrogen Fuel", "Press Ice", "Proc Food", "Quantum Fuel",
-                "Quartz", "Scrap", "Ship Ammo", "Stims", "Waste"
-            ],
-            stellar: [
-                "Agricultural Supplies", "Aluminum", "Beryl", "Carbon", "Corundum", "Hydrogen",
-                "Pressurized Ice", "Processed Food", "Quartz", "Scrap", "Tin", "Titanium",
-                "Tungsten", "Waste"
-            ],
-            interstellar: [
-                "Argon", "Atlasium", "Cobalt", "Distilled Spirits", "Fresh Food", "Hydrogen",
-                "Hydrogen Fuel", "Iodine", "Medical Supplies", "Nitrogen", "Organics",
-                "Press Ice", "Processed Food", "Ranta Dung", "RMC", "Scrap", "Ship Ammo",
-                "Souvenirs", "Stims", "ThermalFoam"
-            ]
-        };
+        const commodities = COMMODITIES_DATABASE;
 
         // Payouts database (sorted numerically low to high)
-        const payouts = {
-            planetary: [
-                "30k", "37k", "43k", "45k", "48k", "50k", "56k", "59k", "61k", "62k", "65k",
-                "76k", "83k", "84k", "90k", "95k", "99k", "121k", "123k", "160k", "163k",
-                "207k", "332k", "394k"
-            ],
-            local: [
-                "52.5k", "60.75k", "139k", "150.5k", "153.25k", "163.75k"
-            ],
-            stellar: [
-                "51.5k", "55.75k", "56.25k", "57k", "59.5k", "63k", "63.25k", "64k", "64.25k",
-                "68.25k", "79.25k", "81.25k", "124.75k", "126.25k", "127.25k", "136.5k",
-                "137.5k", "142k", "162.25k", "245.5k", "247.75k", "276.25k", "282.5k",
-                "289k", "313.25k", "314k", "319k", "339.5k", "383k"
-            ],
-            interstellar: [
-                "92.75k", "99.25k", "102.25k", "119.5k", "123k", "140.75k", "150.25k",
-                "153.5k", "195k", "222.25k", "287k", "525.5k"
-            ]
-        };
+        const payouts = PAYOUTS_DATABASE;
 
 
         // Load cargo grid expanded state
@@ -2286,7 +398,7 @@
                 e.preventDefault();
             }
             e.dataTransfer.dropEffect = 'move';
-            return false;
+               return false;
         }
 
         // OCR Screenshot Processing
@@ -2685,8 +797,8 @@
             const saved = localStorage.getItem('haulerHelperDeliveryOrder');
             if (saved) {
                 try {
-                    deliveryOrder = JSON.parse(saved);
-                } catch (e) {
+                    deliveryOrder = JSON.parse(saved); 
+                 } catch (e) {
                     deliveryOrder = [];
                 }
             }
@@ -2864,11 +976,21 @@
         }
 
         // Update commodity data
-        function updateCommodity(commodityId, field, value) {
+                function updateCommodity(commodityId, field, value) {
             for (const mission of missions) {
                 const commodity = mission.commodities.find(c => c.id === commodityId);
                 if (commodity) {
                     commodity[field] = value;
+                    
+                    // AUTO-FILL PATTERNS: If this is the first commodity and we're setting the commodity name
+                    const isFirstCommodity = commodity.id.includes('_commodity_0');
+                    const isSettingCommodity = field === 'commodity';
+                    const isMicrotech = selectedSystem === 'microtech';
+                    
+                    if (isFirstCommodity && isSettingCommodity && value && isMicrotech) {
+                        applyAutoFillPattern(mission, value);
+                    }
+                    
                     break;
                 }
             }
@@ -2884,6 +1006,77 @@
             if (mission) {
                 mission.payout = payout;
             }
+
+        // AUTO-FILL HELPER FUNCTION
+        function applyAutoFillPattern(mission, firstCommodity) {
+            // Only apply if mission has exactly 1 commodity (we're setting the first one)
+            if (mission.commodities.length !== 1) return;
+            
+            const depot = 'Covalex S4DC05';
+            
+            // Define patterns based on first commodity
+            const patterns = {
+                'Quartz': {
+                    destinations: [depot, depot, depot, depot],
+                    commodities: ['Quartz', 'Corundum', 'Quartz', 'Corundum']
+                },
+                'Stims': {
+                    pickups: [depot, depot, depot, depot],
+                    commodities: ['Stims', 'Stims', 'Stims', 'Stims']
+                },
+                'Press Ice': {
+                    pickups: [depot, depot, depot, depot],
+                    commodities: ['Press Ice', 'Press Ice', 'Proc Food', 'Proc Food']
+                },
+                'Hydrogen': {
+                    pickups: [depot, depot, depot, depot],
+                    commodities: ['Hydrogen', 'Hydrogen', 'Quantum Fuel', 'Ship Ammo']
+                },
+                'Waste': {
+                    destinations: [depot, depot, depot, depot],
+                    commodities: ['Waste', 'Scrap', 'Waste', 'Scrap']
+                }
+            };
+            
+            const pattern = patterns[firstCommodity];
+            if (!pattern) return; // No pattern for this commodity
+            
+            console.log(`✨ Auto-filling mission with ${firstCommodity} pattern`);
+            
+            // Add 3 more commodity rows (we already have 1)
+            for (let i = 1; i < 4; i++) {
+                if (mission.commodities.length >= 4) break;
+                addCommodityRow(mission.id);
+            }
+            
+            // Wait for DOM to update, then fill in values
+            setTimeout(() => {
+                mission.commodities.forEach((commodity, index) => {
+                    if (pattern.pickups) {
+                        commodity.pickup = pattern.pickups[index];
+                        const pickupSelect = document.querySelector(`#${commodity.id} select:nth-of-type(1)`);
+                        if (pickupSelect) pickupSelect.value = pattern.pickups[index];
+                    }
+                    
+                    if (pattern.destinations) {
+                        commodity.destination = pattern.destinations[index];
+                        const destSelect = document.querySelector(`#${commodity.id} select:nth-of-type(4)`);
+                        if (destSelect) destSelect.value = pattern.destinations[index];
+                    }
+                    
+                    commodity.commodity = pattern.commodities[index];
+                    const commoditySelect = document.querySelector(`#${commodity.id} select:nth-of-type(2)`);
+                    if (commoditySelect) commoditySelect.value = pattern.commodities[index];
+                });
+                
+                // Update displays
+                generateRoutePlan();
+                generateCargoGrid();
+                updateStats();
+                saveSession();
+            }, 100);
+        }
+
             updateStats();
             saveSession();
         }
@@ -3005,6 +1198,8 @@
             if (!container) {
                 console.error('❌ cargoGrid container not found!');
                 return;
+ Output
+
             }
             
             // Get cargo groups from missions
@@ -3393,7 +1588,6 @@
 
 
 
-
         // Route planner drag and drop handlers
         let draggedRouteStop = null;
         
@@ -3404,7 +1598,6 @@
             stopElement.style.opacity = '0.5';
             e.dataTransfer.effectAllowed = 'move';
         }
-        
         function handleRouteStopDragEnd(e) {
             const stopElement = e.currentTarget === document ? e.target : e.currentTarget;
             stopElement.style.opacity = '1';
@@ -3515,7 +1708,7 @@
                 }
             });
             
-            // Build optimized route with proper pickup-before-delivery logic
+                        // Build optimized route - FIXED to combine pickups and deliveries at same location
             const stops = [];
             const cargoOnBoard = new Set(); // Track IDs of cargo currently on ship
             const allPickupIds = new Set();
@@ -3527,110 +1720,72 @@
                 loc.deliveries.forEach(d => allDeliveryIds.add(d.id));
             });
             
-            // Identify the first pickup location (starting location)
-            let firstPickupLocation = null;
-            if (missions.length > 0 && missions[0].commodities.length > 0) {
-                firstPickupLocation = missions[0].commodities[0].pickup;
-            }
-            
             let currentCargo = 0;
             const shipCapacity = selectedShip ? selectedShip.capacity : 999999;
             
             // Keep visiting locations until everything is delivered
-            while (allDeliveryIds.size > 0) {
-                let madeProgress = false;
+            while (allDeliveryIds.size > 0 || allPickupIds.size > 0) {
+                let bestLocation = null;
+                let bestScore = -1;
                 
-                // Phase 1: Visit locations with pickups (prioritize locations that also have deliveries)
-                // BUT: Defer first pickup location deliveries until the end
-                const locationsByPriority = Object.keys(locationMap).sort((a, b) => {
-                    const aIsFirst = a === firstPickupLocation;
-                    const bIsFirst = b === firstPickupLocation;
-                    const aHasDeliveryOnly = locationMap[a].pickups.length === 0 && 
-                                             locationMap[a].deliveries.some(d => cargoOnBoard.has(d.id));
-                    const bHasDeliveryOnly = locationMap[b].pickups.length === 0 && 
-                                             locationMap[b].deliveries.some(d => cargoOnBoard.has(d.id));
+                // Find the best next location to visit
+                for (const location of Object.keys(locationMap)) {
+                    const hasUnpickedCargo = locationMap[location].pickups.some(p => allPickupIds.has(p.id));
+                    const hasReadyDeliveries = locationMap[location].deliveries.some(d => cargoOnBoard.has(d.id));
                     
-                    // Deprioritize first location if it only has deliveries (save for end)
-                    if (aIsFirst && aHasDeliveryOnly && !bIsFirst) return 1;
-                    if (bIsFirst && bHasDeliveryOnly && !aIsFirst) return -1;
+                    if (!hasUnpickedCargo && !hasReadyDeliveries) continue;
                     
-                    const aHasBoth = locationMap[a].pickups.length > 0 && 
-                                     locationMap[a].deliveries.some(d => cargoOnBoard.has(d.id));
-                    const bHasBoth = locationMap[b].pickups.length > 0 && 
-                                     locationMap[b].deliveries.some(d => cargoOnBoard.has(d.id));
+                    // Score this location - prioritize locations that can do BOTH
+                    let score = 0;
+                    if (hasReadyDeliveries) score += 100; // Deliveries free up space
+                    if (hasUnpickedCargo) score += 50; // Pickups are next priority
+                    if (hasReadyDeliveries && hasUnpickedCargo) score += 150; // Best: combo stop!
                     
-                    if (aHasBoth && !bHasBoth) return -1;
-                    if (!aHasBoth && bHasBoth) return 1;
-                    
-                    const aHasPickup = locationMap[a].pickups.length > 0;
-                    const bHasPickup = locationMap[b].pickups.length > 0;
-                    
-                    if (aHasPickup && !bHasPickup) return -1;
-                    if (!aHasPickup && bHasPickup) return 1;
-                    
-                    return 0;
-                });
-                
-                for (const location of locationsByPriority) {
-                    const loc = locationMap[location];
-                    
-                    // Check if we should visit this location
-                    const hasPickupsToGet = loc.pickups.some(p => allPickupIds.has(p.id));
-                    const hasDeliveriesToMake = loc.deliveries.some(d => cargoOnBoard.has(d.id));
-                    
-                    if (!hasPickupsToGet && !hasDeliveriesToMake) continue;
-                    
-                    // Skip first location if it only has deliveries and other locations still need visiting
-                    const isFirstLocation = location === firstPickupLocation;
-                    const onlyHasDeliveries = !hasPickupsToGet && hasDeliveriesToMake;
-                    const otherLocationsRemain = Object.keys(locationMap).some(loc => 
-                        loc !== location && 
-                        (locationMap[loc].pickups.some(p => allPickupIds.has(p.id)) ||
-                         locationMap[loc].deliveries.some(d => cargoOnBoard.has(d.id)))
-                    );
-                    
-                    if (isFirstLocation && onlyHasDeliveries && otherLocationsRemain) {
-                        continue; // Skip first location, visit other locations first
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestLocation = location;
                     }
-                    
-                    // Create stop
-                    const pickupsAtThisStop = loc.pickups.filter(p => allPickupIds.has(p.id));
-                    const deliveriesAtThisStop = loc.deliveries.filter(d => cargoOnBoard.has(d.id));
-                    
-                    if (pickupsAtThisStop.length === 0 && deliveriesAtThisStop.length === 0) continue;
-                    
-                    const pickupSCU = pickupsAtThisStop.reduce((sum, p) => sum + p.scu, 0);
-                    const deliverySCU = deliveriesAtThisStop.reduce((sum, d) => sum + d.scu, 0);
-                    
-                    stops.push({
-                        location: location,
-                        pickups: pickupsAtThisStop,
-                        deliveries: deliveriesAtThisStop,
-                        cargoBeforeStop: currentCargo,
-                        cargoAfterStop: currentCargo - deliverySCU + pickupSCU
-                    });
-                    
-                    // Update cargo state
-                    deliveriesAtThisStop.forEach(d => {
-                        cargoOnBoard.delete(d.id);
-                        allDeliveryIds.delete(d.id);
-                    });
-                    
-                    pickupsAtThisStop.forEach(p => {
-                        cargoOnBoard.add(p.id);
-                        allPickupIds.delete(p.id);
-                    });
-                    
-                    currentCargo = currentCargo - deliverySCU + pickupSCU;
-                    madeProgress = true;
-                    break; // Visit one location at a time
                 }
                 
-                if (!madeProgress) {
-                    // Safety check - shouldn't happen if data is valid
-                    console.error('Route planner stuck - no valid next stop found');
+                if (!bestLocation) {
+                    console.error('Route planner: No valid next location found');
+                    break; // Safety check
+                }
+                
+                // Visit this location and do ALL possible actions in ONE stop
+                const loc = locationMap[bestLocation];
+                const pickupsHere = loc.pickups.filter(p => allPickupIds.has(p.id));
+                const deliveriesHere = loc.deliveries.filter(d => cargoOnBoard.has(d.id));
+                
+                if (pickupsHere.length === 0 && deliveriesHere.length === 0) {
+                    console.error('Route planner: Selected location has no valid actions');
                     break;
                 }
+                
+                const deliverySCU = deliveriesHere.reduce((sum, d) => sum + d.scu, 0);
+                const pickupSCU = pickupsHere.reduce((sum, p) => sum + p.scu, 0);
+                
+                // Record this stop (with both pickups AND deliveries)
+                stops.push({
+                    location: bestLocation,
+                    pickups: pickupsHere,
+                    deliveries: deliveriesHere,
+                    cargoBeforeStop: currentCargo,
+                    cargoAfterStop: currentCargo - deliverySCU + pickupSCU
+                });
+                
+                // Update cargo state - deliveries first (free space), then pickups
+                deliveriesHere.forEach(d => {
+                    cargoOnBoard.delete(d.id);
+                    allDeliveryIds.delete(d.id);
+                });
+                
+                pickupsHere.forEach(p => {
+                    cargoOnBoard.add(p.id);
+                    allPickupIds.delete(p.id);
+                });
+                
+                currentCargo = currentCargo - deliverySCU + pickupSCU;
             }
             
             // Store stops and render
