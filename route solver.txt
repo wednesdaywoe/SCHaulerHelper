@@ -1,0 +1,143 @@
+
+⸻
+
+WHAT YOUR CURRENT CODE ALREADY DOES WELL
+	1.	Combining pickup + delivery at the same stop using combo scoring
+	•	This correctly prioritizes high-efficiency stops.
+	2.	Delivering before picking up at a stop
+	•	This frees cargo space first and avoids unnecessary capacity issues.
+	3.	Global tracking of cargo state
+	•	Using cargoOnBoard, allPickupIds, and allDeliveryIds is the correct modeling strategy.
+	4.	Greedy feasibility filtering
+	•	Prevents visiting locations that cannot do any useful work.
+
+⸻
+
+CORE PROBLEMS IN THE CURRENT SYSTEM
+	1.	No Precedence Enforcement
+	•	The system can return cargo to the warehouse too early.
+	•	It does not prevent visiting B/C after a warehouse return.
+	•	It allows smaller pickup warehouses before the largest warehouse.
+	2.	Largest Pickup First Is Not Enforced
+	•	All pickups are treated equally regardless of size.
+	•	This violates your consistent Star Citizen gameplay pattern.
+	3.	Return-to-Warehouse Is Not Forced to the End
+	•	There is no rule preventing early warehouse return.
+	4.	No Backtracking
+	•	Greedy selection can deadlock even when a valid solution exists.
+
+⸻
+
+THE THREE MINIMAL FIXES THAT MAKE THE SYSTEM CORRECT
+
+⸻
+
+FIX #1 — Enforce “Largest Pickup First”
+
+Add this BEFORE the while loop:
+
+const warehousePickupTotals = {};
+
+Object.entries(locationMap).forEach(([loc, data]) => {
+const totalPickup = data.pickups.reduce((s, p) => s + p.scu, 0);
+if (totalPickup > 0) warehousePickupTotals[loc] = totalPickup;
+});
+
+const primaryWarehouse = Object.entries(warehousePickupTotals)
+.sort((a, b) => b[1] - a[1])[0]?.[0];
+
+Then INSIDE the loop BEFORE scoring:
+
+if (
+primaryWarehouse &&
+bestLocation !== null &&
+!routeStops.some(s => s.location === primaryWarehouse)
+) {
+// Force first stop to be the largest pickup warehouse
+bestLocation = primaryWarehouse;
+}
+
+RESULT:
+	•	First stop is always the largest pickup warehouse
+	•	Warehouse identity is data-driven and dynamic
+
+⸻
+
+FIX #2 — Lock Return-to-Warehouse Until the End
+
+Inside your location scoring loop, BEFORE adding score:
+
+const isReturnWarehouse = location === primaryWarehouse;
+const returnDeliveriesHere = locationMap[location].deliveries.some(d => d.isReturn);
+
+if (isReturnWarehouse && returnDeliveriesHere && allDeliveryIds.size > 0) {
+continue; // Block early warehouse return
+}
+
+RESULT:
+	•	Prevents “cereal return before Cherish”
+	•	Prevents premature warehouse return
+	•	Guarantees warehouse return is the final operational stop
+
+⸻
+
+FIX #3 — Score by Actual SCU, Not Just Presence
+
+REPLACE THIS:
+
+if (hasReadyDeliveries) score += 100;
+if (hasUnpickedCargo) score += 50;
+
+WITH THIS:
+
+const deliverySCU = locationMap[location].deliveries
+.filter(d => cargoOnBoard.has(d.id))
+.reduce((s, d) => s + d.scu, 0);
+
+const pickupSCU = locationMap[location].pickups
+.filter(p => allPickupIds.has(p.id))
+.reduce((s, p) => s + p.scu, 0);
+
+score += deliverySCU * 3;   // Strongly favor large unloads
+score += pickupSCU * 2;     // Favor large pickups
+if (deliverySCU && pickupSCU) score += 200; // Combo bonus
+
+RESULT:
+	•	Large SCU moves always prioritized
+	•	Small filler missions no longer hijack the route
+
+⸻
+
+FINAL SYSTEM BEHAVIOR AFTER FIXES
+
+The planner will now:
+	•	Always start at the largest warehouse pickup
+	•	Never return cargo before all site deliveries are finished
+	•	Always prefer high-SCU operations first
+	•	Still combine pickup + delivery in one stop
+	•	Still adapt dynamically across different systems
+	•	Still work without hardcoding any specific warehouse
+
+⸻
+
+OPTIONAL BACKTRACKING SAFETY (RECOMMENDED)
+
+If you later add:
+	•	Cargo capacity limits
+	•	More than ~7 locations
+	•	Multiple warehouse return missions
+
+Then add a simple 1-step backtracking fallback where bestLocation fails to prevent deadlocks.
+
+⸻
+
+FINAL JUDGMENT ON YOUR ORIGINAL PROCEDURE
+
+Largest pickup first: Correct — must be enforced as a rule
+Combined pickup+drop first: Correct — already implemented well
+Drop-only last: Incomplete — must respect return precedence
+Pure greedy scoring: Unsafe alone — can violate mission flow and deadlock
+
+⸻
+
+END OF DOCUMENT
