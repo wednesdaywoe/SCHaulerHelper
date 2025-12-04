@@ -182,11 +182,11 @@
         </div>
     </div>
 
-    <script src="js/data/theme-colors.js"></script>
-    <script src="js/data/ships.js"></script>
-    <script src="js/data/locations.js"></script>
-    <script src="js/data/commodities.js"></script>
-    <script src="js/data/payouts.js"></script>
+    <script src="js/data/theme-colors.js?v=2"></script>
+    <script src="js/data/ships.js?v=2"></script>
+    <script src="js/data/locations.js?v=2"></script>
+    <script src="js/data/commodities.js?v=3"></script>
+    <script src="js/data/payouts.js?v=2"></script>
     
     <script>
         // Data
@@ -1033,9 +1033,9 @@
                     pickups: [depot, depot, depot, depot],
                     commodities: ['Press Ice', 'Press Ice', 'Proc Food', 'Proc Food']
                 },
-                'Hydrogen': {
+                'Hydrogen Fuel': {
                     pickups: [depot, depot, depot, depot],
-                    commodities: ['Hydrogen', 'Hydrogen', 'Quantum Fuel', 'Ship Ammo']
+                    commodities: ['Hydrogen Fuel', 'Hydrogen Fuel', 'Quantum Fuel', 'Ship Ammo']
                 },
                 'Waste': {
                     destinations: [depot, depot, depot, depot],
@@ -1244,7 +1244,7 @@
             // Assign colors and labels to groups
             const theme = document.body.getAttribute('data-theme');
             const palette = themeColorPalettes[theme] || themeColorPalettes['stardust'];
-            let groupIndex = 0;
+            let groupIndex = Object.keys(cargoGroups).length; // Start from existing count
             
             Object.keys(groupData).forEach(destination => {
                 if (!cargoGroups[destination]) {
@@ -1721,7 +1721,7 @@
             // Assign colors to cargo groups (by destination)
             const theme = document.body.getAttribute('data-theme');
             const palette = themeColorPalettes[theme] || themeColorPalettes['stardust'];
-            let groupIndex = 0;
+            let groupIndex = Object.keys(cargoGroups).length; // Start from existing count
             
             // Assign groups for each destination
             Object.keys(locationMap).forEach(location => {
@@ -2108,6 +2108,7 @@
                 category: selectedCategory,
                 missions: missions,
                 locationColors: locationColors,
+                cargoGroups: cargoGroups,
                 timestamp: new Date().toISOString()
             };
             localStorage.setItem('haulerHelperSession', JSON.stringify(session));
@@ -2179,6 +2180,11 @@
                 // Restore location colors
                 if (session.locationColors) {
                     locationColors = session.locationColors;
+                }
+                
+                // Restore cargo groups
+                if (session.cargoGroups) {
+                    cargoGroups = session.cargoGroups;
                 }
                 
                 // Generate route plan and cargo grid

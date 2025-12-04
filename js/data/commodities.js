@@ -11,7 +11,7 @@ const COMMODITIES_DATABASE = {
         "Silicon", "Stims", "Tin", "Titanium", "Tungsten", "Waste"
     ],
     local: [
-        "Agri Supplies", "Corundum", "Hydrogen", "Hydrogen Fuel", "Press Ice", "Proc Food", "Quantum Fuel",
+        "Agri Supplies", "Corundum", "Hydrogen Fuel", "Press Ice", "Proc Food", "Quantum Fuel",
         "Quartz", "Scrap", "Ship Ammo", "Stims", "Waste"
     ],
     stellar: [
