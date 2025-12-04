@@ -44,7 +44,7 @@
         }
         
         .header h1::after {
-            content: 'v3.2.5 - COLOR CONFIRM FIX';
+            content: 'v3.3.0';
             position: absolute;
             top: -15px;
             right: 0;

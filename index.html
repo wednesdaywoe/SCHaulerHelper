@@ -201,6 +201,7 @@
         let cargoGridOrder = []; // Track custom order of groups in cargo grid
         let cargoGroups = {}; // Store cargo groups for persistent colors/labels
         let currentColorTarget = null;
+        let isLoadingSession = false;  // ← ADD THIS LINE
 
         // Theme color palettes
         const themeColorPalettes = THEME_COLOR_PALETTES;
@@ -228,7 +229,7 @@
 
         // Initialize
         function init() {
-            console.log('%c🎯 HAULER HELPER v3.2.5 - COLOR CONFIRM FIX', 'background: #4dd4ac; color: #000; font-size: 16px; padding: 8px;');
+            console.log('%c🎯 HAULER HELPER v3.3.0 - ROUTE SOLVER FIXES', 'background: #4dd4ac; color: #000; font-size: 16px; padding: 8px;');
 
             // HANDLE dragstart at document level (since addEventListener on cards doesn't work)
             document.addEventListener('dragstart', function(e) {
@@ -398,7 +399,7 @@
                 e.preventDefault();
             }
             e.dataTransfer.dropEffect = 'move';
-               return false;
+            return false;
         }
 
         // OCR Screenshot Processing
@@ -797,8 +798,8 @@
             const saved = localStorage.getItem('haulerHelperDeliveryOrder');
             if (saved) {
                 try {
-                    deliveryOrder = JSON.parse(saved); 
-                 } catch (e) {
+                    deliveryOrder = JSON.parse(saved);
+                } catch (e) {
                     deliveryOrder = [];
                 }
             }
@@ -1006,6 +1007,9 @@
             if (mission) {
                 mission.payout = payout;
             }
+            updateStats();
+            saveSession();
+        }
 
         // AUTO-FILL HELPER FUNCTION
         function applyAutoFillPattern(mission, firstCommodity) {
@@ -1077,9 +1081,8 @@
             }, 100);
         }
 
-            updateStats();
-            saveSession();
-        }
+           
+        
 
         // Remove commodity row
         function removeCommodityRow(missionId, commodityId) {
@@ -1198,8 +1201,6 @@
             if (!container) {
                 console.error('❌ cargoGrid container not found!');
                 return;
- Output
-
             }
             
             // Get cargo groups from missions
@@ -1588,6 +1589,7 @@
 
 
 
+
         // Route planner drag and drop handlers
         let draggedRouteStop = null;
         
@@ -1598,6 +1600,7 @@
             stopElement.style.opacity = '0.5';
             e.dataTransfer.effectAllowed = 'move';
         }
+        
         function handleRouteStopDragEnd(e) {
             const stopElement = e.currentTarget === document ? e.target : e.currentTarget;
             stopElement.style.opacity = '1';
@@ -1644,6 +1647,11 @@
         function generateRoutePlan() {
             const container = document.getElementById('routePlanner');
             
+            console.log('');
+            console.log('═══════════════════════════════════════════════');
+            console.log('🚀 STARTING ROUTE GENERATION');
+            console.log('═══════════════════════════════════════════════');
+            
             // Build comprehensive location map
             const locationMap = {}; // { location: { pickups: [], deliveries: [] } }
             
@@ -1684,8 +1692,30 @@
             
             if (Object.keys(locationMap).length === 0) {
                 container.innerHTML = '<div class="empty-state">No route planned</div>';
+                console.log('❌ No locations in map - aborting route generation');
                 return;
             }
+            
+            // DEBUG: Show location map contents
+            console.log('📋 LOCATION MAP BUILT:');
+            Object.entries(locationMap).forEach(([loc, data]) => {
+                const pickupSCU = data.pickups.reduce((s, p) => s + p.scu, 0);
+                const deliverySCU = data.deliveries.reduce((s, d) => s + d.scu, 0);
+                console.log(`  ${loc}:`);
+                if (data.pickups.length > 0) {
+                    console.log(`    📦 Pickups: ${pickupSCU} SCU (${data.pickups.length} items)`);
+                    data.pickups.forEach(p => {
+                        console.log(`       - Mission ${p.missionNum}: ${p.commodity} ${p.scu} SCU → ${p.destination}`);
+                    });
+                }
+                if (data.deliveries.length > 0) {
+                    console.log(`    📭 Deliveries: ${deliverySCU} SCU (${data.deliveries.length} items)`);
+                    data.deliveries.forEach(d => {
+                        console.log(`       - Mission ${d.missionNum}: ${d.commodity} ${d.scu} SCU from ${d.pickup}`);
+                    });
+                }
+            });
+            console.log('');
             
             // Assign colors to cargo groups (by destination)
             const theme = document.body.getAttribute('data-theme');
@@ -1708,7 +1738,7 @@
                 }
             });
             
-                        // Build optimized route - FIXED to combine pickups and deliveries at same location
+                        // Build optimized route - ENHANCED with route solver fixes
             const stops = [];
             const cargoOnBoard = new Set(); // Track IDs of cargo currently on ship
             const allPickupIds = new Set();
@@ -1723,34 +1753,127 @@
             let currentCargo = 0;
             const shipCapacity = selectedShip ? selectedShip.capacity : 999999;
             
+            // FIX #1: Calculate warehouse pickup totals and identify primary warehouse (largest pickup)
+            const warehousePickupTotals = {};
+            Object.entries(locationMap).forEach(([loc, data]) => {
+                const totalPickup = data.pickups.reduce((s, p) => s + p.scu, 0);
+                if (totalPickup > 0) {
+                    warehousePickupTotals[loc] = totalPickup;
+                }
+            });
+            
+            const primaryWarehouse = Object.entries(warehousePickupTotals)
+                .sort((a, b) => b[1] - a[1])[0]?.[0];
+            
+            console.log('🏭 WAREHOUSE IDENTIFICATION:');
+            console.log('  Warehouse pickup totals:', warehousePickupTotals);
+            console.log(`  Primary warehouse: ${primaryWarehouse} (${warehousePickupTotals[primaryWarehouse]} SCU)`);
+            console.log('');
+            
             // Keep visiting locations until everything is delivered
+            let iteration = 0;
             while (allDeliveryIds.size > 0 || allPickupIds.size > 0) {
+                iteration++;
+                console.log(`\n━━━ ITERATION ${iteration} ━━━`);
+                console.log(`Cargo on board: ${currentCargo} SCU`);
+                console.log(`Pickups remaining: ${allPickupIds.size}`);
+                console.log(`Deliveries remaining: ${allDeliveryIds.size}`);
+                console.log(`Stops so far: ${stops.map(s => s.location).join(' → ')}`);
+                console.log('');
                 let bestLocation = null;
                 let bestScore = -1;
                 
-                // Find the best next location to visit
-                for (const location of Object.keys(locationMap)) {
-                    const hasUnpickedCargo = locationMap[location].pickups.some(p => allPickupIds.has(p.id));
-                    const hasReadyDeliveries = locationMap[location].deliveries.some(d => cargoOnBoard.has(d.id));
-                    
-                    if (!hasUnpickedCargo && !hasReadyDeliveries) continue;
-                    
-                    // Score this location - prioritize locations that can do BOTH
-                    let score = 0;
-                    if (hasReadyDeliveries) score += 100; // Deliveries free up space
-                    if (hasUnpickedCargo) score += 50; // Pickups are next priority
-                    if (hasReadyDeliveries && hasUnpickedCargo) score += 150; // Best: combo stop!
-                    
-                    if (score > bestScore) {
-                        bestScore = score;
-                        bestLocation = location;
+                // FIX #1 (continued): Force first stop to be the largest pickup warehouse
+                if (primaryWarehouse && 
+                    stops.length === 0 && 
+                    locationMap[primaryWarehouse].pickups.some(p => allPickupIds.has(p.id))) {
+                    bestLocation = primaryWarehouse;
+                    console.log('✅ Forcing first stop to primary warehouse:', primaryWarehouse);
+                } else {
+                    // Find the best next location to visit
+                    console.log('🔍 EVALUATING LOCATIONS:');
+                    for (const location of Object.keys(locationMap)) {
+                        const hasUnpickedCargo = locationMap[location].pickups.some(p => allPickupIds.has(p.id));
+                        const hasReadyDeliveries = locationMap[location].deliveries.some(d => cargoOnBoard.has(d.id));
+                        
+                        console.log(`  ${location}:`);
+                        console.log(`    - Has unpicked cargo: ${hasUnpickedCargo}`);
+                        console.log(`    - Has ready deliveries: ${hasReadyDeliveries}`);
+                        
+                        if (!hasUnpickedCargo && !hasReadyDeliveries) {
+                            console.log(`    ⏭️  SKIP: Nothing to do here`);
+                            continue;
+                        }
+                        
+                        // FIX #2: Block return-to-warehouse until end
+                        const isWarehouse = location === primaryWarehouse;
+                        const hasDeliveriesHere = locationMap[location].deliveries.some(d => cargoOnBoard.has(d.id));
+                        
+                        console.log(`    - Is primary warehouse: ${isWarehouse}`);
+                        
+                        // Block warehouse deliveries if there are ANY other non-warehouse deliveries pending
+                        if (isWarehouse && hasDeliveriesHere && !hasUnpickedCargo) {
+                            console.log(`    🔒 WAREHOUSE RETURN CHECK:`);
+                            // Count how many non-warehouse deliveries are still pending
+                            let otherDeliveriesCount = 0;
+                            for (const [loc, data] of Object.entries(locationMap)) {
+                                if (loc !== primaryWarehouse) {
+                                    const pendingHere = data.deliveries.filter(d => allDeliveryIds.has(d.id)).length;
+                                    if (pendingHere > 0) {
+                                        console.log(`       - ${loc}: ${pendingHere} pending deliveries`);
+                                    }
+                                    otherDeliveriesCount += pendingHere;
+                                }
+                            }
+                            
+                            if (otherDeliveriesCount > 0) {
+                                console.log(`    🚫 BLOCKED: ${otherDeliveriesCount} other deliveries still pending`);
+                                continue; // Skip warehouse for now
+                            } else {
+                                console.log(`    ✅ ALLOWED: All other deliveries complete`);
+                            }
+                        }
+                        
+                        // FIX #3: Score by actual SCU, not just presence
+                        const deliverySCU = locationMap[location].deliveries
+                            .filter(d => cargoOnBoard.has(d.id))
+                            .reduce((s, d) => s + d.scu, 0);
+                        
+                        const pickupSCU = locationMap[location].pickups
+                            .filter(p => allPickupIds.has(p.id))
+                            .reduce((s, p) => s + p.scu, 0);
+                        
+                        let score = 0;
+                        const deliveryScore = deliverySCU * 3;
+                        const pickupScore = pickupSCU * 2;
+                        const comboBonus = (deliverySCU > 0 && pickupSCU > 0) ? 200 : 0;
+                        
+                        score = deliveryScore + pickupScore + comboBonus;
+                        
+                        console.log(`    📊 SCORING:`);
+                        console.log(`       - Delivery: ${deliverySCU} SCU × 3 = ${deliveryScore}`);
+                        console.log(`       - Pickup: ${pickupSCU} SCU × 2 = ${pickupScore}`);
+                        console.log(`       - Combo bonus: ${comboBonus}`);
+                        console.log(`       - TOTAL SCORE: ${score}`);
+                        
+                        if (score > bestScore) {
+                            console.log(`    ⭐ NEW BEST LOCATION!`);
+                            bestScore = score;
+                            bestLocation = location;
+                        }
                     }
                 }
                 
                 if (!bestLocation) {
-                    console.error('Route planner: No valid next location found');
+                    console.error('❌ Route planner: No valid next location found');
+                    console.log('   Final state:');
+                    console.log(`   - Pickups remaining: ${allPickupIds.size}`);
+                    console.log(`   - Deliveries remaining: ${allDeliveryIds.size}`);
+                    console.log(`   - Cargo on board IDs:`, Array.from(cargoOnBoard));
                     break; // Safety check
                 }
+                
+                console.log(`\n✅ SELECTED: ${bestLocation} (score: ${bestScore})`);
                 
                 // Visit this location and do ALL possible actions in ONE stop
                 const loc = locationMap[bestLocation];
@@ -1758,12 +1881,27 @@
                 const deliveriesHere = loc.deliveries.filter(d => cargoOnBoard.has(d.id));
                 
                 if (pickupsHere.length === 0 && deliveriesHere.length === 0) {
-                    console.error('Route planner: Selected location has no valid actions');
+                    console.error('❌ Route planner: Selected location has no valid actions');
                     break;
                 }
                 
                 const deliverySCU = deliveriesHere.reduce((sum, d) => sum + d.scu, 0);
                 const pickupSCU = pickupsHere.reduce((sum, p) => sum + p.scu, 0);
+                
+                console.log(`📍 STOP ${stops.length + 1}: ${bestLocation}`);
+                if (deliveriesHere.length > 0) {
+                    console.log(`   📭 Delivering ${deliverySCU} SCU:`);
+                    deliveriesHere.forEach(d => {
+                        console.log(`      - Mission ${d.missionNum}: ${d.commodity} ${d.scu} SCU`);
+                    });
+                }
+                if (pickupsHere.length > 0) {
+                    console.log(`   📦 Picking up ${pickupSCU} SCU:`);
+                    pickupsHere.forEach(p => {
+                        console.log(`      - Mission ${p.missionNum}: ${p.commodity} ${p.scu} SCU → ${p.destination}`);
+                    });
+                }
+                console.log(`   Cargo: ${currentCargo} → ${currentCargo - deliverySCU + pickupSCU} SCU`);
                 
                 // Record this stop (with both pickups AND deliveries)
                 stops.push({
@@ -1787,6 +1925,12 @@
                 
                 currentCargo = currentCargo - deliverySCU + pickupSCU;
             }
+            
+            console.log('\n═══════════════════════════════════════════════');
+            console.log('✅ ROUTE GENERATION COMPLETE');
+            console.log(`Total stops: ${stops.length}`);
+            console.log(`Route: ${stops.map(s => s.location).join(' → ')}`);
+            console.log('═══════════════════════════════════════════════\n');
             
             // Store stops and render
             routeStops = stops;
@@ -1820,7 +1964,7 @@
                         <div class="route-stop" data-stop-index="${index}" draggable="true">
                             <div class="route-stop-header">
                                 <div class="route-stop-title">Stop ${index + 1}: ${stop.location}</div>
-                                <div class="route-cargo-status">Cargo: ${stop.cargoAfterStop}/${shipCapacity} SCU</div>
+                                <div class="route-cargo-status">Cargo: ${stop.cargoAfterStop}/${selectedShip ? shipCapacity : '--'} SCU</div>
                             </div>
                             
                             ${hasDeliveries ? `
@@ -1946,6 +2090,17 @@
 
         // Session management
         function saveSession() {
+            if (isLoadingSession) {
+                console.log('⏸️ Skipping save - currently loading session');
+                return;
+            }
+            
+            console.log('💾 saveSession() called! Current state:', {
+                ship: selectedShip?.id,
+                system: selectedSystem,
+                category: selectedCategory,
+                missionsCount: missions.length
+            });
             const session = {
                 ship: selectedShip?.id,
                 system: selectedSystem,
@@ -1958,8 +2113,12 @@
         }
 
         function loadSession() {
+            console.log('🔵 loadSession() called!');
             const saved = localStorage.getItem('haulerHelperSession');
+            console.log('🔵 Saved data:', saved);
             if (!saved) return;
+
+            isLoadingSession = true; // 🔒 Block saves during load
             
             try {
                 const session = JSON.parse(saved);
@@ -2026,9 +2185,12 @@
                 generateCargoGrid();
                 updateStats();
             } catch (e) {
-                console.error('Error loading session:', e);
-            }
-        }
+                console.error('❌ Error loading session:', e);
+                console.error('❌ Error stack:', e.stack);
+            } finally {
+        isLoadingSession = false; // 🔓 Allow saves again
+    }
+}
 
         // Initialize on load
         window.onload = init;
