@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hauler Helper - Star Citizen</title>
-    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <link rel="stylesheet" href="css/themes.css">
     <link rel="stylesheet" href="css/main.css">
 </head>
@@ -35,7 +34,7 @@
                 <select id="systemSelect" onchange="updateSystem()">
                     <option value="">Select System</option>
                     <option value="microtech">microTech</option>
-                    <option value="hurston" disabled>Hurston (Coming Soon)</option>
+                    <option value="hurston">Hurston </option>
                     <option value="arccorp" disabled>ArcCorp (Coming Soon)</option>
                     <option value="crusader" disabled>Crusader (Coming Soon)</option>
                     <option value="nyx" disabled>Nyx (Coming Soon)</option>
@@ -74,23 +73,6 @@
         <div class="main-layout">
             <!-- Column 1: Mission Panels -->
             <div class="missions-column">
-                <!-- Screenshot OCR Section -->
-                <div class="ocr-section">
-                    <div class="ocr-header">
-                        <div class="ocr-title">📸 Screenshot Scanner (Experimental)</div>
-                        <button class="ocr-toggle" onclick="toggleOCRSection()">Show</button>
-                    </div>
-                    <div class="ocr-content" id="ocrContent">
-                        <input type="file" id="ocrFileInput" class="ocr-file-input" accept="image/*" onchange="processScreenshot(event)">
-                        <div class="ocr-upload-area" id="ocrUploadArea" onclick="document.getElementById('ocrFileInput').click()">
-                            <div class="ocr-upload-icon">📷</div>
-                            <div class="ocr-upload-text">Click to upload mission screenshot</div>
-                            <div class="ocr-upload-hint">Supports PNG, JPG, or any image format</div>
-                        </div>
-                        <div class="ocr-status" id="ocrStatus" style="display: none;"></div>
-                    </div>
-                </div>
-
                 <div class="missions-scroll" id="missionsContainer">
                     <!-- Mission panels will be added here -->
                 </div>
@@ -182,11 +164,11 @@
         </div>
     </div>
 
-    <script src="js/data/theme-colors.js?v=2"></script>
-    <script src="js/data/ships.js?v=2"></script>
-    <script src="js/data/locations.js?v=2"></script>
-    <script src="js/data/commodities.js?v=3"></script>
-    <script src="js/data/payouts.js?v=2"></script>
+    <script src="js/data/theme-colors.js?v=20250105"></script>
+    <script src="js/data/ships.js?v=20250105"></script>
+    <script src="js/data/locations.js?v=20250105"></script>
+    <script src="js/data/commodities.js?v=20250105"></script>
+    <script src="js/data/payouts.js?v=20250105"></script>
     
     <script>
         // Data
@@ -204,20 +186,20 @@
         let currentColorTarget = null;
         let isLoadingSession = false;  // ← ADD THIS LINE
 
-        // Theme color palettes
-        const themeColorPalettes = THEME_COLOR_PALETTES;
+        // Theme color palettes (loaded from external file)
+        const themeColorPalettes = window.THEME_COLOR_PALETTES || {};
 
         // Ships database (sorted alphabetically by name)
-        const ships = SHIPS_DATABASE;
+        const ships = window.SHIPS_DATABASE || [];
 
         // Locations database (sorted alphabetically)
-        const locations = LOCATIONS_DATABASE;
+        const locations = window.LOCATIONS_DATABASE || {};
 
         // Commodities database (sorted alphabetically)
-        const commodities = COMMODITIES_DATABASE;
+        const commodities = window.COMMODITIES_DATABASE || {};
 
         // Payouts database (sorted numerically low to high)
-        const payouts = PAYOUTS_DATABASE;
+        const payouts = window.PAYOUTS_DATABASE || {};
 
 
         // Load cargo grid expanded state
@@ -230,7 +212,7 @@
 
         // Initialize
         function init() {
-            console.log('%c🎯 HAULER HELPER v3.3.0 - ROUTE SOLVER FIXES', 'background: #4dd4ac; color: #000; font-size: 16px; padding: 8px;');
+            console.log('%c🎯 HAULER HELPER v3.3.1 - SCREENSHOT SCANNER REMOVED', 'background: #4dd4ac; color: #000; font-size: 16px; padding: 8px;');
 
             // HANDLE dragstart at document level (since addEventListener on cards doesn't work)
             document.addEventListener('dragstart', function(e) {
@@ -403,352 +385,6 @@
             return false;
         }
 
-        // OCR Screenshot Processing
-        function toggleOCRSection() {
-            const content = document.getElementById('ocrContent');
-            const button = event.target;
-            
-            if (content.classList.contains('active')) {
-                content.classList.remove('active');
-                button.textContent = 'Show';
-            } else {
-                content.classList.add('active');
-                button.textContent = 'Hide';
-            }
-        }
-
-        function processScreenshot(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const uploadArea = document.getElementById('ocrUploadArea');
-            const status = document.getElementById('ocrStatus');
-            
-            // Show processing state
-            uploadArea.classList.add('processing');
-            status.style.display = 'block';
-            status.className = 'ocr-status processing';
-            status.textContent = 'Processing screenshot... This may take 10-30 seconds.';
-            
-            // Create image element
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const imageData = e.target.result;
-                
-                // Run Tesseract OCR
-                Tesseract.recognize(
-                    imageData,
-                    'eng',
-                    {
-                        logger: m => {
-                            if (m.status === 'recognizing text') {
-                                const percent = Math.round(m.progress * 100);
-                                status.textContent = `Processing: ${percent}%`;
-                            }
-                        }
-                    }
-                ).then(({ data: { text } }) => {
-                    console.log('OCR Text:', text);
-                    
-                    // Parse the text to extract mission data
-                    const missionData = parseMissionFromOCR(text);
-                    
-                    if (missionData) {
-                        // Auto-populate mission
-                        addMissionFromOCR(missionData);
-                        
-                        status.className = 'ocr-status success';
-                        status.textContent = `✓ Mission extracted! Found: ${missionData.commodities.length} commodity(ies)`;
-                    } else {
-                        status.className = 'ocr-status error';
-                        status.textContent = '✗ Could not extract mission data. Try a clearer screenshot.';
-                    }
-                    
-                    uploadArea.classList.remove('processing');
-                    
-                    // Reset file input
-                    event.target.value = '';
-                    
-                }).catch(err => {
-                    console.error('OCR Error:', err);
-                    status.className = 'ocr-status error';
-                    status.textContent = '✗ Error processing image. Please try again.';
-                    uploadArea.classList.remove('processing');
-                    event.target.value = '';
-                });
-            };
-            
-            reader.readAsDataURL(file);
-        }
-
-        function parseMissionFromOCR(text) {
-            // Enhanced parser for Star Citizen mission screenshots
-            const lines = text.split('\n').map(line => line.trim()).filter(line => line);
-            
-            console.log('=== OCR PARSING START ===');
-            console.log('Raw lines:', lines);
-            
-            const missionData = {
-                payout: '',
-                commodities: []
-            };
-            
-            const fullText = lines.join(' ');
-            
-            // Enhanced patterns for Star Citizen UI
-            const payoutPattern = /[¤#]?\s*([\d,]+)(?:[.,](\d{3}))?/;
-            
-            // Pattern: "Collect [Commodity] from [Location]"
-            // Can include variations like "Collect Quartz (Raw) from Shubin Mining Facility SMCa-6"
-            const collectPattern = /collect\s+([\w\s()-]+?)\s+from\s+([\w\s-]+?)(?:\.|$|deliver|on\s+\w|at\s+\w|above\s+\w)/gi;
-            
-            // Pattern: "Deliver [Quantity] SCU of [Commodity] to [Location]"
-            // Handles both "Deliver 28 SCU" and "Deliver 0/28 SCU" (progress format)
-            // Stops at common UI text or location suffixes
-            const deliverPattern = /deliver\s+(?:\d+\/)?(\d+)\s*SCU\s+of\s+([\w\s()-]+?)\s+to\s+([\w\s-]+?)(?:\s+(?:on|at|above)\s|\.|$|\s+(?:research|outpost|station|depot|facility|spaceport|harbor|workcenter|complex|point|rank|experienced|junior|senior|master|member|rookie))/gi;
-            
-            // Extract payout
-            for (const line of lines) {
-                const payoutMatch = line.match(payoutPattern);
-                if (payoutMatch && payoutMatch[1]) {
-                    const payoutNum = parseInt(payoutMatch[1].replace(/,/g, ''));
-                    if (payoutNum > 1000 && !missionData.payout) {
-                        if (payoutNum >= 1000) {
-                            missionData.payout = (payoutNum / 1000).toFixed(2).replace(/\.?0+$/, '') + 'k';
-                        }
-                    }
-                }
-            }
-            
-            console.log('Extracted payout:', missionData.payout);
-            
-            // Extract all pickups (Collect X from Y)
-            const pickups = {}; // { commodityName: [locations] }
-            let collectMatch;
-            while ((collectMatch = collectPattern.exec(fullText)) !== null) {
-                const commodity = collectMatch[1].trim();
-                const location = collectMatch[2].trim();
-                
-                console.log('Found COLLECT:', commodity, 'from', location);
-                
-                const cleanedCommodity = cleanCommodityName(commodity);
-                const cleanedLocation = cleanLocationName(location);
-                
-                if (!pickups[cleanedCommodity]) {
-                    pickups[cleanedCommodity] = [];
-                }
-                pickups[cleanedCommodity].push(cleanedLocation);
-            }
-            
-            console.log('All pickups:', pickups);
-            
-            // Extract all deliveries (Deliver X SCU of Y to Z)
-            const deliveries = []; // [{ commodity, quantity, destination }]
-            let deliverMatch;
-            while ((deliverMatch = deliverPattern.exec(fullText)) !== null) {
-                const quantity = deliverMatch[1];
-                const commodity = deliverMatch[2].trim();
-                const location = deliverMatch[3].trim();
-                
-                console.log('Found DELIVER:', quantity, 'SCU of', commodity, 'to', location);
-                
-                deliveries.push({
-                    commodity: cleanCommodityName(commodity),
-                    quantity: quantity,
-                    destination: cleanLocationName(location)
-                });
-            }
-            
-            console.log('All deliveries:', deliveries);
-            
-            // Match pickups with deliveries to create complete commodity entries
-            for (const delivery of deliveries) {
-                const commodityName = delivery.commodity;
-                const pickupLocations = pickups[commodityName] || [];
-                
-                // Use first pickup location for this commodity (or empty if none found)
-                const pickupLocation = pickupLocations[0] || '';
-                
-                missionData.commodities.push({
-                    pickup: pickupLocation,
-                    commodity: commodityName,
-                    quantity: delivery.quantity,
-                    destination: delivery.destination,
-                    maxBoxSize: '4'
-                });
-                
-                console.log('Created commodity entry:', {
-                    pickup: pickupLocation,
-                    commodity: commodityName,
-                    quantity: delivery.quantity,
-                    destination: delivery.destination
-                });
-            }
-            
-            // Return mission data if we found at least one commodity
-            if (missionData.commodities.length > 0) {
-                console.log('=== SUCCESS: Parsed mission ===', missionData);
-                return missionData;
-            }
-            
-            console.log('=== FAILED: No complete commodities found ===');
-            return null;
-        }
-        
-        function cleanCommodityName(name) {
-            if (!name || !selectedCategory) return name;
-            
-            // Remove parenthetical suffixes like "(Raw)"
-            const baseName = name.replace(/\s*\([^)]+\)\s*$/g, '').trim();
-            
-            const categoryList = commodities[selectedCategory] || [];
-            
-            // Try exact match with full name (case insensitive)
-            const exactMatch = categoryList.find(c => 
-                c.toLowerCase() === name.toLowerCase()
-            );
-            if (exactMatch) return exactMatch;
-            
-            // Try exact match with base name (without suffix)
-            const exactBaseMatch = categoryList.find(c => 
-                c.toLowerCase() === baseName.toLowerCase()
-            );
-            if (exactBaseMatch) return exactBaseMatch;
-            
-            // Try partial match with full name
-            const partialMatch = categoryList.find(c => 
-                name.toLowerCase().includes(c.toLowerCase()) || 
-                c.toLowerCase().includes(name.toLowerCase())
-            );
-            if (partialMatch) return partialMatch;
-            
-            // Try partial match with base name
-            const partialBaseMatch = categoryList.find(c => 
-                baseName.toLowerCase().includes(c.toLowerCase()) || 
-                c.toLowerCase().includes(baseName.toLowerCase())
-            );
-            if (partialBaseMatch) return partialBaseMatch;
-            
-            // Try matching by key words (for compound names like "Hydrogen Fuel")
-            const words = baseName.split(/\s+/);
-            for (const word of words) {
-                if (word.length > 3) { // Only try meaningful words
-                    const wordMatch = categoryList.find(c =>
-                        c.toLowerCase().includes(word.toLowerCase())
-                    );
-                    if (wordMatch) return wordMatch;
-                }
-            }
-            
-            // If no match found, return original name
-            console.log('Warning: Could not match commodity:', name, 'in category:', selectedCategory);
-            return name;
-        }
-        
-        function cleanLocationName(name) {
-            if (!name || !selectedCategory) return name;
-            
-            // Remove common suffix phrases that aren't part of the location name
-            // Strip: "above X", "on X", "at X's L1 Lagrange point", etc.
-            name = name.replace(/\s+(above|on|at)\s+[\w\s'-]+$/gi, '').trim();
-            
-            // Remove common location type suffixes that might confuse matching
-            name = name.replace(/\s+(Research Outpost|Logistics Depot|Depot|Station|Facility|Spaceport|Harbor|Workcenter|Complex|Point)$/gi, '').trim();
-            
-            const categoryList = locations[selectedCategory] || [];
-            
-            // Try exact match (case insensitive)
-            const exactMatch = categoryList.find(loc => 
-                loc.toLowerCase() === name.toLowerCase()
-            );
-            if (exactMatch) return exactMatch;
-            
-            // Try partial match (location contains name or name contains location)
-            const partialMatch = categoryList.find(loc => {
-                const locLower = loc.toLowerCase();
-                const nameLower = name.toLowerCase();
-                return locLower.includes(nameLower) || nameLower.includes(locLower);
-            });
-            if (partialMatch) return partialMatch;
-            
-            // Try matching by location code (e.g., S4LD13, SMCa-6, CRU-L1)
-            const codeMatch = name.match(/([A-Z]+[\d-]+[A-Z]*\d*)/i);
-            if (codeMatch) {
-                const code = codeMatch[1];
-                const codePartialMatch = categoryList.find(loc => 
-                    loc.toLowerCase().includes(code.toLowerCase())
-                );
-                if (codePartialMatch) return codePartialMatch;
-            }
-            
-            // Try matching by key words in name
-            const words = name.split(/\s+/);
-            for (const word of words) {
-                if (word.length > 3) { // Only try meaningful words
-                    const wordMatch = categoryList.find(loc =>
-                        loc.toLowerCase().includes(word.toLowerCase())
-                    );
-                    if (wordMatch) return wordMatch;
-                }
-            }
-            
-            // If no match found, return original cleaned name
-            console.log('Warning: Could not match location:', name, 'in category:', selectedCategory);
-            return name;
-        }
-
-        function addMissionFromOCR(missionData) {
-            // Add a new mission panel
-            addMissionPanel();
-            
-            // Get the last added mission
-            const lastMission = missions[missions.length - 1];
-            const panel = document.getElementById(lastMission.id);
-            
-            // Set payout
-            if (missionData.payout) {
-                const payoutSelect = panel.querySelector('select');
-                if (payoutSelect) {
-                    // Try to find matching payout
-                    const options = Array.from(payoutSelect.options);
-                    const matchingOption = options.find(opt => opt.value === missionData.payout);
-                    if (matchingOption) {
-                        payoutSelect.value = missionData.payout;
-                        updateMissionPayout(lastMission.id, missionData.payout);
-                    }
-                }
-            }
-            
-            // Remove default commodity row
-            lastMission.commodities = [];
-            const commoditiesContainer = document.getElementById(`${lastMission.id}_commodities`);
-            commoditiesContainer.innerHTML = '';
-            
-            // Add commodities from OCR
-            missionData.commodities.forEach((commodity, index) => {
-                addCommodityRow(lastMission.id);
-                
-                const commodityData = lastMission.commodities[index];
-                const row = document.getElementById(commodityData.id);
-                
-                // Set values
-                const selects = row.querySelectorAll('select');
-                const input = row.querySelector('input');
-                
-                if (selects[0]) selects[0].value = commodity.pickup || '';
-                if (selects[1]) selects[1].value = commodity.commodity || '';
-                if (input) input.value = commodity.quantity || '';
-                if (selects[3]) selects[3].value = commodity.destination || '';
-                
-                // Update the commodity data
-                updateCommodity(commodityData.id, 'pickup', commodity.pickup || '');
-                updateCommodity(commodityData.id, 'commodity', commodity.commodity || '');
-                updateCommodity(commodityData.id, 'quantity', commodity.quantity || '');
-                updateCommodity(commodityData.id, 'destination', commodity.destination || '');
-            });
-            
-            saveSession();
-        }
 
         function handleDragLeave(e) {
             e.target.classList.remove('drag-over');
@@ -873,9 +509,30 @@
             panel.className = 'mission-panel';
             panel.id = missionId;
             
-            // Get category-specific payouts
+            const system = selectedSystem || 'microtech';
             const category = selectedCategory || 'planetary';
-            const categoryPayouts = Array.isArray(payouts) ? payouts : (payouts[category] || payouts.planetary);
+            const categoryLocations = (locations[system] && locations[system][category]) || [];
+            const categoryCommodities = Array.isArray(commodities) ? commodities : (commodities[category] || commodities.planetary);
+            
+            // Get category-specific payouts with defensive checks
+            console.log('createMissionPanel - payouts:', typeof payouts, payouts);
+            console.log('createMissionPanel - category:', category);
+            
+            let categoryPayouts;
+            if (!payouts) {
+                console.error('❌ payouts is undefined! Using empty array.');
+                categoryPayouts = [];
+            } else if (Array.isArray(payouts)) {
+                // Old format (array)
+                categoryPayouts = payouts;
+            } else if (typeof payouts === 'object' && payouts[category]) {
+                // New format (object with category keys)
+                categoryPayouts = payouts[category];
+            } else {
+                // Fallback to planetary
+                console.warn('⚠️ Could not find category payouts, using planetary');
+                categoryPayouts = payouts.planetary || [];
+            }
             
             panel.innerHTML = `
                 <div class="mission-header">
@@ -941,8 +598,9 @@
             row.id = commodityId;
             
             // Get category-specific locations and commodities
+            const system = selectedSystem || 'microtech';
             const category = selectedCategory || 'planetary';
-            const categoryLocations = locations[category] || locations.planetary;
+            const categoryLocations = (locations[system] && locations[system][category]) || [];
             const categoryCommodities = Array.isArray(commodities) ? commodities : (commodities[category] || commodities.planetary);
             
             row.innerHTML = `
@@ -987,11 +645,11 @@
                     // AUTO-FILL PATTERNS: If this is the first commodity and we're setting the commodity name
                     const isFirstCommodity = commodity.id.includes('_commodity_0');
                     const isSettingCommodity = field === 'commodity';
-                    const isMicrotech = selectedSystem === 'microtech';
-                    
-                    if (isFirstCommodity && isSettingCommodity && value && isMicrotech) {
-                        applyAutoFillPattern(mission, value);
-                    }
+                    const hasAutoFillSystem = selectedSystem === 'microtech' || selectedSystem === 'hurston';
+
+            if (isFirstCommodity && isSettingCommodity && value && hasAutoFillSystem && selectedCategory === 'local') {
+                applyAutoFillPattern(mission, value, selectedSystem);
+            }
                     
                     break;
                 }
@@ -1013,40 +671,121 @@
         }
 
         // AUTO-FILL HELPER FUNCTION
-        function applyAutoFillPattern(mission, firstCommodity) {
+        function applyAutoFillPattern(mission, firstCommodity, system) {
             // Only apply if mission has exactly 1 commodity (we're setting the first one)
             if (mission.commodities.length !== 1) return;
             
-            const depot = 'Covalex S4DC05';
+            // Get mission payout
+            const missionPayout = mission.payout || '';
             
-            // Define patterns based on first commodity
-            const patterns = {
-                'Quartz': {
-                    destinations: [depot, depot, depot, depot],
-                    commodities: ['Quartz', 'Corundum', 'Quartz', 'Corundum']
-                },
-                'Stims': {
-                    pickups: [depot, depot, depot, depot],
-                    commodities: ['Stims', 'Stims', 'Stims', 'Stims']
-                },
-                'Press Ice': {
-                    pickups: [depot, depot, depot, depot],
-                    commodities: ['Press Ice', 'Press Ice', 'Proc Food', 'Proc Food']
-                },
-                'Hydrogen Fuel': {
-                    pickups: [depot, depot, depot, depot],
-                    commodities: ['Hydrogen Fuel', 'Hydrogen Fuel', 'Quantum Fuel', 'Ship Ammo']
-                },
-                'Waste': {
-                    destinations: [depot, depot, depot, depot],
-                    commodities: ['Waste', 'Scrap', 'Waste', 'Scrap']
+            // Define location constants
+            const microTechDepot = 'Covalex S4DC05';
+            const hurstonCassillo = 'HDPC-Cassillo';
+            const hurstonFarnesway = 'HDPC-Farnesway';
+            const hurstonTeasa = 'Teasa Spaceport';
+            const hurstonOperei = 'HDMS-Operei';
+            
+            console.log(`🔍 Checking autofill: ${system} / ${firstCommodity} / Payout: ${missionPayout}`);
+            
+            // PAYOUT-SPECIFIC PATTERNS (checked first - most specific)
+            const payoutPatterns = {
+                'hurston': {
+                    'Quantum Fuel': {
+                        '60.75k': {
+                            pickups: [hurstonCassillo, hurstonCassillo, hurstonCassillo, hurstonCassillo],
+                            destinations: [hurstonOperei, hurstonOperei, hurstonOperei, hurstonOperei],
+                            commodities: ['Quantum Fuel', 'Hydrogen Fuel', 'Hydrogen Fuel', 'Ship Ammo']
+                        },
+                        '160.25k': {
+                            pickups: [hurstonFarnesway, hurstonFarnesway, hurstonFarnesway, hurstonFarnesway],
+                            commodities: ['Quantum Fuel', 'Hydrogen Fuel', 'Hydrogen Fuel', 'Ship Ammo']
+                        },
+                        '72k': {
+                            pickups: [hurstonTeasa, hurstonTeasa, hurstonTeasa, hurstonTeasa],
+                            commodities: ['Quantum Fuel', 'Hydrogen Fuel', 'Hydrogen Fuel', 'Ship Ammo']
+                        }
+                    },
+                    'Press Ice': {
+                        '60.75k': {
+                            pickups: [hurstonCassillo, hurstonCassillo, null, null],
+                            destinations: [hurstonOperei, hurstonOperei, null, null],
+                            commodities: ['Press Ice', 'Press Ice', 'Proc Food', 'Proc Food']
+                        }
+                    }
                 }
             };
             
-            const pattern = patterns[firstCommodity];
-            if (!pattern) return; // No pattern for this commodity
+            // COMMODITY-ONLY PATTERNS (fallback - less specific)
+            const commodityPatterns = {
+                'microtech': {
+                    'Quartz': {
+                        destinations: [microTechDepot, microTechDepot, microTechDepot, microTechDepot],
+                        commodities: ['Quartz', 'Corundum', 'Quartz', 'Corundum']
+                    },
+                    'Stims': {
+                        pickups: [microTechDepot, microTechDepot, microTechDepot, microTechDepot],
+                        commodities: ['Stims', 'Stims', 'Stims', 'Stims']
+                    },
+                    'Press Ice': {
+                        pickups: [microTechDepot, microTechDepot, microTechDepot, microTechDepot],
+                        commodities: ['Press Ice', 'Press Ice', 'Proc Food', 'Proc Food']
+                    },
+                    'Hydrogen Fuel': {
+                        pickups: [microTechDepot, microTechDepot, microTechDepot, microTechDepot],
+                        commodities: ['Hydrogen Fuel', 'Hydrogen Fuel', 'Quantum Fuel', 'Ship Ammo']
+                    },
+                    'Waste': {
+                        destinations: [microTechDepot, microTechDepot, microTechDepot, microTechDepot],
+                        commodities: ['Waste', 'Scrap', 'Waste', 'Scrap']
+                    }
+                },
+                'hurston': {
+                    // No generic hurston patterns - all require payout
+                }
+            };
             
-            console.log(`✨ Auto-filling mission with ${firstCommodity} pattern`);
+            // UNIVERSAL COMMODITY SEQUENCES (apply to any system)
+            const universalCommoditySequences = {
+                'Press Ice': ['Press Ice', 'Press Ice', 'Proc Food', 'Proc Food'],
+                'Quantum Fuel': ['Quantum Fuel', 'Hydrogen Fuel', 'Hydrogen Fuel', 'Ship Ammo'],
+                'Waste': ['Waste', 'Scrap', 'Waste', 'Scrap'],
+                'Quartz': ['Quartz', 'Corundum', 'Quartz', 'Corundum']
+            };
+            
+            let pattern = null;
+            let patternType = '';
+            
+            // Step 1: Check for payout-specific pattern (most specific)
+            if (payoutPatterns[system] && 
+                payoutPatterns[system][firstCommodity] && 
+                payoutPatterns[system][firstCommodity][missionPayout]) {
+                pattern = payoutPatterns[system][firstCommodity][missionPayout];
+                patternType = 'payout-specific';
+                console.log(`✅ Found payout-specific pattern: ${system} / ${firstCommodity} / ${missionPayout}`);
+            }
+            
+            // Step 2: Check for commodity-only pattern (less specific)
+            if (!pattern && commodityPatterns[system] && commodityPatterns[system][firstCommodity]) {
+                pattern = commodityPatterns[system][firstCommodity];
+                patternType = 'commodity-only';
+                console.log(`✅ Found commodity-only pattern: ${system} / ${firstCommodity}`);
+            }
+            
+            // Step 3: Check for universal commodity sequence
+            if (!pattern && universalCommoditySequences[firstCommodity]) {
+                pattern = {
+                    commodities: universalCommoditySequences[firstCommodity]
+                };
+                patternType = 'universal-sequence';
+                console.log(`✅ Found universal commodity sequence: ${firstCommodity}`);
+            }
+            
+            if (!pattern) {
+                console.log(`❌ No autofill pattern found`);
+                return; // No pattern found
+            }
+            
+            console.log(`✨ Auto-filling ${system} mission with ${firstCommodity} (${patternType} pattern)`);
             
             // Add 3 more commodity rows (we already have 1)
             for (let i = 1; i < 4; i++) {
@@ -1057,21 +796,26 @@
             // Wait for DOM to update, then fill in values
             setTimeout(() => {
                 mission.commodities.forEach((commodity, index) => {
-                    if (pattern.pickups) {
+                    // Fill pickups (if pattern specifies them and they're not null)
+                    if (pattern.pickups && pattern.pickups[index] !== null && pattern.pickups[index] !== undefined) {
                         commodity.pickup = pattern.pickups[index];
                         const pickupSelect = document.querySelector(`#${commodity.id} select:nth-of-type(1)`);
                         if (pickupSelect) pickupSelect.value = pattern.pickups[index];
                     }
                     
-                    if (pattern.destinations) {
+                    // Fill destinations (if pattern specifies them and they're not null)
+                    if (pattern.destinations && pattern.destinations[index] !== null && pattern.destinations[index] !== undefined) {
                         commodity.destination = pattern.destinations[index];
                         const destSelect = document.querySelector(`#${commodity.id} select:nth-of-type(4)`);
                         if (destSelect) destSelect.value = pattern.destinations[index];
                     }
                     
-                    commodity.commodity = pattern.commodities[index];
-                    const commoditySelect = document.querySelector(`#${commodity.id} select:nth-of-type(2)`);
-                    if (commoditySelect) commoditySelect.value = pattern.commodities[index];
+                    // Fill commodities (always)
+                    if (pattern.commodities && pattern.commodities[index]) {
+                        commodity.commodity = pattern.commodities[index];
+                        const commoditySelect = document.querySelector(`#${commodity.id} select:nth-of-type(2)`);
+                        if (commoditySelect) commoditySelect.value = pattern.commodities[index];
+                    }
                 });
                 
                 // Update displays
@@ -1081,9 +825,6 @@
                 saveSession();
             }, 100);
         }
-
-           
-        
 
         // Remove commodity row
         function removeCommodityRow(missionId, commodityId) {

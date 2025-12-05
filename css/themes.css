@@ -77,23 +77,23 @@ body[data-theme="lux"] .mission-title {
 /* Theme: Pulse (hot magenta) - Comprehensive palette */
 body[data-theme="pulse"] {
     /* Backgrounds */
-    --bg-primary: #1a1118;
+    --bg-primary: #1a1111;
     --bg-secondary: #2a1a24;
     --bg-tertiary: #3d2535;
-    --bg-gradient-end: #121625; /* standard blue */
+    --bg-gradient-end: #20000b; /* standard blue */
     
     /* Primary brand colors */
-    --color-primary: #FF006E;      /* Hot Magenta - headers, main accents */
-    --color-accent: #FF1B8D;       /* Neon Fuchsia - hover states, highlights */
+    --color-primary: #d10046;      /* Hot Magenta - headers, main accents */
+    --color-accent: #ff1b67;       /* Neon Fuchsia - hover states, highlights */
     
     /* Functional colors */
     --color-success: #00FFA3;      /* Neon Mint - success states, add buttons */
     --color-warning: #FF8800;      /* Bright Orange - warnings */
-    --color-danger: #E63946;       /* Vibrant Red - danger states */
+    --color-danger: #e63973;       /* Vibrant Red - danger states */
     --color-info: #00D4FF;         /* Bright Cyan - info, special highlights */
     
     /* Structural */
-    --border-color: #5d3d52;       /* Magenta-tinted mauve - borders */
+    --border-color: #a00050;       /* Magenta-tinted mauve - borders */
     
     /* Text */
     --text-primary: #FFFFFF;       /* Pure White - main text */
@@ -409,33 +409,33 @@ body[data-theme="argo"] .mission-title {
 /* Theme: Starkitten (kawaii brand) - Comprehensive palette */
 body[data-theme="starkitten"] {
     /* Backgrounds - Bright and clean */
-    --bg-primary: #9df0ff;      /* Pure White - Main page background */
-    --bg-secondary: #fda9da;    /* Soft White - Panels */
-    --bg-tertiary: #82f7ff;     /* Light Gray - Dropdowns/Inputs */
-    --bg-gradient-end: #E0F7FF; /* Soft Cyan Tint - gradient end */
+    --bg-primary: #000000;      /* Pure White - Main page background */
+    --bg-secondary: #ebb4d4;    /* Soft White - Panels */
+    --bg-tertiary: #4fc2ca;     /* Light Gray - Dropdowns/Inputs */
+    --bg-gradient-end: #000000; /* Soft Cyan Tint - gradient end */
     
     /* Primary brand colors - Hot pink and cyan */
-    --color-primary: #000000;   /* Hot Pink - Headers, capacity fills */
-    --color-accent: #00a4c5;    /* Electric Cyan - Hover states, highlights */
+    --color-primary: #b92b72;   /* Hot Pink - Headers, capacity fills */
+    --color-accent: #007188;    /* Electric Cyan - Hover states, highlights */
     
     /* Functional colors - Bright and playful */
     --color-success: #00CBA0;   /* Teal Green - Add buttons */
-    --color-warning: #000000;   /* Pastel Pink - Warnings */
-    --color-danger: #FF006E;    /* Deep Magenta - Danger states */
-    --color-info: #00D4FF;      /* Electric Cyan - High-contrast elements */
+    --color-warning: #ffe3f7;   /* Pastel Pink - Warnings */
+    --color-danger: #ffacd0;    /* Deep Magenta - Danger states */
+    --color-info: #000000;      /* Electric Cyan - High-contrast elements */
     
     /* Structural */
     --border-color: #ffffff;    /* Light Gray - Borders */
     
     /* Text - Dark for light background */
-    --text-primary: #360214;    /* Dark Gray - Main readable text */
-    --text-secondary: #66213c;  /* Medium Gray - Dimmed text */
-    --text-highlight: #00A8CC;  /* Deep Cyan - important values */
+    --text-primary: #000000;    /* Dark Gray - Main readable text */
+    --text-secondary: #973980;  /* Medium Gray - Dimmed text */
+    --text-highlight: #882c4f;  /* Deep Cyan - important values */
     
     /* Special accents */
-    --accent-purple: #B026FF;   /* Neon Purple - Special highlights */
-    --accent-cyan: #00FFC8;     /* Kawaii Cyan */
-    --accent-pink-light: #FFE0F0; /* Soft Pink backgrounds */
+    --accent-purple: #ffe926;   /* Neon Purple - Special highlights */
+    --accent-cyan: #d0ff00;     /* Kawaii Cyan */
+    --accent-pink-light: #a34776; /* Soft Pink backgrounds */
 }
 
 /* Starkitten theme - Component-specific styling */
