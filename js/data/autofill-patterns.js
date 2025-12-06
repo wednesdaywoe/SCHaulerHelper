@@ -56,9 +56,12 @@ const LOCATIONS = {
     // Hurston
     HURSTON_CASSILLO: 'HDPC-Cassillo',
     HURSTON_FARNESWAY: 'HDPC-Farnesway',
-    HURSTON_TEASA: LOCATIONS.HURSTON_TEASA,
+    HURSTON_TEASA: 'HDPC-Teasa',
     HURSTON_OPEREI: 'HDMS-Operei',
     EVERUS_HARBOR: 'Everus Harbor',
+    HURSTON_STANHOPE: 'HDMS-Stanhope',
+    HURSTON_PINEWOOD: 'HDMS-Pinewood',
+    HURSTON_THEDUS: 'HDMS-Thedus',
     
     // Add more locations here as you discover patterns
 };

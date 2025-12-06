@@ -698,7 +698,7 @@
                     const isSettingCommodity = field === 'commodity';
                     const hasAutoFillSystem = selectedSystem === 'microtech' || selectedSystem === 'hurston';
 
-            if (isFirstCommodity && isSettingCommodity && value && hasAutoFillSystem && selectedCategory === 'local') {
+            if (isFirstCommodity && isSettingCommodity && value && hasAutoFillSystem) {
                 applyAutoFillPattern(mission, value, selectedSystem);
             }
                     
