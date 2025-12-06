@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+<!DOC
+
+                TYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -20,7 +22,13 @@
         
         <!-- Decorative gradient line -->
         <div style="width: 100%; height: 2px; margin: 25px 0 30px 0; background: linear-gradient(90deg, transparent 0%, var(--color-primary) 50%, transparent 100%);"></div>
-
+       
+        <!-- Navigation -->
+        <div class="nav-bar">
+            <a href="index.html" class="nav-link active">Mission Planner</a>
+            <a href="ocr-scanner.html" class="nav-link">OCR Scanner (experimental)</a>
+        </div>
+        
         <!-- Controls -->
         <div class="controls">
             <div class="control-group">
@@ -35,9 +43,9 @@
                     <option value="">Select System</option>
                     <option value="microtech">microTech</option>
                     <option value="hurston">Hurston </option>
-                    <option value="arccorp" disabled>ArcCorp (Coming Soon)</option>
-                    <option value="crusader" disabled>Crusader (Coming Soon)</option>
-                    <option value="nyx" disabled>Nyx (Coming Soon)</option>
+                    <option value="arccorp">ArcCorp</option>
+                    <option value="crusader">Crusader</option>
+                    <option value="nyx">Nyx</option>
                     <option value="pyro" disabled>Pyro (Coming Soon)</option>
                 </select>
             </div>
@@ -59,10 +67,9 @@
                     <option value="pulse">Pulse</option>
                     <option value="flow">Flow</option>
                     <option value="dark">Dark</option>
-                    <option value="starkitten">Starkitten</option>
+                    <option value="cetacean">Cetacean</option>
                     <option value="wednesday">Wednesday</option>
                     <option value="moonshine">Moonshine</option>
-                    <option value="argo">ARGO</option>
                     <option value="cassette">Cassette</option>
                     <option value="cargo-explorer">Cargo Explorer</option>
                 </select>
@@ -123,7 +130,20 @@
                 
                 <!-- Route Planner Tab -->
                 <div id="routeTab" class="tab-content" style="display: block;">
-                    <div id="routePlanner">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px;">View:</span>
+                        <select id="routeViewModeSelect" onchange="changeRouteViewMode(this.value)" style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 10px; border-radius: 4px; font-size: 12px;">
+                            <option value="all">Show All Steps</option>
+                            <option value="current">Current Step Only</option>
+                            <option value="current-next">Current + Next Step</option>
+                        </select>
+                    </div>
+                    <button onclick="resetRouteCompletion()" style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 6px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;">
+                        Reset Completion
+                    </button>
+                </div>
+                <div id="routePlanner">
                         <div class="empty-state">No route planned</div>
                     </div>
                 </div>
@@ -164,11 +184,12 @@
         </div>
     </div>
 
-    <script src="js/data/theme-colors.js?v=20250105"></script>
-    <script src="js/data/ships.js?v=20250105"></script>
-    <script src="js/data/locations.js?v=20250105"></script>
-    <script src="js/data/commodities.js?v=20250105"></script>
-    <script src="js/data/payouts.js?v=20250105"></script>
+    <script src="js/data/theme-colors.js?v=20250106"></script>
+    <script src="js/data/ships.js?v=20250106"></script>
+    <script src="js/data/locations.js?v=20250106"></script>
+    <script src="js/data/commodities.js?v=20250106"></script>
+    <script src="js/data/payouts.js?v=20250106"></script>
+    <script src="js/data/autofill-patterns.js?v=20250106"></script>
     
     <script>
         // Data
@@ -184,6 +205,8 @@
         let cargoGridOrder = []; // Track custom order of groups in cargo grid
         let cargoGroups = {}; // Store cargo groups for persistent colors/labels
         let currentColorTarget = null;
+        let routeStepCompletion = {}; // Track which route steps are completed
+        let routeViewMode = 'all'; // 'all', 'current', 'current-next'
         let isLoadingSession = false;  // ← ADD THIS LINE
 
         // Theme color palettes (loaded from external file)
@@ -276,6 +299,7 @@
             loadDeliveryOrder();
             loadCommodityOrder();
             loadCargoGridLayout();
+            loadRouteViewMode();
             updateColorPalette();
         }
 
@@ -319,6 +343,41 @@
         // Update system
         function updateSystem() {
             selectedSystem = document.getElementById('systemSelect').value;
+            
+            // Update category dropdown based on system rules
+            const categorySelect = document.getElementById('categorySelect');
+            const localOption = categorySelect.querySelector('option[value="local"]');
+            const planetaryOption = categorySelect.querySelector('option[value="planetary"]');
+            const stellarOption = categorySelect.querySelector('option[value="stellar"]');
+            const interstellarOption = categorySelect.querySelector('option[value="interstellar"]');
+            
+            // Reset all options
+            if (localOption) localOption.disabled = false;
+            if (planetaryOption) planetaryOption.disabled = false;
+            if (stellarOption) stellarOption.disabled = false;
+            if (interstellarOption) interstellarOption.disabled = false;
+            
+            // Apply system-specific rules
+            if (selectedSystem === 'arccorp' || selectedSystem === 'crusader') {
+                // No Local missions for ArcCorp and Crusader
+                if (localOption) localOption.disabled = true;
+                if (selectedCategory === 'local') {
+                    selectedCategory = '';
+                    categorySelect.value = '';
+                    alert('Local missions are not available for ' + selectedSystem + '. Please select Planetary, Stellar, or Interstellar.');
+                }
+            } else if (selectedSystem === 'nyx') {
+                // Only Interstellar missions for Nyx
+                if (localOption) localOption.disabled = true;
+                if (planetaryOption) planetaryOption.disabled = true;
+                if (stellarOption) stellarOption.disabled = true;
+                if (selectedCategory !== 'interstellar') {
+                    selectedCategory = '';
+                    categorySelect.value = '';
+                    alert('Nyx only has Interstellar missions. Please select Interstellar category.');
+                }
+            }
+            
             saveSession();
         }
 
@@ -511,28 +570,15 @@
             
             const system = selectedSystem || 'microtech';
             const category = selectedCategory || 'planetary';
-            const categoryLocations = (locations[system] && locations[system][category]) || [];
-            const categoryCommodities = Array.isArray(commodities) ? commodities : (commodities[category] || commodities.planetary);
             
-            // Get category-specific payouts with defensive checks
-            console.log('createMissionPanel - payouts:', typeof payouts, payouts);
-            console.log('createMissionPanel - category:', category);
+            // For interstellar missions, use universal data instead of system-specific
+            const isInterstellar = category === 'interstellar';
+            const dataSource = isInterstellar ? 'universal' : system;
             
-            let categoryPayouts;
-            if (!payouts) {
-                console.error('❌ payouts is undefined! Using empty array.');
-                categoryPayouts = [];
-            } else if (Array.isArray(payouts)) {
-                // Old format (array)
-                categoryPayouts = payouts;
-            } else if (typeof payouts === 'object' && payouts[category]) {
-                // New format (object with category keys)
-                categoryPayouts = payouts[category];
-            } else {
-                // Fallback to planetary
-                console.warn('⚠️ Could not find category payouts, using planetary');
-                categoryPayouts = payouts.planetary || [];
-            }
+            const categoryLocations = (locations[dataSource] && locations[dataSource][category]) || [];
+            const categoryCommodities = (commodities[dataSource] && commodities[dataSource][category]) || [];
+            const categoryPayouts = (payouts[dataSource] && payouts[dataSource][category]) || [];
+            console.log(`✅ ${system}.${category} - Found ${categoryPayouts.length} payouts`);
             
             panel.innerHTML = `
                 <div class="mission-header">
@@ -558,8 +604,8 @@
         // Add commodity row
         function addCommodityRow(missionId) {
             const mission = missions.find(m => m.id === missionId);
-            if (mission.commodities.length >= 4) {
-                alert('Maximum 4 commodities per mission');
+            if (mission.commodities.length >= 8) {
+                alert('Maximum 8 commodities per mission');
                 return;
             }
             
@@ -600,8 +646,13 @@
             // Get category-specific locations and commodities
             const system = selectedSystem || 'microtech';
             const category = selectedCategory || 'planetary';
-            const categoryLocations = (locations[system] && locations[system][category]) || [];
-            const categoryCommodities = Array.isArray(commodities) ? commodities : (commodities[category] || commodities.planetary);
+            
+            // For interstellar missions, use universal data instead of system-specific
+            const isInterstellar = category === 'interstellar';
+            const dataSource = isInterstellar ? 'universal' : system;
+            
+            const categoryLocations = (locations[dataSource] && locations[dataSource][category]) || [];
+            const categoryCommodities = (commodities[dataSource] && commodities[dataSource][category]) || [];
             
             row.innerHTML = `
                 <select onchange="updateCommodity('${commodityId}', 'pickup', this.value)">
@@ -678,79 +729,13 @@
             // Get mission payout
             const missionPayout = mission.payout || '';
             
-            // Define location constants
-            const microTechDepot = 'Covalex S4DC05';
-            const hurstonCassillo = 'HDPC-Cassillo';
-            const hurstonFarnesway = 'HDPC-Farnesway';
-            const hurstonTeasa = 'Teasa Spaceport';
-            const hurstonOperei = 'HDMS-Operei';
+            // Get patterns from external file
+            const { payoutPatterns, commodityPatterns, universalCommoditySequences } = window.AUTOFILL_PATTERNS || {};
             
-            console.log(`🔍 Checking autofill: ${system} / ${firstCommodity} / Payout: ${missionPayout}`);
-            
-            // PAYOUT-SPECIFIC PATTERNS (checked first - most specific)
-            const payoutPatterns = {
-                'hurston': {
-                    'Quantum Fuel': {
-                        '60.75k': {
-                            pickups: [hurstonCassillo, hurstonCassillo, hurstonCassillo, hurstonCassillo],
-                            destinations: [hurstonOperei, hurstonOperei, hurstonOperei, hurstonOperei],
-                            commodities: ['Quantum Fuel', 'Hydrogen Fuel', 'Hydrogen Fuel', 'Ship Ammo']
-                        },
-                        '160.25k': {
-                            pickups: [hurstonFarnesway, hurstonFarnesway, hurstonFarnesway, hurstonFarnesway],
-                            commodities: ['Quantum Fuel', 'Hydrogen Fuel', 'Hydrogen Fuel', 'Ship Ammo']
-                        },
-                        '72k': {
-                            pickups: [hurstonTeasa, hurstonTeasa, hurstonTeasa, hurstonTeasa],
-                            commodities: ['Quantum Fuel', 'Hydrogen Fuel', 'Hydrogen Fuel', 'Ship Ammo']
-                        }
-                    },
-                    'Press Ice': {
-                        '60.75k': {
-                            pickups: [hurstonCassillo, hurstonCassillo, null, null],
-                            destinations: [hurstonOperei, hurstonOperei, null, null],
-                            commodities: ['Press Ice', 'Press Ice', 'Proc Food', 'Proc Food']
-                        }
-                    }
-                }
-            };
-            
-            // COMMODITY-ONLY PATTERNS (fallback - less specific)
-            const commodityPatterns = {
-                'microtech': {
-                    'Quartz': {
-                        destinations: [microTechDepot, microTechDepot, microTechDepot, microTechDepot],
-                        commodities: ['Quartz', 'Corundum', 'Quartz', 'Corundum']
-                    },
-                    'Stims': {
-                        pickups: [microTechDepot, microTechDepot, microTechDepot, microTechDepot],
-                        commodities: ['Stims', 'Stims', 'Stims', 'Stims']
-                    },
-                    'Press Ice': {
-                        pickups: [microTechDepot, microTechDepot, microTechDepot, microTechDepot],
-                        commodities: ['Press Ice', 'Press Ice', 'Proc Food', 'Proc Food']
-                    },
-                    'Hydrogen Fuel': {
-                        pickups: [microTechDepot, microTechDepot, microTechDepot, microTechDepot],
-                        commodities: ['Hydrogen Fuel', 'Hydrogen Fuel', 'Quantum Fuel', 'Ship Ammo']
-                    },
-                    'Waste': {
-                        destinations: [microTechDepot, microTechDepot, microTechDepot, microTechDepot],
-                        commodities: ['Waste', 'Scrap', 'Waste', 'Scrap']
-                    }
-                },
-                'hurston': {
-                    // No generic hurston patterns - all require payout
-                }
-            };
-            
-            // UNIVERSAL COMMODITY SEQUENCES (apply to any system)
-            const universalCommoditySequences = {
-                'Press Ice': ['Press Ice', 'Press Ice', 'Proc Food', 'Proc Food'],
-                'Quantum Fuel': ['Quantum Fuel', 'Hydrogen Fuel', 'Hydrogen Fuel', 'Ship Ammo'],
-                'Waste': ['Waste', 'Scrap', 'Waste', 'Scrap'],
-                'Quartz': ['Quartz', 'Corundum', 'Quartz', 'Corundum']
-            };
+            if (!payoutPatterns || !commodityPatterns || !universalCommoditySequences) {
+                console.error('❌ Autofill patterns not loaded!');
+                return;
+            }
             
             let pattern = null;
             let patternType = '';
@@ -1386,7 +1371,63 @@
             return false;
         }
 
-        function generateRoutePlan() {
+        
+        // =============================================================================
+        // ROUTE STEP COMPLETION MANAGEMENT
+        // =============================================================================
+        
+        /**
+         * Toggle completion status of a route stop
+         */
+        function toggleRouteStepCompletion(stopIndex) {
+            routeStepCompletion[stopIndex] = !routeStepCompletion[stopIndex];
+            generateRoutePlan();
+            saveSession();
+        }
+        
+        /**
+         * Change route view mode
+         */
+        function changeRouteViewMode(mode) {
+            routeViewMode = mode;
+            generateRoutePlan();
+            localStorage.setItem('haulerHelperRouteViewMode', mode);
+        }
+        
+        /**
+         * Load route view mode preference
+         */
+        function loadRouteViewMode() {
+            const saved = localStorage.getItem('haulerHelperRouteViewMode');
+            if (saved) {
+                routeViewMode = saved;
+                const select = document.getElementById('routeViewModeSelect');
+                if (select) select.value = saved;
+            }
+        }
+        
+        /**
+         * Get current uncompleted step index
+         */
+        function getCurrentStepIndex(totalSteps) {
+            for (let i = 0; i < totalSteps; i++) {
+                if (!routeStepCompletion[i]) {
+                    return i;
+                }
+
+        /**
+         * Reset all route completion checkboxes
+         */
+        function resetRouteCompletion() {
+            routeStepCompletion = {};
+            generateRoutePlan();
+            saveSession();
+        }
+            }
+            return totalSteps - 1; // All completed, show last one
+        }
+        
+function generateRoutePlan() {
             const container = document.getElementById('routePlanner');
             
             console.log('');
@@ -1694,18 +1735,61 @@
                 stop.cargoAfterStop = currentCargo;
             });
             
+            // Determine which stops to show based on view mode
+            let stopsToShow = stops;
+            const currentIndex = getCurrentStepIndex(stops.length);
+            
+            if (routeViewMode === 'current') {
+                stopsToShow = [stops[currentIndex]];
+            } else if (routeViewMode === 'current-next') {
+                if (currentIndex < stops.length - 1) {
+                    stopsToShow = [stops[currentIndex], stops[currentIndex + 1]];
+                } else {
+                    stopsToShow = [stops[currentIndex]];
+                }
+            }
+            
             container.innerHTML = `
                 <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px;">
                     Optimized Route - ${stops.length} Stops
                 </div>
-                ${stops.map((stop, index) => {
-                    const hasPickups = stop.pickups.length > 0;
-                    const hasDeliveries = stop.deliveries.length > 0;
+                ${stopsToShow.map((stop) => {
+                    // Find the actual index in the full stops array
+                    const actualIndex = stops.indexOf(stop);
+                    const hasDeliveries = stop.deliveries && stop.deliveries.length > 0;
+                    const hasPickups = stop.pickups && stop.pickups.length > 0;
+                    const isCompleted = routeStepCompletion[actualIndex];
+                    const isCurrent = actualIndex === currentIndex;
                     
+                    // Compact view for completed stops
+                    if (isCompleted) {
+                        return `
+                            <div class="route-stop route-stop-completed" data-stop-index="${actualIndex}">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <input type="checkbox" 
+                                           checked 
+                                           onchange="toggleRouteStepCompletion(${actualIndex})"
+                                           style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--color-success);">
+                                    <div style="flex: 1;">
+                                        <span style="font-weight: 600;">Stop ${actualIndex + 1}: ${stop.location}</span>
+                                        <span style="margin-left: 12px; color: var(--color-success);">✓ Completed</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Full view for non-completed stops
                     return `
-                        <div class="route-stop" data-stop-index="${index}" draggable="true">
+                        <div class="route-stop ${isCurrent ? 'route-stop-current' : ''}" data-stop-index="${actualIndex}" draggable="true">
                             <div class="route-stop-header">
-                                <div class="route-stop-title">Stop ${index + 1}: ${stop.location}</div>
+                                <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                                    <input type="checkbox" 
+                                           ${isCompleted ? 'checked' : ''} 
+                                           onchange="toggleRouteStepCompletion(${actualIndex})"
+                                           style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--color-success);">
+                                    <div class="route-stop-title">Stop ${actualIndex + 1}: ${stop.location}</div>
+                                </div>
                                 <div class="route-cargo-status">Cargo: ${stop.cargoAfterStop}/${selectedShip ? shipCapacity : '--'} SCU</div>
                             </div>
                             
@@ -1764,7 +1848,7 @@
             let totalPayout = 0;
             missions.forEach(mission => {
                 if (mission.payout) {
-                    totalPayout += parseInt(mission.payout.replace('k', '')) * 1000;
+                    totalPayout += parseFloat(mission.payout.replace('k', '')) * 1000;
                 }
             });
             
@@ -1850,6 +1934,7 @@
                 missions: missions,
                 locationColors: locationColors,
                 cargoGroups: cargoGroups,
+                routeStepCompletion: routeStepCompletion,
                 timestamp: new Date().toISOString()
             };
             localStorage.setItem('haulerHelperSession', JSON.stringify(session));
@@ -1918,7 +2003,13 @@
                     });
                 }
                 
-                // Restore location colors
+                                
+                // Restore route completion state
+                if (session.routeStepCompletion) {
+                    routeStepCompletion = session.routeStepCompletion;
+                }
+                
+// Restore location colors
                 if (session.locationColors) {
                     locationColors = session.locationColors;
                 }
@@ -1940,7 +2031,176 @@
     }
 }
 
-        // Initialize on load
+        // =============================================================================
+        // MISSION DATA EXPORT FUNCTIONS
+        // =============================================================================
+        
+        /**
+         * Export current session data to JSON file for analysis
+         * Captures all mission details for pattern identification
+         */
+        function exportSessionData() {
+            if (missions.length === 0) {
+                alert('No missions to export. Add some missions first!');
+                return;
+            }
+            
+            // Build export data structure
+            const exportData = {
+                metadata: {
+                    exportDate: new Date().toISOString(),
+                    version: '3.3.2',
+                    system: selectedSystem,
+                    category: selectedCategory,
+                    ship: selectedShip ? {
+                        id: selectedShip.id,
+                        name: selectedShip.name,
+                        capacity: selectedShip.capacity
+                    } : null
+                },
+                missions: missions.map(mission => ({
+                    payout: mission.payout,
+                    commodities: mission.commodities.map(commodity => ({
+                        pickup: commodity.pickup,
+                        commodity: commodity.commodity,
+                        quantity: parseInt(commodity.quantity) || 0,
+                        maxBoxSize: parseInt(commodity.maxBoxSize) || 4,
+                        destination: commodity.destination
+                    })).filter(c => c.commodity) // Only include commodities with a name
+                })).filter(m => m.commodities.length > 0), // Only include missions with commodities
+                statistics: {
+                    totalMissions: missions.length,
+                    totalPayout: missions.reduce((sum, m) => {
+                        if (!m.payout) return sum;
+                        return sum + (parseInt(m.payout.replace('k', '')) * 1000);
+                    }, 0),
+                    totalSCU: missions.reduce((sum, m) => {
+                        return sum + m.commodities.reduce((cSum, c) => {
+                            return cSum + (parseInt(c.quantity) || 0);
+                        }, 0);
+                    }, 0)
+                }
+            };
+            
+            // Create filename with timestamp
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const filename = `HaulerHelper_${selectedSystem || 'unknown'}_${selectedCategory || 'unknown'}_${timestamp}.json`;
+            
+            // Download JSON file
+            downloadJSON(exportData, filename);
+            
+            console.log('✅ Session data exported:', filename);
+            console.log('📊 Statistics:', exportData.statistics);
+        }
+        
+        /**
+         * Export current session data to CSV for Excel analysis
+         * One row per commodity delivery
+         */
+        function exportSessionCSV() {
+            if (missions.length === 0) {
+                alert('No missions to export. Add some missions first!');
+                return;
+            }
+            
+            // Build CSV data
+            const rows = [];
+            
+            // Header row
+            rows.push([
+                'Export Date',
+                'System',
+                'Category',
+                'Ship',
+                'Ship Capacity',
+                'Mission Number',
+                'Payout',
+                'Commodity Number',
+                'Pickup Location',
+                'Commodity',
+                'Quantity (SCU)',
+                'Max Box Size',
+                'Destination Location'
+            ]);
+            
+            // Data rows
+            const exportDate = new Date().toISOString().split('T')[0];
+            missions.forEach((mission, missionIndex) => {
+                mission.commodities.forEach((commodity, commodityIndex) => {
+                    if (!commodity.commodity) return; // Skip empty commodities
+                    
+                    rows.push([
+                        exportDate,
+                        selectedSystem || '',
+                        selectedCategory || '',
+                        selectedShip ? selectedShip.name : '',
+                        selectedShip ? selectedShip.capacity : '',
+                        missionIndex + 1,
+                        mission.payout || '',
+                        commodityIndex + 1,
+                        commodity.pickup || '',
+                        commodity.commodity || '',
+                        commodity.quantity || '',
+                        commodity.maxBoxSize || '4',
+                        commodity.destination || ''
+                    ]);
+                });
+            });
+            
+            // Convert to CSV string
+            const csvContent = rows.map(row => 
+                row.map(cell => {
+                    // Escape quotes and wrap in quotes if contains comma
+                    const cellStr = String(cell);
+                    if (cellStr.includes(',') || cellStr.includes('"')) {
+                        return '"' + cellStr.replace(/"/g, '""') + '"';
+                    }
+                    return cellStr;
+                }).join(',')
+            ).join('\n');
+            
+            // Create filename with timestamp
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const filename = `HaulerHelper_${selectedSystem || 'unknown'}_${selectedCategory || 'unknown'}_${timestamp}.csv`;
+            
+            // Download CSV file
+            downloadCSV(csvContent, filename);
+            
+            console.log('✅ Session data exported to CSV:', filename);
+        }
+        
+        /**
+         * Download JSON data as a file
+         */
+        function downloadJSON(data, filename) {
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        /**
+         * Download CSV data as a file
+         */
+        function downloadCSV(csvContent, filename) {
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+                // Initialize on load
         window.onload = init;
 
         // Reset missions only (keep ship, system, category, theme)
@@ -1983,6 +2243,16 @@
     </script>
 
     <button class="btn-reset" onclick="resetMissions()" title="Clear missions only" style="bottom: 80px;">Reset Missions</button>
+        <!-- Export Buttons -->
+    <div class="export-buttons-bottom">
+        <button class="btn-export-bottom" onclick="exportSessionData()" title="Export as JSON for analysis">
+            📊 Export JSON
+        </button>
+        <button class="btn-export-bottom" onclick="exportSessionCSV()" title="Export as CSV for Excel">
+            📈 Export CSV
+        </button>
+    </div>
+
     <button class="btn-reset" onclick="resetAll()" title="Reset all data and preferences">Reset All</button>
 
     <footer class="footer">

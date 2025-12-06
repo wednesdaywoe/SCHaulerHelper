@@ -31,10 +31,113 @@ const LOCATIONS_DATABASE = {
         ]
     },
     hurston: {
+        planetary: [
+            "Covalex Distribution Center S1DC06",
+            "Covalex Distribution Center S1DC0B",
+            "Dupree Industrial Manufacturing Facility",
+            "Everus Harbor",
+            "HDMS-Hahn",
+            "HDMS-Periman",
+            "HDMS-Ryder",
+            "HDMS-Woodruff",
+            "HDPC-Cassillo",
+            "HDPC-Farnesway",
+            "Sakura Sun Magnolia Workcenter",
+            "Teasa Spaceport"
+        ],
         local: [
             "HDMS-Edmond", "HDMS-Hadley", "HDMS-Operei", "HDMS-Pinewood", 
             "HDMS-Stanhope", "HDMS-Thedus", "HDPC-Cassillo", "HDPC-Farnesway", 
             "Reclamation Orinth", "Teasa Spaceport"
+        ],
+        stellar: [
+            "ARC-L1 Wide Forest Station",
+            "ARC-L2 Lively Pathway Station",
+            "ARC-L5 Yellow Core Station",
+            "ARC-LS Yellow Core Station",
+            "Baijini Point",
+            "CRU-L1 Ambitious Dream Station",
+            "CRU-L4 Shallow Fields Station",
+            "Everus Harbor",
+            "HUR-L1 Green Glade Station",
+            "HUR-L2 Faithful Dream Station",
+            "HUR-L3 Thundering Express Station",
+            "HUR-L4 Melodic Fields Station",
+            "HUR-LS High Course Station",
+            "MIC-L1 Shallow Frontier Station",
+            "MIC-L2 Long Forest Station",
+            "Port Tressler",
+            "Seraphim Station"
+        ],
+        interstellar: [
+            "ArcCorp Mining Area 045", "ArcCorp Mining Area 061", "Baijini Point",
+            "Brio's Breaker Yard", "Chawla's Beach", "Everus Harbor", "HDMS-Thedus",
+            "Jackson's Swap", "Levski", "Port Tressler", "Rayari", "Ruin Station",
+            "Sacren's Plot", "Shepherd's Rest"
+        ]
+    },
+    arccorp: {
+        planetary: [
+            "ArcCorp Mining Area 045", "ArcCorp Mining Area 048", "ArcCorp Mining Area 056",
+            "ArcCorp Mining Area 061", "Baijini Point", "Everus Harbor", "HDPC-Cassillo",
+            "HDPC-Farnesway", "Riker Memorial Spaceport", "Samson & Son's Salvage Center",
+            "Shubin Mining Facility SAL-2", "Shubin Mining Facility SAL-5",
+            "Teasa Spaceport in Lorville"
+        ],
+        stellar: [
+            "ARC-L1 Wide Forest Station", "ARC-L2 Lively Pathway Station",
+            "ARC-L3 Modern Express Station", "ARC-L4 Faint Glen Station",
+            "ARC-L5 Yellow Core Station", "ARC-LS Yellow Core Station",
+            "Baijini Point", "CRU-L1 Ambitious Dream Station",
+            "CRU-L4 Shallow Fields Station", "Everus Harbor",
+            "HUR-L2 Faithful Dream Station", "MIC-L1 Shallow Frontier Station",
+            "MIC-L2 Long Forest Station", "Port Tressler", "Seraphim Station"
+        ]
+    },
+    crusader: {
+        planetary: [
+            "August Dunlow Spaceport", "Brio's Breaker Yard", "Deakins Research Outpost",
+            "Everus Harbor", "HDPC-Cassillo", "Seraphim Station", "Shubin Mining Facility",
+            "Teasa Spaceport in Lorville", "Terra Mills HydroFarm"
+        ],
+        stellar: [
+            "ARC-L1 Wide Forest Station", "ARC-L2 Lively Pathway Station",
+            "ARC-L5 Yellow Core Station", "ARC-LS Yellow Core Station",
+            "Baijini Point", "Beautiful Glen Station", "CRU-L1 Ambitious Dream Station",
+            "CRU-L4 Shallow Fields Station", "CRU-L5 Beautiful Glen Station",
+            "Everus Harbor", "HUR-L2 Faithful Dream Station",
+            "MIC-L1 Shallow Frontier Station", "MIC-L2 Long Forest Station",
+            "Port Tressler", "Seraphim Station", "Shallow Fields Station"
+        ]
+    },
+    nyx: {
+        interstellar: [
+            "Areal8", "Baijini Point", "Everus Harbor", "Grim HEX", "Levski",
+            "Seraphim Station"
+        ]
+    },
+    // Universal Interstellar locations (system-agnostic)
+    universal: {
+        interstellar: [
+            "Areal8", "ARC-L1 Wide Forest Station", "ARC-L2 Lively Pathway Station",
+            "ARC-L3 Modern Express Station", "ARC-L4 Faint Glen Station",
+            "ARC-L5 Yellow Core Station", "ArcCorp Mining Area 045",
+            "ArcCorp Mining Area 048", "ArcCorp Mining Area 056",
+            "ArcCorp Mining Area 061", "August Dunlow Spaceport",
+            "Baijini Point", "Beautiful Glen Station", "Brio's Breaker Yard",
+            "Bueno Ravine", "Canard View", "Chawla Beach", "CRU-L1 Ambitious Dream Station",
+            "CRU-L4 Shallow Fields Station", "CRU-L5 Beautiful Glen Station",
+            "Deakins Research Outpost", "Everus Harbor", "Grim HEX",
+            "HDMS-Hahn", "HDMS-Thedus", "HDPC-Cassillo", "HDPC-Farnesway",
+            "HUR-L1 Green Glade Station", "HUR-L2 Faithful Dream Station",
+            "HUR-L3 Thundering Express Station", "HUR-L4 Melodic Fields Station",
+            "Jackson's Swap", "Levski", "MIC-L1 Shallow Frontier Station",
+            "MIC-L2 Long Forest Station", "Port Tressler",
+            "Rayari", "Rayari McGrath", "Riker Memorial Spaceport", "Ruin Station",
+            "Sacren's Plot", "Samson & Son's Salvage Center", "Seraphim Station",
+            "Shepherd's Rest", "Shubin Mining Facility SAL-2",
+            "Shubin Mining Facility SAL-5", "Shubin SAL-5", "Shubin SMO-18",
+            "Teasa Spaceport", "Terra Mills HydroFarm"
         ]
     }
 };

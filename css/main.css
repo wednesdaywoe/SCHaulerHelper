@@ -62,7 +62,41 @@
             padding-bottom: 15px;
         }
 
+        /* Navigation */
+        .nav-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
 
+        .nav-link {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            display: inline-block;
+        }
+
+        .nav-link:hover {
+            background-color: var(--color-primary);
+            border-color: var(--color-primary);
+            color: var(--bg-primary);
+            transform: translateY(-2px);
+        }
+
+        .nav-link.active {
+            background-color: var(--color-primary);
+            border-color: var(--color-primary);
+            color: var(--bg-primary);
+        }
 
         /* Top Controls */
         .controls {
@@ -1217,3 +1251,56 @@
             background: var(--color-primary);
             border-radius: 4px;
         }
+
+/* Export buttons - Bottom of screen */
+.export-buttons-bottom {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    display: flex;
+    gap: 15px;
+    z-index: 1000;
+}
+
+.btn-export-bottom {
+    background-color: var(--bg-secondary);
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+    padding: 12px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s;
+    text-transform: none;
+    letter-spacing: 0.5px;
+}
+
+.btn-export-bottom:hover {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--bg-primary);
+    transform: scale(1.05);
+}
+
+.btn-export-bottom:active {
+    transform: scale(0.98);
+}
+
+
+/* Route Planner - Completion Tracking */
+.route-stop-completed {
+    opacity: 0.5;
+    background-color: var(--bg-tertiary);
+    border-left: 3px solid var(--color-success);
+}
+
+.route-stop-current {
+    border-left: 3px solid var(--color-primary);
+    box-shadow: 0 0 12px rgba(77, 212, 172, 0.2);
+}
+
+.route-stop-completed:hover {
+    opacity: 0.7;
+}
+

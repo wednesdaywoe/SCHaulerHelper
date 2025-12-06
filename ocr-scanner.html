@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Scanner - Hauler Helper</title>
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #141b2d;
+            --bg-tertiary: #1a2332;
+            --color-primary: #4dd4ac;
+            --color-accent: #7ee7c4;
+            --color-success: #4ade80;
+            --color-warning: #fbbf24;
+            --color-danger: #ef4444;
+            --border-color: #2d3d54;
+            --text-primary: #e5e5e5;
+            --text-secondary: #8b92a8;
+        }
+
+        /* Theme: Stardust (default - teal/cyan) */
+        body[data-theme="stardust"] {
+            --color-primary: #4dd4ac;
+            --color-accent: #7ee7c4;
+        }
+
+        /* Theme: Lux (lime green) */
+        body[data-theme="lux"] {
+            --bg-primary: #0f1510;
+            --bg-secondary: #1a2318;
+            --bg-tertiary: #283525;
+            --color-primary: #B4F500;
+            --color-accent: #9DFF00;
+            --color-success: #32CD32;
+            --color-warning: #FFD600;
+            --color-danger: #FF4757;
+            --border-color: #7FE800;
+            --text-primary: #FFFFFF;
+            --text-secondary: #ADB5BD;
+        }
+
+        /* Theme: Pulse (hot magenta) */
+        body[data-theme="pulse"] {
+            --bg-primary: #1a1118;
+            --bg-secondary: #2a1a24;
+            --bg-tertiary: #3d2535;
+            --color-primary: #FF006E;
+            --color-accent: #FF1B8D;
+            --color-success: #00FFA3;
+            --color-warning: #FF8800;
+            --color-danger: #E63946;
+            --border-color: #5d3d52;
+            --text-primary: #FFFFFF;
+            --text-secondary: #ADB5BD;
+        }
+
+        /* Theme: Flow (blue) */
+        body[data-theme="flow"] {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #141b2d;
+            --bg-tertiary: #1a2332;
+            --color-primary: #1E90FF;
+            --color-accent: #00D4FF;
+            --color-success: #00FFA3;
+            --color-warning: #FFD600;
+            --color-danger: #FF4757;
+            --border-color: #2d5a80;
+            --text-primary: #FFFFFF;
+            --text-secondary: #ADB5BD;
+        }
+
+        /* Theme: Dark (purple) */
+        body[data-theme="dark"] {
+            --bg-primary: #1a1118;
+            --bg-secondary: #2a1a24;
+            --bg-tertiary: #3d2535;
+            --color-primary: #8B3FBF;
+            --color-accent: #A855F7;
+            --color-success: #00FFA3;
+            --color-warning: #FF8800;
+            --color-danger: #E63946;
+            --border-color: #5B2E6B;
+            --text-primary: #FFFFFF;
+            --text-secondary: #ADB5BD;
+        }
+
+        /* Theme: Starkitten (cybergoth) */
+        body[data-theme="starkitten"] {
+            --bg-primary: #000000;
+            --bg-secondary: #00222b;
+            --bg-tertiary: #00222b;
+            --color-primary: #FF006E;
+            --color-accent: #FF1B8D;
+            --color-success: #00FFA3;
+            --color-warning: #FF8800;
+            --color-danger: #E63946;
+            --border-color: #FF006E;
+            --text-primary: #FFFFFF;
+            --text-secondary: #ADB5BD;
+        }
+
+        /* Theme: Wednesday (gothic wine/jade) */
+        body[data-theme="wednesday"] {
+            --bg-primary: #1f001a;
+            --bg-secondary: #18091b;
+            --bg-tertiary: #221531;
+            --color-primary: #ff27ed;
+            --color-accent: #7B3F6D;
+            --color-success: #2D7C7B;
+            --color-warning: #a0ff61;
+            --color-danger: #a0ff61;
+            --border-color: #5B2C6F;
+            --text-primary: #a0ff61;
+            --text-secondary: #B8A5AB;
+        }
+
+        /* Theme: Moonshine (silver/blue) */
+        body[data-theme="moonshine"] {
+            --bg-primary: #0f1419;
+            --bg-secondary: #1a1f2e;
+            --bg-tertiary: #2a3342;
+            --color-primary: #8BA5C1;
+            --color-accent: #B8D4E8;
+            --color-success: #5FBAA7;
+            --color-warning: #D4AF6A;
+            --color-danger: #D97777;
+            --border-color: #3d4a5c;
+            --text-primary: #E8EDF2;
+            --text-secondary: #8B95A5;
+        }
+
+        /* Theme: ARGO (industrial orange) */
+        body[data-theme="argo"] {
+            --bg-primary: #1a1612;
+            --bg-secondary: #2a2520;
+            --bg-tertiary: #3d3832;
+            --color-primary: #FF6600;
+            --color-accent: #FF8C42;
+            --color-success: #4CAF50;
+            --color-warning: #FFC107;
+            --color-danger: #D32F2F;
+            --border-color: #5a5248;
+            --text-primary: #F5F5F5;
+            --text-secondary: #9E9E9E;
+        }
+
+        /* Theme: Cargo Explorer (red/gold) */
+        body[data-theme="cargo-explorer"] {
+            --bg-primary: #000000;
+            --bg-secondary: #110000;
+            --bg-tertiary: #240000;
+            --color-primary: #ff0000;
+            --color-accent: #B91C1C;
+            --color-success: #fffd84;
+            --color-warning: #FF6B35;
+            --color-danger: #a5a5a5;
+            --border-color: #a70000;
+            --text-primary: #c8dbff;
+            --text-secondary: #9CA3AF;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, #0d1424 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            font-weight: 900;
+            letter-spacing: 8px;
+            color: var(--color-primary);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .header .subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            padding-bottom: 15px;
+        }
+
+        .header h1::after {
+            content: '';
+            display: block;
+            width: 100%;
+            height: 2px;
+            margin: 15px 0;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                var(--color-primary) 50%, 
+                transparent 100%);
+        }
+
+        /* Navigation */
+        .nav-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .nav-link {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            display: inline-block;
+        }
+
+        .nav-link:hover {
+            background-color: var(--color-primary);
+            border-color: var(--color-primary);
+            color: var(--bg-primary);
+            transform: translateY(-2px);
+        }
+
+        /* Theme Selector */
+        .theme-selector {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+
+        .theme-selector select {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        /* Constrain top sections */
+        .constrained-section {
+            max-width: 800px;
+            margin: 0 auto 20px auto;
+        }
+
+        /* Cards */
+        .card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            font-size: 16px;
+            color: var(--color-primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* Buttons */
+        .button {
+            background-color: var(--color-primary);
+            color: var(--bg-primary);
+            border: none;
+            padding: 12px 24px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .button-secondary {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .button-secondary:hover {
+            background-color: var(--color-primary);
+            border-color: var(--color-primary);
+            color: var(--bg-primary);
+        }
+
+        .button-danger {
+            background-color: var(--color-danger);
+            color: white;
+            border: none;
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 3px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: var(--bg-tertiary);
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--color-primary);
+            background-color: rgba(77, 212, 172, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--color-primary);
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-hint {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        /* Preview Grid */
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .preview-item {
+            position: relative;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .preview-item:hover {
+            border-color: var(--color-primary);
+            transform: translateY(-2px);
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .preview-item .status-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 14, 26, 0.9);
+            color: white;
+            padding: 8px;
+            font-size: 11px;
+            text-align: center;
+        }
+
+        /* Options Grid */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .option-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--color-primary);
+        }
+
+        .option-item label {
+            font-size: 13px;
+            color: var(--text-primary);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* Results */
+        .result-item {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .result-filename {
+            font-size: 13px;
+            color: var(--color-primary);
+            font-weight: 600;
+        }
+
+        .region-badge {
+            display: inline-block;
+            background-color: rgba(77, 212, 172, 0.2);
+            color: var(--color-accent);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+
+        .copy-button, .import-button {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-button:hover, .import-button:hover {
+            background-color: var(--color-primary);
+            border-color: var(--color-primary);
+            color: var(--bg-primary);
+        }
+
+        .import-button {
+            margin-left: 8px;
+            background-color: var(--color-success);
+            border-color: var(--color-success);
+            color: white;
+        }
+
+        .import-button:hover {
+            opacity: 0.9;
+        }
+
+        .result-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        /* Parsed Data */
+        .parsed-data {
+            background-color: rgba(77, 212, 172, 0.1);
+            border: 1px solid var(--color-primary);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .parsed-data h4 {
+            color: var(--color-primary);
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .data-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .data-row {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 10px;
+        }
+
+        .data-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .data-value {
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        .payout-highlight {
+            color: var(--color-primary);
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .commodity-tag {
+            display: inline-block;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+
+        .data-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .data-list li {
+            padding: 4px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-list li:last-child {
+            border-bottom: none;
+        }
+
+        /* Stats */
+        .stats {
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            color: var(--color-primary);
+            font-weight: 900;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 5px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 95vw;
+            max-height: 95vh;
+            overflow: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-header h3 {
+            color: var(--color-primary);
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .close-modal {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            color: var(--text-primary);
+        }
+
+        .close-modal:hover {
+            background-color: var(--color-danger);
+            border-color: var(--color-danger);
+            color: white;
+        }
+
+        .canvas-container {
+            position: relative;
+            display: inline-block;
+            margin: 20px 0;
+        }
+
+        #regionCanvas {
+            border: 2px solid var(--border-color);
+            cursor: crosshair;
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .region-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        /* Progress */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+            transition: width 0.3s ease;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 11px;
+            padding: 30px 20px 20px 20px;
+            line-height: 1.6;
+        }
+
+        .footer a {
+            color: var(--color-accent);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer a:hover {
+            color: var(--color-primary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 32px;
+                letter-spacing: 4px;
+            }
+
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .data-row {
+                grid-template-columns: 1fr;
+            }
+
+            .result-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .constrained-section {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body data-theme="stardust">
+    <div class="container">
+        <!-- Theme Selector -->
+        <div class="theme-selector">
+            <select id="themeSelect" onchange="changeTheme()">
+                <option value="stardust">Stardust</option>
+                <option value="lux">Lux</option>
+                <option value="pulse">Pulse</option>
+                <option value="flow">Flow</option>
+                <option value="dark">Dark</option>
+                <option value="starkitten">Starkitten</option>
+                <option value="wednesday">Wednesday</option>
+                <option value="moonshine">Moonshine</option>
+                <option value="argo">ARGO</option>
+                <option value="cargo-explorer">Cargo Explorer</option>
+            </select>
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+            <h1>OCR SCANNER</h1>
+            <div class="subtitle">EXPERIMENTAL - BROKE AF - Screenshot to Mission Data</div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-bar">
+            <a href="index.html" class="nav-link">← Back to Hauler Helper</a>
+        </div>
+
+        <!-- Constrained Top Sections -->
+        <div class="constrained-section">
+            <!-- Options Card (moved to top) -->
+            <div class="card">
+                <div class="card-header">⚙️ Processing Options</div>
+                <div class="options-grid">
+                    <div class="option-item">
+                        <input type="checkbox" id="parseMode" checked>
+                        <label for="parseMode">Parse Mission Data</label>
+                    </div>
+                    <div class="option-item">
+                        <input type="checkbox" id="deduplicateMode">
+                        <label for="deduplicateMode">Deduplicate Results</label>
+                    </div>
+                    <div class="option-item">
+                        <input type="checkbox" id="templateMode">
+                        <label for="templateMode">Use Template Mode</label>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+                    <button class="button" id="processBtn" disabled>Process Images</button>
+                    <button class="button button-secondary" id="clearBtn" style="display: none;">Clear All</button>
+                </div>
+            </div>
+
+            <!-- Upload Card -->
+            <div class="card">
+                <div class="card-header">📸 Upload Screenshots</div>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">Drag & drop screenshots here</div>
+                    <div class="upload-hint">or click to browse (supports multiple files)</div>
+                </div>
+                <input type="file" id="fileInput" accept="image/*" multiple>
+                
+                <div id="previewContainer" class="preview-grid"></div>
+            </div>
+        </div>
+
+        <!-- Statistics (full width) -->
+        <div class="stats" id="stats">
+            <div class="stat-box">
+                <span class="stat-value" id="totalImages">0</span>
+                <span class="stat-label">Images Processed</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-value" id="totalWords">0</span>
+                <span class="stat-label">Words Extracted</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-value" id="totalChars">0</span>
+                <span class="stat-label">Characters</span>
+            </div>
+        </div>
+
+        <!-- Results Card (full width) -->
+        <div class="card" id="resultsCard" style="display: none;">
+            <div class="card-header">📄 Extracted Data</div>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                <button class="button button-secondary" id="exportJsonBtn">Export JSON</button>
+                <button class="button button-secondary" id="exportCsvBtn">Export CSV</button>
+            </div>
+
+            <div id="resultsContainer"></div>
+        </div>
+    </div>
+
+    <!-- Region Selection Modal -->
+    <div class="modal" id="regionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Select OCR Regions</h3>
+                <button class="close-modal" onclick="closeRegionModal()">×</button>
+            </div>
+            <div class="canvas-container">
+                <canvas id="regionCanvas"></canvas>
+            </div>
+            <div class="region-controls">
+                <button class="button" onclick="addCurrentRegion()">Save Current Region</button>
+                <button class="button button-secondary" onclick="clearCurrentRegion()">Clear Current</button>
+                <button class="button button-secondary" onclick="clearAllRegions()">Clear All Regions</button>
+                <button class="button button-danger" onclick="processFullImage()">Process Full Image</button>
+            </div>
+            <div id="regionsList" style="margin-top: 15px; color: var(--text-secondary); font-size: 12px;"></div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        This is an unofficial Star Citizen fansite, not affiliated with the Cloud Imperium group of companies.<br>
+        2025 Wednesdaywoe<br>
+        <a href="https://www.youtube.com/@wednesdaywoeplays" target="_blank">youtube.com/@wednesdaywoeplays</a>
+    </footer>
+
+    <script>
+        // Global state
+        let selectedFiles = [];
+        let fileRegions = new Map();
+        let currentFile = null;
+        let templateRegions = null;
+        let processedResults = [];
+        let isDrawing = false;
+        let startX, startY, currentX, currentY;
+
+        // DOM elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const previewContainer = document.getElementById('previewContainer');
+        const processBtn = document.getElementById('processBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const resultsCard = document.getElementById('resultsCard');
+        const stats = document.getElementById('stats');
+        const regionModal = document.getElementById('regionModal');
+        const regionCanvas = document.getElementById('regionCanvas');
+        const ctx = regionCanvas.getContext('2d');
+        const regionsList = document.getElementById('regionsList');
+        const parseMode = document.getElementById('parseMode');
+        const deduplicateMode = document.getElementById('deduplicateMode');
+        const templateMode = document.getElementById('templateMode');
+        const exportJsonBtn = document.getElementById('exportJsonBtn');
+        const exportCsvBtn = document.getElementById('exportCsvBtn');
+
+        // Theme management
+        function changeTheme() {
+            const theme = document.getElementById('themeSelect').value;
+            document.body.setAttribute('data-theme', theme);
+            localStorage.setItem('haulerHelperOCRTheme', theme);
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('haulerHelperOCRTheme');
+            if (savedTheme) {
+                document.body.setAttribute('data-theme', savedTheme);
+                document.getElementById('themeSelect').value = savedTheme;
+            }
+        }
+
+        loadTheme();
+
+        // Upload handlers
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            selectedFiles = Array.from(files);
+            fileRegions.clear();
+            displayPreviews();
+            processBtn.disabled = false;
+            clearBtn.style.display = 'inline-block';
+        }
+
+        function displayPreviews() {
+            previewContainer.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const div = document.createElement('div');
+                    div.className = 'preview-item';
+                    div.innerHTML = `
+                        <img src="${e.target.result}" alt="${file.name}">
+                        <div class="status-overlay" data-index="${index}">Ready - Click to define regions</div>
+                    `;
+                    div.onclick = () => openRegionModal(file, e.target.result);
+                    previewContainer.appendChild(div);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Region selection
+        function openRegionModal(file, dataUrl) {
+            currentFile = { file, dataUrl };
+            regionModal.classList.add('active');
+            
+            const img = new Image();
+            img.onload = () => {
+                const maxWidth = window.innerWidth * 0.8;
+                const maxHeight = window.innerHeight * 0.7;
+                const scale = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+                
+                regionCanvas.width = img.width * scale;
+                regionCanvas.height = img.height * scale;
+                
+                ctx.drawImage(img, 0, 0, regionCanvas.width, regionCanvas.height);
+                
+                const regions = fileRegions.get(file.name) || (templateMode.checked && templateRegions) || [];
+                drawRegions(regions);
+                updateRegionsList(regions);
+            };
+            img.src = dataUrl;
+        }
+
+        function closeRegionModal() {
+            regionModal.classList.remove('active');
+            currentFile = null;
+        }
+
+        // Canvas drawing
+        regionCanvas.addEventListener('mousedown', (e) => {
+            const rect = regionCanvas.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+            isDrawing = true;
+        });
+
+        regionCanvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            
+            const rect = regionCanvas.getBoundingClientRect();
+            currentX = e.clientX - rect.left;
+            currentY = e.clientY - rect.top;
+            
+            redrawCanvas();
+            
+            ctx.strokeStyle = '#4dd4ac';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.strokeRect(startX, startY, currentX - startX, currentY - startY);
+            ctx.setLineDash([]);
+        });
+
+        regionCanvas.addEventListener('mouseup', () => {
+            isDrawing = false;
+        });
+
+        function redrawCanvas() {
+            const img = new Image();
+            img.onload = () => {
+                ctx.clearRect(0, 0, regionCanvas.width, regionCanvas.height);
+                ctx.drawImage(img, 0, 0, regionCanvas.width, regionCanvas.height);
+                
+                const regions = fileRegions.get(currentFile.file.name) || (templateMode.checked && templateRegions) || [];
+                drawRegions(regions);
+            };
+            img.src = currentFile.dataUrl;
+        }
+
+        function drawRegions(regions) {
+            regions.forEach((region, index) => {
+                ctx.strokeStyle = '#4dd4ac';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(region.x, region.y, region.width, region.height);
+                
+                ctx.fillStyle = 'rgba(77, 212, 172, 0.2)';
+                ctx.fillRect(region.x, region.y, region.width, region.height);
+                
+                ctx.fillStyle = '#4dd4ac';
+                ctx.font = '16px sans-serif';
+                ctx.fillText(`${index + 1}`, region.x + 5, region.y + 20);
+            });
+        }
+
+        function addCurrentRegion() {
+            if (!currentFile || startX === undefined) {
+                alert('Please draw a region first');
+                return;
+            }
+            
+            const region = {
+                x: Math.min(startX, currentX),
+                y: Math.min(startY, currentY),
+                width: Math.abs(currentX - startX),
+                height: Math.abs(currentY - startY)
+            };
+            
+            if (templateMode.checked) {
+                if (!templateRegions) templateRegions = [];
+                templateRegions.push(region);
+                
+                selectedFiles.forEach(file => {
+                    const existingRegions = fileRegions.get(file.name) || [];
+                    fileRegions.set(file.name, [...existingRegions, region]);
+                });
+            } else {
+                const fileName = currentFile.file.name;
+                const existingRegions = fileRegions.get(fileName) || [];
+                fileRegions.set(fileName, [...existingRegions, region]);
+            }
+            
+            startX = undefined;
+            redrawCanvas();
+            updateRegionsList(fileRegions.get(currentFile.file.name) || templateRegions || []);
+        }
+
+        function clearCurrentRegion() {
+            startX = undefined;
+            redrawCanvas();
+        }
+
+        function clearAllRegions() {
+            if (templateMode.checked) {
+                templateRegions = null;
+                fileRegions.clear();
+            } else if (currentFile) {
+                fileRegions.delete(currentFile.file.name);
+            }
+            redrawCanvas();
+            updateRegionsList([]);
+        }
+
+        function processFullImage() {
+            if (templateMode.checked) {
+                templateRegions = null;
+                fileRegions.clear();
+            } else if (currentFile) {
+                fileRegions.delete(currentFile.file.name);
+            }
+            closeRegionModal();
+        }
+
+        function updateRegionsList(regions) {
+            if (regions.length === 0) {
+                regionsList.innerHTML = 'No regions defined (will process full image)';
+            } else {
+                regionsList.innerHTML = `Regions defined: ${regions.length}`;
+            }
+        }
+
+        // Star Citizen mission parser
+        function parseStarCitizenMission(text) {
+            const result = {
+                payout: null,
+                commodities: [],
+                pickupLocations: [],
+                deliveryLocations: []
+            };
+            
+            const payoutMatch = text.match(/(\d[\d,]*)\s*(?:aUEC|AUEC)/i);
+            if (payoutMatch) {
+                result.payout = parseInt(payoutMatch[1].replace(/,/g, ''));
+            }
+            
+            const commodityKeywords = ['Aluminum', 'Beryl', 'Carbon', 'Corundum', 'Diamond', 'Gold', 
+                'Hydrogen', 'Laranite', 'Quantanium', 'Quartz', 'Silicon', 'Titanium', 'Tungsten',
+                'Agricultural Supplies', 'Medical Supplies', 'Processed Food', 'Waste', 'Scrap',
+                'Stims', 'Ship Ammo', 'Quantum Fuel', 'Pressurized Ice', 'Press Ice', 'Proc Food',
+                'Agri Supplies', 'C Materials'];
+            
+            commodityKeywords.forEach(commodity => {
+                if (text.includes(commodity)) {
+                    result.commodities.push(commodity);
+                }
+            });
+            
+            const locationPatterns = [
+                /(?:Pick\s*up|Pickup|From):\s*([A-Za-z0-9\s\-]+?)(?:\n|$)/gi,
+                /(?:Deliver|Delivery|To):\s*([A-Za-z0-9\s\-]+?)(?:\n|$)/gi
+            ];
+            
+            const pickupMatches = text.matchAll(locationPatterns[0]);
+            for (const match of pickupMatches) {
+                result.pickupLocations.push(match[1].trim());
+            }
+            
+            const deliveryMatches = text.matchAll(locationPatterns[1]);
+            for (const match of deliveryMatches) {
+                result.deliveryLocations.push(match[1].trim());
+            }
+            
+            return result;
+        }
+
+        function aggregateUniqueValues(results) {
+            const commodities = new Set();
+            const locations = new Set();
+            const payouts = new Set();
+            
+            results.forEach(result => {
+                const parsed = parseStarCitizenMission(result.text);
+                if (parsed.payout) payouts.add(parsed.payout);
+                parsed.commodities.forEach(c => commodities.add(c));
+                parsed.pickupLocations.forEach(l => locations.add(l));
+                parsed.deliveryLocations.forEach(l => locations.add(l));
+            });
+            
+            return {
+                commodities: Array.from(commodities).sort(),
+                allLocations: Array.from(locations).sort(),
+                payouts: Array.from(payouts).sort((a, b) => a - b)
+            };
+        }
+
+        function deduplicateResults(results) {
+            const seen = new Set();
+            return results.filter(result => {
+                const key = result.text.trim().toLowerCase();
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+        }
+
+        function renderResults() {
+            resultsContainer.innerHTML = '';
+            let resultsToShow = processedResults;
+            
+            if (deduplicateMode.checked) {
+                resultsToShow = deduplicateResults(resultsToShow);
+            }
+            
+            resultsToShow.forEach(result => {
+                displayResult(result.filename, result.text, result.region);
+            });
+            
+            resultsCard.style.display = 'block';
+        }
+
+        // Processing
+        processBtn.addEventListener('click', async () => {
+            if (selectedFiles.length === 0) return;
+            
+            processBtn.disabled = true;
+            processBtn.textContent = 'Processing...';
+            resultsContainer.innerHTML = '';
+            processedResults = [];
+            
+            const worker = await Tesseract.createWorker();
+            await worker.loadLanguage('eng');
+            await worker.initialize('eng');
+            
+            for (let i = 0; i < selectedFiles.length; i++) {
+                const file = selectedFiles[i];
+                const statusEl = document.querySelector(`[data-index="${i}"]`);
+                statusEl.innerHTML = 'Processing...';
+                statusEl.style.background = 'rgba(77, 212, 172, 0.9)';
+                
+                try {
+                    const imageData = await readFileAsDataURL(file);
+                    const regions = fileRegions.get(file.name) || (templateMode.checked && templateRegions) || [];
+                    
+                    if (regions.length === 0) {
+                        const result = await worker.recognize(imageData);
+                        processedResults.push({
+                            filename: file.name,
+                            text: result.data.text,
+                            confidence: result.data.confidence,
+                            region: 'Full Image'
+                        });
+                        statusEl.innerHTML = `✓ Complete`;
+                    } else {
+                        for (let r = 0; r < regions.length; r++) {
+                            const region = regions[r];
+                            const rect = {
+                                left: Math.round(region.x),
+                                top: Math.round(region.y),
+                                width: Math.round(region.width),
+                                height: Math.round(region.height)
+                            };
+                            
+                            const result = await worker.recognize(imageData, { rectangle: rect });
+                            processedResults.push({
+                                filename: file.name,
+                                text: result.data.text,
+                                confidence: result.data.confidence,
+                                region: `Region ${r + 1}`
+                            });
+                        }
+                        statusEl.innerHTML = `✓ Complete - ${regions.length} region${regions.length > 1 ? 's' : ''}`;
+                    }
+                } catch (error) {
+                    statusEl.innerHTML = '✗ Error';
+                    statusEl.style.background = 'rgba(239, 68, 68, 0.9)';
+                    console.error('OCR Error:', error);
+                }
+            }
+            
+            await worker.terminate();
+            processBtn.disabled = false;
+            processBtn.textContent = 'Process Again';
+            
+            renderResults();
+            updateStats();
+        });
+
+        clearBtn.addEventListener('click', () => {
+            selectedFiles = [];
+            fileRegions.clear();
+            processedResults = [];
+            templateRegions = null;
+            previewContainer.innerHTML = '';
+            resultsContainer.innerHTML = '';
+            resultsCard.style.display = 'none';
+            stats.style.display = 'none';
+            processBtn.disabled = true;
+            clearBtn.style.display = 'none';
+        });
+
+        function readFileAsDataURL(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function displayResult(filename, text, regionLabel) {
+            const div = document.createElement('div');
+            div.className = 'result-item';
+            
+            const isEmpty = !text.trim();
+            
+            let parsedHtml = '';
+            if (parseMode.checked && !isEmpty) {
+                const parsed = parseStarCitizenMission(text);
+                
+                parsedHtml = `
+                    <div class="parsed-data">
+                        <h4>🎯 Parsed Mission Data</h4>
+                        <div class="data-grid">
+                            <div class="data-row">
+                                <div class="data-label">Payout:</div>
+                                <div class="data-value payout-highlight">${parsed.payout ? '₡ ' + parsed.payout.toLocaleString() : 'Not found'}</div>
+                            </div>
+                            ${parsed.commodities.length > 0 ? `
+                            <div class="data-row">
+                                <div class="data-label">Commodities:</div>
+                                <div class="data-value">
+                                    ${parsed.commodities.map(c => `<span class="commodity-tag">${c}</span>`).join('')}
+                                </div>
+                            </div>
+                            ` : ''}
+                            ${parsed.pickupLocations.length > 0 ? `
+                            <div class="data-row">
+                                <div class="data-label">Pickup From:</div>
+                                <div class="data-value">
+                                    <ul class="data-list">
+                                        ${parsed.pickupLocations.map(loc => `<li>${loc}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                            ` : ''}
+                            ${parsed.deliveryLocations.length > 0 ? `
+                            <div class="data-row">
+                                <div class="data-label">Deliver To:</div>
+                                <div class="data-value">
+                                    <ul class="data-list">
+                                        ${parsed.deliveryLocations.map(loc => `<li>${loc}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            div.innerHTML = `
+                <div class="result-header">
+                    <div>
+                        <div class="result-filename">📄 ${filename}</div>
+                        <span class="region-badge">${regionLabel}</span>
+                    </div>
+                    <div>
+                        ${!isEmpty ? '<button class="copy-button" onclick="copyText(this)">Copy Text</button>' : ''}
+                        ${!isEmpty && parseMode.checked ? '<button class="import-button" onclick="importToHauler(this)">Import to Hauler</button>' : ''}
+                    </div>
+                </div>
+                ${parsedHtml}
+                <div class="result-text" style="${parseMode.checked ? 'margin-top: 1rem;' : ''}">${isEmpty ? '(No text detected)' : text || '(No text detected)'}</div>
+            `;
+            
+            resultsContainer.appendChild(div);
+        }
+
+        function copyText(button) {
+            const resultItem = button.closest('.result-item');
+            const text = resultItem.querySelector('.result-text').textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = button.textContent;
+                button.textContent = '✓ Copied!';
+                setTimeout(() => button.textContent = originalText, 2000);
+            });
+        }
+
+        function importToHauler(button) {
+            const resultItem = button.closest('.result-item');
+            const text = resultItem.querySelector('.result-text').textContent;
+            const parsed = parseStarCitizenMission(text);
+            
+            const importData = {
+                payout: parsed.payout,
+                commodities: [],
+                timestamp: Date.now()
+            };
+            
+            const maxItems = Math.max(
+                parsed.commodities.length,
+                parsed.pickupLocations.length,
+                parsed.deliveryLocations.length
+            );
+            
+            for (let i = 0; i < maxItems; i++) {
+                importData.commodities.push({
+                    commodity: parsed.commodities[i] || '',
+                    pickup: parsed.pickupLocations[i] || '',
+                    destination: parsed.deliveryLocations[i] || '',
+                    quantity: '',
+                    maxBoxSize: '4'
+                });
+            }
+            
+            localStorage.setItem('haulerHelperOCRImport', JSON.stringify(importData));
+            
+            button.textContent = '✓ Ready to Import!';
+            button.style.backgroundColor = 'var(--color-success)';
+            
+            window.open('index.html', '_blank');
+            
+            setTimeout(() => {
+                button.textContent = 'Import to Hauler';
+                button.style.backgroundColor = '';
+            }, 3000);
+        }
+
+        function updateStats() {
+            const totalWords = processedResults.reduce((sum, r) => 
+                sum + (r.text.trim().split(/\s+/).filter(w => w.length > 0).length), 0
+            );
+            const totalChars = processedResults.reduce((sum, r) => sum + r.text.length, 0);
+            
+            document.getElementById('totalImages').textContent = selectedFiles.length;
+            document.getElementById('totalWords').textContent = totalWords.toLocaleString();
+            document.getElementById('totalChars').textContent = totalChars.toLocaleString();
+            stats.style.display = 'grid';
+        }
+
+        // Export functions
+        exportJsonBtn.addEventListener('click', () => {
+            const aggregateData = aggregateUniqueValues(processedResults);
+            
+            const exportData = {
+                summary: {
+                    totalMissions: processedResults.length,
+                    uniqueCommodities: aggregateData.commodities,
+                    uniqueLocations: aggregateData.allLocations,
+                    uniquePayouts: aggregateData.payouts
+                },
+                missions: processedResults.map(result => {
+                    const parsed = parseStarCitizenMission(result.text);
+                    return {
+                        filename: result.filename,
+                        region: result.region,
+                        payout: parsed.payout,
+                        commodities: parsed.commodities,
+                        pickupLocations: parsed.pickupLocations,
+                        deliveryLocations: parsed.deliveryLocations,
+                        rawText: result.text
+                    };
+                })
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'star-citizen-missions-ocr.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        exportCsvBtn.addEventListener('click', () => {
+            const rows = [['Filename', 'Region', 'Payout', 'Commodities', 'Pickup Locations', 'Delivery Locations']];
+            
+            processedResults.forEach(result => {
+                const parsed = parseStarCitizenMission(result.text);
+                rows.push([
+                    result.filename,
+                    result.region,
+                    parsed.payout || '',
+                    parsed.commodities.join('; '),
+                    parsed.pickupLocations.join('; '),
+                    parsed.deliveryLocations.join('; ')
+                ]);
+            });
+            
+            const csv = rows.map(row => 
+                row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+            ).join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'star-citizen-missions-ocr.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html>
