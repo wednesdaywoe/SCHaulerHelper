@@ -235,7 +235,7 @@
 
         // Initialize
         function init() {
-            console.log('%c🎯 HAULER HELPER v3.3.1 - SCREENSHOT SCANNER REMOVED', 'background: #4dd4ac; color: #000; font-size: 16px; padding: 8px;');
+            console.log('%c🎯 HAULER HELPER v3.3.2 - OCR IMPORT FIX', 'background: #4dd4ac; color: #000; font-size: 16px; padding: 8px;');
 
             // HANDLE dragstart at document level (since addEventListener on cards doesn't work)
             document.addEventListener('dragstart', function(e) {
@@ -301,6 +301,221 @@
             loadCargoGridLayout();
             loadRouteViewMode();
             updateColorPalette();
+            checkForOCRImport();
+        }
+
+        // Check for OCR Scanner import data
+        // Helper: Match abbreviated location to full database name
+
+        function matchLocation(shortName, system, category) {
+
+            if (!shortName || !system || !category) return '';
+
+            
+
+            // Get locations for this system/category
+
+            const systemData = LOCATIONS_DATABASE[system];
+
+            if (!systemData || !systemData[category]) return shortName;
+
+            
+
+            const locations = systemData[category];
+
+            
+
+            // Try exact match first
+
+            if (locations.includes(shortName)) {
+
+                return shortName;
+
+            }
+
+            
+
+            // Try partial match (e.g., "ARC-L2" matches "ARC-L2 Lively Pathway Station")
+
+            const match = locations.find(loc => 
+
+                loc.startsWith(shortName) || 
+
+                loc.includes(shortName + ' ') ||
+
+                loc.toLowerCase().includes(shortName.toLowerCase())
+
+            );
+
+            
+
+            return match || shortName;
+
+        }
+
+        // Helper: Match payout to database format and find closest
+        function matchPayout(payoutNumber, system, category) {
+            if (!payoutNumber || !system || !category) return '';
+            
+            // Convert number to "k" format (40750 → "40.75k")
+            let payoutK = payoutNumber / 1000;
+            
+            // Get payouts for this system/category
+            const systemData = PAYOUTS_DATABASE[system];
+            if (!systemData || !systemData[category]) return '';
+            
+            const payouts = systemData[category];
+            
+            // Try to find exact or closest match
+            let bestMatch = '';
+            let smallestDiff = Infinity;
+            
+            for (const payout of payouts) {
+                // Parse payout string "40.75k" → 40.75
+                const value = parseFloat(payout.replace('k', ''));
+                const diff = Math.abs(value - payoutK);
+                
+                if (diff < smallestDiff) {
+                    smallestDiff = diff;
+                    bestMatch = payout;
+                }
+                
+                // If exact match, stop  
+                if (diff < 0.1) break;
+            }
+            
+            return bestMatch;
+        }
+
+
+
+        function checkForOCRImport() {
+            // Check for Import All (multiple missions)
+            const importAllData = localStorage.getItem('haulerHelperOCRImportAll');
+            if (importAllData) {
+                try {
+                    const data = JSON.parse(importAllData);
+                    console.log('📦 OCR Import All detected:', data);
+                    
+                    // Clear the import flag immediately
+                    localStorage.removeItem('haulerHelperOCRImportAll');
+                    
+                    // Import each mission
+                    if (data.missions && data.missions.length > 0) {
+                        data.missions.forEach(missionData => {
+                            importSingleMission(missionData);
+                        });
+                        
+                        updateDeliveryManager();
+                        updateStats();
+                        saveSession();
+                        
+                        // Show success message
+                        setTimeout(() => {
+                            alert(`✅ ${data.missions.length} mission${data.missions.length > 1 ? 's' : ''} imported from OCR Scanner!`);
+                        }, 500);
+                    }
+                    
+                    return; // Skip single import check
+                } catch (e) {
+                    console.error('Error importing all OCR data:', e);
+                    localStorage.removeItem('haulerHelperOCRImportAll');
+                }
+            }
+            
+            // Check for single mission import
+            const importData = localStorage.getItem('haulerHelperOCRImport');
+            if (!importData) return;
+            
+            try {
+                const data = JSON.parse(importData);
+                console.log('📥 OCR Import detected:', data);
+                
+                // Clear the import flag immediately
+                localStorage.removeItem('haulerHelperOCRImport');
+                
+                importSingleMission(data);
+                
+                updateDeliveryManager();
+                updateStats();
+                saveSession();
+                
+                // Show success message
+                setTimeout(() => {
+                    alert('✅ Mission data imported from OCR Scanner!');
+                }, 500);
+                
+            } catch (e) {
+                console.error('Error importing OCR data:', e);
+                localStorage.removeItem('haulerHelperOCRImport');
+            }
+        }
+        
+        function importSingleMission(data) {
+            // Add a new mission with the imported data
+            addMissionPanel();
+            
+            // Get the newly created mission
+            const lastMission = missions[missions.length - 1];
+            
+            // Set payout if available
+            if (data.payout) {
+                // Match payout to database format
+                const matchedPayout = matchPayout(data.payout, selectedSystem, selectedCategory);
+                console.log('💰 Payout matching:', data.payout, '→', matchedPayout);
+                
+                if (matchedPayout) {
+                    lastMission.payout = matchedPayout;
+                    const missionPanel = document.getElementById(lastMission.id);
+                    const payoutSelect = missionPanel.querySelector('select');
+                    if (payoutSelect) {
+                        payoutSelect.value = matchedPayout;
+                    }
+                }
+            }
+            
+            // Add commodities
+            if (data.commodities && data.commodities.length > 0) {
+                // Remove the default empty commodity row
+                if (lastMission.commodities.length > 0) {
+                    const firstCommodityId = lastMission.commodities[0].id;
+                    removeCommodityRow(lastMission.id, firstCommodityId);
+                }
+                
+                // Add each imported commodity
+                data.commodities.forEach((commodity, index) => {
+                    if (commodity.commodity || commodity.pickup || commodity.destination) {
+                        addCommodityRow(lastMission.id);
+                        const commodityId = `${lastMission.id}_commodity_${index}`;
+                        const commodityData = lastMission.commodities[index];
+                        
+                        // Match locations to database names
+                        const matchedPickup = matchLocation(commodity.pickup, selectedSystem, selectedCategory);
+                        const matchedDestination = matchLocation(commodity.destination, selectedSystem, selectedCategory);
+                        
+                        // Update the commodity data
+                        Object.assign(commodityData, {
+                            commodity: commodity.commodity || '',
+                            pickup: matchedPickup || '',
+                            destination: matchedDestination || '',
+                            quantity: commodity.quantity || '',
+                            maxBoxSize: commodity.maxBoxSize || '4'
+                        });
+                        
+                        // Update the UI with matched locations
+                        const row = document.getElementById(commodityId);
+                        if (row) {
+                            const selects = row.querySelectorAll('select');
+                            const input = row.querySelector('input[type="number"]');
+                            if (selects[0]) selects[0].value = matchedPickup || '';
+                            if (selects[1]) selects[1].value = commodity.commodity || '';
+                            if (input) input.value = commodity.quantity || '';
+                            if (selects[2]) selects[2].value = commodity.maxBoxSize || '4';
+                            if (selects[3]) selects[3].value = matchedDestination || '';
+                        }
+                    }
+                });
+            }
         }
 
         // Load delivery layout preference (removed - tabs removed)
@@ -1848,7 +2063,12 @@ function generateRoutePlan() {
             let totalPayout = 0;
             missions.forEach(mission => {
                 if (mission.payout) {
-                    totalPayout += parseFloat(mission.payout.replace('k', '')) * 1000;
+                    // Handle both string ("40k") and number (40000) formats
+                    if (typeof mission.payout === 'string') {
+                        totalPayout += parseFloat(mission.payout.replace('k', '')) * 1000;
+                    } else if (typeof mission.payout === 'number') {
+                        totalPayout += mission.payout;
+                    }
                 }
             });
             
@@ -2072,7 +2292,13 @@ function generateRoutePlan() {
                     totalMissions: missions.length,
                     totalPayout: missions.reduce((sum, m) => {
                         if (!m.payout) return sum;
-                        return sum + (parseInt(m.payout.replace('k', '')) * 1000);
+                        // Handle both string ("40k") and number formats
+                        if (typeof m.payout === 'string') {
+                            return sum + (parseInt(m.payout.replace('k', '')) * 1000);
+                        } else if (typeof m.payout === 'number') {
+                            return sum + m.payout;
+                        }
+                        return sum;
                     }, 0),
                     totalSCU: missions.reduce((sum, m) => {
                         return sum + m.commodities.reduce((cSum, c) => {
