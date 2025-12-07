@@ -640,12 +640,16 @@
                         <label for="parseMode">Parse Mission Data</label>
                     </div>
                     <div class="option-item">
-                        <input type="checkbox" id="deduplicateMode">
-                        <label for="deduplicateMode">Deduplicate Results</label>
+                        <input type="checkbox" id="autoCropRight" checked>
+                        <label for="autoCropRight">Auto-crop to Right Half</label>
                     </div>
                     <div class="option-item">
                         <input type="checkbox" id="templateMode">
                         <label for="templateMode">Use Template Mode</label>
+                    </div>
+                    <div class="option-item">
+                        <input type="checkbox" id="deduplicateMode">
+                        <label for="deduplicateMode">Deduplicate Results</label>
                     </div>
                     <div class="option-item full-width">
                         <label for="psmMode">OCR Mode:</label>
@@ -661,6 +665,7 @@
 
                 <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
                     <button class="button" id="processBtn" disabled>Process Images</button>
+                    <button class="button" id="importAllBtn" style="background-color: var(--color-success); display: none;">📦 Import All to Hauler</button>
                     <button class="button button-secondary" id="clearBtn" style="display: none;">Clear All</button>
                 </div>
             </div>
@@ -687,7 +692,6 @@
             </div>
             
             <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-                <button class="button" id="importAllBtn" style="background-color: var(--color-success); display: none;">📦 Import All to Hauler</button>
                 <button class="button button-secondary" id="exportJsonBtn">Export JSON</button>
                 <button class="button button-secondary" id="exportCsvBtn">Export CSV</button>
             </div>
@@ -768,8 +772,80 @@
             }
         }
 
-        // Initialize theme
+        // Auto-crop preference management
+        function saveAutoCropPreference() {
+            const autoCropEnabled = document.getElementById('autoCropRight').checked;
+            localStorage.setItem('haulerHelperOCRAutoCrop', autoCropEnabled ? 'true' : 'false');
+        }
+
+        function loadAutoCropPreference() {
+            const saved = localStorage.getItem('haulerHelperOCRAutoCrop');
+            // Only override default (checked) if user explicitly saved a preference
+            if (saved === 'false') {
+                document.getElementById('autoCropRight').checked = false;
+            } else if (saved === 'true') {
+                document.getElementById('autoCropRight').checked = true;
+            }
+            // If no saved preference, leave at default (checked)
+        }
+
+        // OCR state persistence
+        function saveOCRState() {
+            const state = {
+                processedResults: processedResults,
+                fileNames: selectedFiles.map(f => f.name),
+                timestamp: Date.now()
+            };
+            localStorage.setItem('haulerHelperOCRState', JSON.stringify(state));
+            console.log('💾 Saved OCR state:', state.fileNames.length, 'files');
+        }
+
+        function loadOCRState() {
+            const saved = localStorage.getItem('haulerHelperOCRState');
+            if (!saved) return;
+
+            try {
+                const state = JSON.parse(saved);
+                console.log('📂 Loading OCR state:', state.fileNames.length, 'files');
+                
+                // Restore processed results
+                processedResults = state.processedResults || [];
+                
+                // Show results if we have them
+                if (processedResults.length > 0) {
+                    renderResults();
+                    updateStats();
+                    resultsCard.style.display = 'block';
+                    clearBtn.style.display = 'inline-block';
+                    processBtn.textContent = 'Process Again';
+                    
+                    // Show file info in preview area (without thumbnails)
+                    previewContainer.innerHTML = state.fileNames.map((name, index) => `
+                        <div class="preview-item">
+                            <div class="preview-placeholder">📄</div>
+                            <div class="preview-filename">${name}</div>
+                            <div class="preview-status" data-index="${index}">✓ Processed</div>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {
+                console.error('Error loading OCR state:', e);
+                localStorage.removeItem('haulerHelperOCRState');
+            }
+        }
+
+        function clearOCRState() {
+            localStorage.removeItem('haulerHelperOCRState');
+            console.log('🗑️ Cleared OCR state');
+        }
+
+        // Initialize theme and preferences
         loadTheme();
+        loadAutoCropPreference();
+        loadOCRState();
+
+        // Auto-crop checkbox change handler
+        document.getElementById('autoCropRight').addEventListener('change', saveAutoCropPreference);
 
         // Upload handlers
         uploadArea.addEventListener('click', () => fileInput.click());
@@ -1008,6 +1084,7 @@
                 pickupLocations: [],
                 deliveryLocations: [],
                 destinationQuantities: {},  // Map destination → quantity
+                pickupQuantities: {},       // Map pickup → quantity (for multi-pickup missions)
                 quantity: null  // Total quantity
             };
             
@@ -1066,20 +1143,72 @@
             
             // Parse quantities - handle both single and multiple deliveries
             // For multi-delivery missions like "5 SCU to X, 7 SCU to Y", sum them up
+            // Helper function to clean OCR quantity errors
+            // IMPORTANT: OCR often reads "/" as "7", and "8" or "0" as "B"
+            function parseQuantityString(str) {
+                let numStr = str.toString().trim();
+                
+                // Handle "B" misread - could be "8" or "0"
+                // Examples: "B00" → "800", "B24" → "824", "0B00" → "0800"
+                if (/^B(\d+)$/.test(numStr)) {
+                    // "B00" is likely "800" (8 misread as B)
+                    numStr = '8' + numStr.substring(1);
+                } else if (/^0B(\d+)$/.test(numStr)) {
+                    // "0B00" is likely "0800" 
+                    numStr = '08' + numStr.substring(2);
+                }
+                
+                // Direct "/" pattern: "0/100" → "100"
+                if (numStr.includes('/')) {
+                    const parts = numStr.split('/');
+                    if (parts.length === 2) {
+                        return parseInt(parts[1], 10);
+                    }
+                }
+                
+                // Pattern 1: Leading "0" followed by "1" or "7" or "8", then ANY number of digits
+                // Examples: "078" → "8", "0724" → "24", "07642" → "642", "0800" → "800"
+                if (/^0[178](\d+)$/.test(numStr)) {
+                    numStr = numStr.substring(2);
+                    return parseInt(numStr, 10);
+                }
+                
+                // Pattern 2: Starts with "7" followed by 2-4 digits (likely "X/YYY" misread)
+                // Examples: "7100" → "100", "7200" → "200", "724" → "24", "78" → "8"
+                if (/^7(\d{2,4})$/.test(numStr)) {
+                    // Extract the digits after the "7"
+                    const afterSeven = numStr.substring(1);
+                    const value = parseInt(afterSeven, 10);
+                    
+                    // Sanity check: Star Citizen missions typically have quantities like:
+                    // 8, 12, 16, 24, 32, 48, 64, 72, 96, 100, 120, 150, 200, 250, 300+
+                    // If after removing "7" we get a reasonable value, use it
+                    if (value >= 8 && value <= 9999) {
+                        return value;
+                    }
+                }
+                
+                // Pattern 3: Starts with digit other than 0/7, then "7", then more digits
+                // Examples: "2724" could be "27/24" → prefer "24"
+                if (/^[1-9]7(\d{2,3})$/.test(numStr)) {
+                    const afterSeven = numStr.substring(2);
+                    const value = parseInt(afterSeven, 10);
+                    if (value >= 8 && value <= 9999) {
+                        return value;
+                    }
+                }
+                
+                // Default: parse as-is
+                return parseInt(numStr, 10);
+            }
+            
             const quantityMatches = text.matchAll(/Deliver\s+(0[17]?\d+|\d+)\s*SCU/gi);
             let totalQuantity = 0;
             let quantityCount = 0;
             
             for (const match of quantityMatches) {
-                let numStr = match[1];
-                
-                // Fix OCR error: "078" → "8", "0124" → "24"
-                if (/^0[17](\d+)$/.test(numStr) && numStr.length <= 4) {
-                    numStr = numStr.substring(2);
-                }
-                
-                const qty = parseInt(numStr, 10);
-                if (qty > 0) {
+                const qty = parseQuantityString(match[1]);
+                if (qty > 0 && qty < 100000) {  // Sanity check
                     totalQuantity += qty;
                     quantityCount++;
                 }
@@ -1096,11 +1225,7 @@
                     quantityMatch = text.match(/(\d+)\s*SCU/i);
                     
                     if (quantityMatch) {
-                        let numStr = quantityMatch[1];
-                        if (/^0[17](\d+)$/.test(numStr) && numStr.length <= 4) {
-                            numStr = numStr.substring(2);
-                        }
-                        result.quantity = parseInt(numStr, 10);
+                        result.quantity = parseQuantityString(quantityMatch[1]);
                     }
                 } else {
                     result.quantity = parseInt(quantityMatch[1], 10);
@@ -1132,22 +1257,43 @@
             const deliverPattern = /Deliver\s+(0[17]?\d+|\d+)\s*SCU\s+(?:of\s+[\w\s]+?)?to\s+([A-Za-z0-9\s\-'.]+?)(?:above|Harbor|Station|Lagrange|Point|\.|,|\n)/gi;
             const deliverMatches = text.matchAll(deliverPattern);
             for (const match of deliverMatches) {
-                let qty = match[1];
+                const qty = match[1];
                 const location = match[2].trim();
                 
-                // Fix OCR error: "078" → "8"
-                if (/^0[17](\d+)$/.test(qty) && qty.length <= 4) {
-                    qty = qty.substring(2);
-                }
+                // Use the same comprehensive quantity parser
+                const quantity = parseQuantityString(qty);
                 
-                const quantity = parseInt(qty, 10);
-                
-                if (location && location.length > 2) {
+                if (location && location.length > 2 && quantity > 0 && quantity < 100000) {
                     if (!result.deliveryLocations.includes(location)) {
                         result.deliveryLocations.push(location);
                     }
                     // Store quantity for this destination
                     result.destinationQuantities[location] = quantity;
+                }
+            }
+            
+            // Pattern 3b: FALLBACK for misread "Deliver" - catches lines like:
+            // "Salen B00 SCU of Tungsten to Baijini Point"
+            // "[AnyWord] [quantity] SCU of [commodity] to [location]"
+            // This ensures we don't miss quantities when OCR misreads "Deliver"
+            const flexDeliverPattern = /\b\w+\s+(0[178]?\d+|[B]\d{2,3}|\d+)\s*SCU\s+(?:of\s+[\w\s]+?)?to\s+([A-Za-z0-9\s\-'.]+?)(?:above|Harbor|Station|Lagrange|Point|\.|,|\n)/gi;
+            const flexMatches = text.matchAll(flexDeliverPattern);
+            for (const match of flexMatches) {
+                const qty = match[1];
+                const location = match[2].trim();
+                
+                // Use parseQuantityString which handles all OCR errors including "B"
+                const quantity = parseQuantityString(qty);
+                
+                // Only add if we don't already have this location with a quantity
+                if (location && location.length > 2 && quantity > 0 && quantity < 100000) {
+                    if (!result.destinationQuantities[location]) {
+                        if (!result.deliveryLocations.includes(location)) {
+                            result.deliveryLocations.push(location);
+                        }
+                        // Store quantity for this destination
+                        result.destinationQuantities[location] = quantity;
+                    }
                 }
             }
             
@@ -1233,6 +1379,39 @@
             result.pickupLocations = deduplicateLocations(result.pickupLocations);
             result.deliveryLocations = deduplicateLocations(result.deliveryLocations);
             
+            // MULTI-PICKUP DETECTION: If multiple pickups → single delivery,
+            // try to extract quantities per pickup location
+            if (result.pickupLocations.length > 1 && result.deliveryLocations.length === 1) {
+                console.log('🔍 Multi-pickup mission detected, extracting per-pickup quantities...');
+                
+                // Pattern: "Collect [commodity] from [pickup]." followed by "Deliver [qty] SCU ... to [delivery]"
+                // Try to pair up each pickup with its quantity
+                result.pickupLocations.forEach(pickup => {
+                    // Look for pattern: pickup name ... Deliver ... qty SCU
+                    // Use a looser pattern that captures the section after the pickup mention
+                    const escapedPickup = pickup.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const sectionPattern = new RegExp(
+                        `${escapedPickup}[\\s\\S]{0,200}?Deliver\\s+(0[178]?\\d+|[B]\\d{2,3}|\\d+)\\s*SCU`,
+                        'i'
+                    );
+                    const match = text.match(sectionPattern);
+                    
+                    if (match) {
+                        const qty = parseQuantityString(match[1]);
+                        if (qty > 0 && qty < 100000) {
+                            result.pickupQuantities[pickup] = qty;
+                            console.log(`  ✓ ${pickup}: ${qty} SCU`);
+                        }
+                    }
+                });
+                
+                // If we successfully extracted all pickup quantities, clear destinationQuantities
+                // to prevent confusion (since we'll use pickupQuantities instead)
+                if (Object.keys(result.pickupQuantities).length === result.pickupLocations.length) {
+                    console.log('✅ All pickup quantities extracted successfully');
+                }
+            }
+            
             return result;
         }
 
@@ -1303,6 +1482,9 @@
             await worker.loadLanguage('eng');
             await worker.initialize('eng');
             
+            // Check if auto-crop is enabled
+            const autoCropEnabled = document.getElementById('autoCropRight').checked;
+            
             for (let i = 0; i < selectedFiles.length; i++) {
                 const file = selectedFiles[i];
                 const statusEl = document.querySelector(`[data-index="${i}"]`);
@@ -1310,11 +1492,17 @@
                 statusEl.style.background = 'rgba(77, 212, 172, 0.9)';
                 
                 try {
-                    const imageData = await readFileAsDataURL(file);
+                    let imageData = await readFileAsDataURL(file);
+                    
+                    // Apply auto-crop to right half if enabled
+                    if (autoCropEnabled) {
+                        imageData = await cropImageToRightHalf(imageData);
+                    }
+                    
                     const regions = fileRegions.get(file.name) || (templateMode.checked && templateRegions) || [];
                     
                     if (regions.length === 0) {
-                        // Process full image
+                        // Process full image (or cropped image if auto-crop enabled)
                         const psmMode = document.getElementById('psmMode').value;
                         const result = await worker.recognize(imageData, {
                             tessedit_pageseg_mode: psmMode,
@@ -1324,7 +1512,7 @@
                             filename: file.name,
                             text: result.data.text,
                             confidence: result.data.confidence,
-                            region: 'Full Image'
+                            region: autoCropEnabled ? 'Right Half' : 'Full Image'
                         });
                         statusEl.innerHTML = `✓ Complete`;
                     } else {
@@ -1368,6 +1556,9 @@
             
             renderResults();
             updateStats();
+            
+            // Save OCR state for persistence
+            saveOCRState();
         });
 
         clearBtn.addEventListener('click', () => {
@@ -1381,6 +1572,9 @@
             stats.style.display = 'none';
             processBtn.disabled = true;
             clearBtn.style.display = 'none';
+            
+            // Clear saved OCR state
+            clearOCRState();
         });
 
 
@@ -1395,6 +1589,39 @@
                 content.classList.add('expanded');
                 icon.classList.add('expanded');
             }
+        }
+
+        // Helper function to crop image to right half
+        function cropImageToRightHalf(imageDataUrl) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Create canvas and crop to right 50%
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    const cropWidth = Math.floor(img.width / 2);
+                    const cropHeight = img.height;
+                    const startX = img.width - cropWidth; // Start from middle
+                    
+                    canvas.width = cropWidth;
+                    canvas.height = cropHeight;
+                    
+                    // Draw the right half of the image
+                    ctx.drawImage(
+                        img,
+                        startX, 0,              // Source x, y
+                        cropWidth, cropHeight,  // Source width, height
+                        0, 0,                   // Destination x, y
+                        cropWidth, cropHeight   // Destination width, height
+                    );
+                    
+                    // Return cropped image as data URL
+                    resolve(canvas.toDataURL('image/png'));
+                };
+                img.onerror = reject;
+                img.src = imageDataUrl;
+            });
         }
 
         function readFileAsDataURL(file) {
@@ -1523,18 +1750,50 @@
             };
             
             // Build commodity array
-            // For multi-destination missions, create one row per destination
             const commodity = parsed.commodities[0] || '';
-            const pickup = parsed.pickupLocations[0] || '';
+            
+            // Clean up locations - remove empty strings and whitespace-only entries
+            parsed.pickupLocations = parsed.pickupLocations.filter(loc => loc && loc.trim());
+            parsed.deliveryLocations = parsed.deliveryLocations.filter(loc => loc && loc.trim());
             
             // Check if we have per-destination quantities
             const hasPerDestQty = parsed.destinationQuantities && 
                                    Object.keys(parsed.destinationQuantities).length > 0;
             
-            if (hasPerDestQty) {
-                // Create one row per destination with its specific quantity
-                parsed.deliveryLocations.forEach(destination => {
-                    const qty = parsed.destinationQuantities[destination] || parsed.quantity || '';
+            // Determine the mission pattern
+            const multiPickup = parsed.pickupLocations.length > 1;
+            const multiDelivery = parsed.deliveryLocations.length > 1;
+            
+            // DEBUG: Log parsed data
+            console.log('🔍 Import Debug:', {
+                pickups: parsed.pickupLocations,
+                deliveries: parsed.deliveryLocations,
+                destQty: parsed.destinationQuantities,
+                totalQty: parsed.quantity,
+                multiPickup,
+                multiDelivery,
+                hasPerDestQty
+            });
+            
+            if (multiPickup && !multiDelivery) {
+                // CASE 1: Multiple pickups → Single delivery
+                // Example: Collect from A, B, C → Deliver all to X
+                // Create one row per pickup location
+                const destination = parsed.deliveryLocations[0] || '';
+                parsed.pickupLocations.forEach(pickup => {
+                    // First try to get quantity from pickupQuantities (most accurate)
+                    let qty = parsed.pickupQuantities[pickup];
+                    
+                    // Fallback: try destinationQuantities (might have pickup stored there by mistake)
+                    if (!qty) {
+                        qty = parsed.destinationQuantities[pickup] || '';
+                    }
+                    
+                    // Last resort: divide total quantity evenly
+                    if (!qty && parsed.quantity) {
+                        qty = Math.floor(parsed.quantity / parsed.pickupLocations.length);
+                    }
+                    
                     importData.commodities.push({
                         commodity: commodity,
                         pickup: pickup,
@@ -1543,8 +1802,46 @@
                         maxBoxSize: '4'
                     });
                 });
+            } else if (multiDelivery) {
+                // CASE 2: Single (or multiple) pickup → Multiple deliveries
+                // Create one row per destination with its specific quantity
+                const pickup = parsed.pickupLocations[0] || '';
+                
+                if (hasPerDestQty) {
+                    // We have specific quantities per destination - use them
+                    parsed.deliveryLocations.forEach(destination => {
+                        const qty = parsed.destinationQuantities[destination] || '';
+                        
+                        // DEFENSIVE: Only create row if destination is not empty
+                        if (destination && destination.trim()) {
+                            importData.commodities.push({
+                                commodity: commodity,
+                                pickup: pickup,
+                                destination: destination,
+                                quantity: qty,
+                                maxBoxSize: '4'
+                            });
+                        }
+                    });
+                } else {
+                    // No per-destination quantities, divide evenly
+                    const qtyPerDest = parsed.quantity ? Math.floor(parsed.quantity / parsed.deliveryLocations.length) : '';
+                    parsed.deliveryLocations.forEach(destination => {
+                        // DEFENSIVE: Only create row if destination is not empty
+                        if (destination && destination.trim()) {
+                            importData.commodities.push({
+                                commodity: commodity,
+                                pickup: pickup,
+                                destination: destination,
+                                quantity: qtyPerDest,
+                                maxBoxSize: '4'
+                            });
+                        }
+                    });
+                }
             } else {
-                // Single destination - create one row
+                // CASE 3: Simple mission - single pickup, single delivery
+                const pickup = parsed.pickupLocations[0] || '';
                 importData.commodities.push({
                     commodity: commodity,
                     pickup: pickup,
@@ -1571,13 +1868,10 @@
             button.textContent = '✓ Ready to Import!';
             button.style.backgroundColor = 'var(--color-success)';
             
-            // Open main app in new tab
-            window.open('index.html', '_blank');
-            
+            // Navigate to main app in same window
             setTimeout(() => {
-                button.textContent = 'Import to Hauler';
-                button.style.backgroundColor = '';
-            }, 3000);
+                window.location.href = 'index.html';
+            }, 500);
         }
 
         function importAllToHauler() {
@@ -1593,21 +1887,34 @@
                 }
                 
                 const commodity = parsed.commodities[0] || '';
-                const pickup = parsed.pickupLocations[0] || '';
                 
                 const missionData = {
                     payout: parsed.payout,
                     commodities: []
                 };
                 
+                // Clean up locations - remove empty strings and whitespace-only entries
+                parsed.pickupLocations = parsed.pickupLocations.filter(loc => loc && loc.trim());
+                parsed.deliveryLocations = parsed.deliveryLocations.filter(loc => loc && loc.trim());
+                
                 // Check if we have per-destination quantities
                 const hasPerDestQty = parsed.destinationQuantities && 
                                        Object.keys(parsed.destinationQuantities).length > 0;
                 
-                if (hasPerDestQty) {
-                    // Create one row per destination with its specific quantity
-                    parsed.deliveryLocations.forEach(destination => {
-                        const qty = parsed.destinationQuantities[destination] || parsed.quantity || '';
+                // Determine the mission pattern
+                const multiPickup = parsed.pickupLocations.length > 1;
+                const multiDelivery = parsed.deliveryLocations.length > 1;
+                
+                if (multiPickup && !multiDelivery) {
+                    // CASE 1: Multiple pickups → Single delivery
+                    const destination = parsed.deliveryLocations[0] || '';
+                    parsed.pickupLocations.forEach(pickup => {
+                        // First try pickupQuantities, then destinationQuantities, then divide evenly
+                        let qty = parsed.pickupQuantities[pickup] || 
+                                  parsed.destinationQuantities[pickup] || '';
+                        if (!qty && parsed.quantity) {
+                            qty = Math.floor(parsed.quantity / parsed.pickupLocations.length);
+                        }
                         missionData.commodities.push({
                             commodity: commodity,
                             pickup: pickup,
@@ -1616,8 +1923,44 @@
                             maxBoxSize: '4'
                         });
                     });
+                } else if (multiDelivery) {
+                    // CASE 2: Single (or multiple) pickup → Multiple deliveries
+                    const pickup = parsed.pickupLocations[0] || '';
+                    
+                    if (hasPerDestQty) {
+                        // We have specific quantities per destination
+                        parsed.deliveryLocations.forEach(destination => {
+                            const qty = parsed.destinationQuantities[destination] || '';
+                            // DEFENSIVE: Only create row if destination is not empty
+                            if (destination && destination.trim()) {
+                                missionData.commodities.push({
+                                    commodity: commodity,
+                                    pickup: pickup,
+                                    destination: destination,
+                                    quantity: qty,
+                                    maxBoxSize: '4'
+                                });
+                            }
+                        });
+                    } else {
+                        // No per-destination quantities, divide evenly
+                        const qtyPerDest = parsed.quantity ? Math.floor(parsed.quantity / parsed.deliveryLocations.length) : '';
+                        parsed.deliveryLocations.forEach(destination => {
+                            // DEFENSIVE: Only create row if destination is not empty
+                            if (destination && destination.trim()) {
+                                missionData.commodities.push({
+                                    commodity: commodity,
+                                    pickup: pickup,
+                                    destination: destination,
+                                    quantity: qtyPerDest,
+                                    maxBoxSize: '4'
+                                });
+                            }
+                        });
+                    }
                 } else {
-                    // Single destination - create one row
+                    // CASE 3: Simple mission
+                    const pickup = parsed.pickupLocations[0] || '';
                     missionData.commodities.push({
                         commodity: commodity,
                         pickup: pickup,
@@ -1647,12 +1990,10 @@
             const btn = document.getElementById('importAllBtn');
             btn.textContent = `✓ ${allMissions.length} Mission${allMissions.length > 1 ? 's' : ''} Ready!`;
             
-            // Open main app in new tab
-            window.open('index.html', '_blank');
-            
+            // Navigate to main app in same window
             setTimeout(() => {
-                btn.textContent = '📦 Import All to Hauler';
-            }, 3000);
+                window.location.href = 'index.html';
+            }, 500);
         }
 
         function updateStats() {

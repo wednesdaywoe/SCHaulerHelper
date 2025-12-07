@@ -302,14 +302,15 @@
             loadRouteViewMode();
             updateColorPalette();
             checkForOCRImport();
+            checkForOCRImportAll();
         }
 
         // Check for OCR Scanner import data
         // Helper: Match abbreviated location to full database name
 
-        function matchLocation(shortName, system, category) {
+        function matchLocation(ocrName, system, category) {
 
-            if (!shortName || !system || !category) return '';
+            if (!ocrName || !system || !category) return '';
 
             
 
@@ -317,7 +318,7 @@
 
             const systemData = LOCATIONS_DATABASE[system];
 
-            if (!systemData || !systemData[category]) return shortName;
+            if (!systemData || !systemData[category]) return ocrName;
 
             
 
@@ -327,29 +328,52 @@
 
             // Try exact match first
 
-            if (locations.includes(shortName)) {
+            if (locations.includes(ocrName)) {
 
-                return shortName;
+                return ocrName;
 
             }
 
             
 
-            // Try partial match (e.g., "ARC-L2" matches "ARC-L2 Lively Pathway Station")
+            // Normalize OCR name for better matching
+            const normalized = ocrName
+                .replace(/\b(Harbor|Station|Point)\b/gi, '')  // Remove common suffixes
+                .replace(/\b(above|at)\s+\w+$/gi, '')         // Remove "above Hurston" etc
+                .trim();
 
-            const match = locations.find(loc => 
-
-                loc.startsWith(shortName) || 
-
-                loc.includes(shortName + ' ') ||
-
-                loc.toLowerCase().includes(shortName.toLowerCase())
-
+            // Try exact match on normalized
+            const exactNormalized = locations.find(loc => 
+                loc.toLowerCase() === normalized.toLowerCase()
             );
+            if (exactNormalized) return exactNormalized;
+            
+            // Try bidirectional partial matching
+            // Case 1: OCR name contains database location ("Port Tressler" contains "Tressler")
+            // Case 2: Database location contains OCR name ("Tressler" in "Port Tressler")
+            const match = locations.find(loc => {
+                const locLower = loc.toLowerCase();
+                const ocrLower = ocrName.toLowerCase();
+                const normLower = normalized.toLowerCase();
+                
+                return (
+                    // OCR name contains database location
+                    ocrLower.includes(locLower) ||
+                    normLower.includes(locLower) ||
+                    // Database location contains OCR name
+                    locLower.includes(ocrLower) ||
+                    locLower.includes(normLower) ||
+                    // Starts with matching
+                    loc.startsWith(ocrName) ||
+                    ocrName.startsWith(loc) ||
+                    loc.startsWith(normalized) ||
+                    normalized.startsWith(loc)
+                );
+            });
 
             
 
-            return match || shortName;
+            return match || ocrName;
 
         }
 
@@ -390,40 +414,6 @@
 
 
         function checkForOCRImport() {
-            // Check for Import All (multiple missions)
-            const importAllData = localStorage.getItem('haulerHelperOCRImportAll');
-            if (importAllData) {
-                try {
-                    const data = JSON.parse(importAllData);
-                    console.log('📦 OCR Import All detected:', data);
-                    
-                    // Clear the import flag immediately
-                    localStorage.removeItem('haulerHelperOCRImportAll');
-                    
-                    // Import each mission
-                    if (data.missions && data.missions.length > 0) {
-                        data.missions.forEach(missionData => {
-                            importSingleMission(missionData);
-                        });
-                        
-                        updateDeliveryManager();
-                        updateStats();
-                        saveSession();
-                        
-                        // Show success message
-                        setTimeout(() => {
-                            alert(`✅ ${data.missions.length} mission${data.missions.length > 1 ? 's' : ''} imported from OCR Scanner!`);
-                        }, 500);
-                    }
-                    
-                    return; // Skip single import check
-                } catch (e) {
-                    console.error('Error importing all OCR data:', e);
-                    localStorage.removeItem('haulerHelperOCRImportAll');
-                }
-            }
-            
-            // Check for single mission import
             const importData = localStorage.getItem('haulerHelperOCRImport');
             if (!importData) return;
             
@@ -434,7 +424,70 @@
                 // Clear the import flag immediately
                 localStorage.removeItem('haulerHelperOCRImport');
                 
-                importSingleMission(data);
+                // Add a new mission with the imported data
+                addMissionPanel();
+                
+                // Get the newly created mission
+                const lastMission = missions[missions.length - 1];
+                
+                // Set payout if available
+                if (data.payout) {
+                    // Match payout to database format
+                    const matchedPayout = matchPayout(data.payout, selectedSystem, selectedCategory);
+                    console.log('💰 Payout matching:', data.payout, '→', matchedPayout);
+                    
+                    if (matchedPayout) {
+                        lastMission.payout = matchedPayout;
+                        const missionPanel = document.getElementById(lastMission.id);
+                        const payoutSelect = missionPanel.querySelector('select');
+                        if (payoutSelect) {
+                            payoutSelect.value = matchedPayout;
+                        }
+                    }
+                }
+                
+                // Add commodities
+                if (data.commodities && data.commodities.length > 0) {
+                    // Remove the default empty commodity row
+                    if (lastMission.commodities.length > 0) {
+                        const firstCommodityId = lastMission.commodities[0].id;
+                        removeCommodityRow(lastMission.id, firstCommodityId);
+                    }
+                    
+                    // Add each imported commodity
+                    data.commodities.forEach((commodity, index) => {
+                        if (commodity.commodity || commodity.pickup || commodity.destination) {
+                            addCommodityRow(lastMission.id);
+                            const commodityId = `${lastMission.id}_commodity_${index}`;
+                            const commodityData = lastMission.commodities[index];
+                            
+                            // Match locations to database names
+                            const matchedPickup = matchLocation(commodity.pickup, selectedSystem, selectedCategory);
+                            const matchedDestination = matchLocation(commodity.destination, selectedSystem, selectedCategory);
+                            
+                            // Update the commodity data
+                            Object.assign(commodityData, {
+                                commodity: commodity.commodity || '',
+                                pickup: matchedPickup || '',
+                                destination: matchedDestination || '',
+                                quantity: commodity.quantity || '',
+                                maxBoxSize: commodity.maxBoxSize || '4'
+                            });
+                            
+                            // Update the UI with matched locations
+                            const row = document.getElementById(commodityId);
+                            if (row) {
+                                const selects = row.querySelectorAll('select');
+                                const input = row.querySelector('input[type="number"]');
+                                if (selects[0]) selects[0].value = matchedPickup || '';
+                                if (selects[1]) selects[1].value = commodity.commodity || '';
+                                if (input) input.value = commodity.quantity || '';
+                                if (selects[2]) selects[2].value = commodity.maxBoxSize || '4';
+                                if (selects[3]) selects[3].value = matchedDestination || '';
+                            }
+                        }
+                    });
+                }
                 
                 updateDeliveryManager();
                 updateStats();
@@ -450,71 +503,112 @@
                 localStorage.removeItem('haulerHelperOCRImport');
             }
         }
-        
-        function importSingleMission(data) {
-            // Add a new mission with the imported data
-            addMissionPanel();
+
+        // Check for batch OCR import (Import All)
+        function checkForOCRImportAll() {
+            const importData = localStorage.getItem('haulerHelperOCRImportAll');
+            if (!importData) return;
             
-            // Get the newly created mission
-            const lastMission = missions[missions.length - 1];
-            
-            // Set payout if available
-            if (data.payout) {
-                // Match payout to database format
-                const matchedPayout = matchPayout(data.payout, selectedSystem, selectedCategory);
-                console.log('💰 Payout matching:', data.payout, '→', matchedPayout);
+            try {
+                const data = JSON.parse(importData);
+                console.log('📦 OCR Batch Import detected:', data.missions?.length, 'missions');
                 
-                if (matchedPayout) {
-                    lastMission.payout = matchedPayout;
-                    const missionPanel = document.getElementById(lastMission.id);
-                    const payoutSelect = missionPanel.querySelector('select');
-                    if (payoutSelect) {
-                        payoutSelect.value = matchedPayout;
-                    }
-                }
-            }
-            
-            // Add commodities
-            if (data.commodities && data.commodities.length > 0) {
-                // Remove the default empty commodity row
-                if (lastMission.commodities.length > 0) {
-                    const firstCommodityId = lastMission.commodities[0].id;
-                    removeCommodityRow(lastMission.id, firstCommodityId);
+                // Clear the import flag immediately
+                localStorage.removeItem('haulerHelperOCRImportAll');
+                
+                if (!data.missions || data.missions.length === 0) {
+                    console.warn('No missions in batch import data');
+                    return;
                 }
                 
-                // Add each imported commodity
-                data.commodities.forEach((commodity, index) => {
-                    if (commodity.commodity || commodity.pickup || commodity.destination) {
-                        addCommodityRow(lastMission.id);
-                        const commodityId = `${lastMission.id}_commodity_${index}`;
-                        const commodityData = lastMission.commodities[index];
+                // Import each mission
+                let successCount = 0;
+                data.missions.forEach((missionData, missionIndex) => {
+                    try {
+                        // Add a new mission panel
+                        addMissionPanel();
+                        const lastMission = missions[missions.length - 1];
                         
-                        // Match locations to database names
-                        const matchedPickup = matchLocation(commodity.pickup, selectedSystem, selectedCategory);
-                        const matchedDestination = matchLocation(commodity.destination, selectedSystem, selectedCategory);
-                        
-                        // Update the commodity data
-                        Object.assign(commodityData, {
-                            commodity: commodity.commodity || '',
-                            pickup: matchedPickup || '',
-                            destination: matchedDestination || '',
-                            quantity: commodity.quantity || '',
-                            maxBoxSize: commodity.maxBoxSize || '4'
-                        });
-                        
-                        // Update the UI with matched locations
-                        const row = document.getElementById(commodityId);
-                        if (row) {
-                            const selects = row.querySelectorAll('select');
-                            const input = row.querySelector('input[type="number"]');
-                            if (selects[0]) selects[0].value = matchedPickup || '';
-                            if (selects[1]) selects[1].value = commodity.commodity || '';
-                            if (input) input.value = commodity.quantity || '';
-                            if (selects[2]) selects[2].value = commodity.maxBoxSize || '4';
-                            if (selects[3]) selects[3].value = matchedDestination || '';
+                        // Set payout if available
+                        if (missionData.payout) {
+                            const matchedPayout = matchPayout(missionData.payout, selectedSystem, selectedCategory);
+                            console.log(`💰 Mission ${missionIndex + 1} payout:`, missionData.payout, '→', matchedPayout);
+                            
+                            if (matchedPayout) {
+                                lastMission.payout = matchedPayout;
+                                const missionPanel = document.getElementById(lastMission.id);
+                                const payoutSelect = missionPanel.querySelector('select');
+                                if (payoutSelect) {
+                                    payoutSelect.value = matchedPayout;
+                                }
+                            }
                         }
+                        
+                        // Add commodities
+                        if (missionData.commodities && missionData.commodities.length > 0) {
+                            // Remove the default empty commodity row
+                            if (lastMission.commodities.length > 0) {
+                                const firstCommodityId = lastMission.commodities[0].id;
+                                removeCommodityRow(lastMission.id, firstCommodityId);
+                            }
+                            
+                            // Add each imported commodity
+                            missionData.commodities.forEach((commodity, index) => {
+                                if (commodity.commodity || commodity.pickup || commodity.destination) {
+                                    addCommodityRow(lastMission.id);
+                                    const commodityId = `${lastMission.id}_commodity_${index}`;
+                                    const commodityData = lastMission.commodities[index];
+                                    
+                                    // Match locations to database names
+                                    const matchedPickup = matchLocation(commodity.pickup, selectedSystem, selectedCategory);
+                                    const matchedDestination = matchLocation(commodity.destination, selectedSystem, selectedCategory);
+                                    
+                                    console.log(`📍 Mission ${missionIndex + 1}, Commodity ${index + 1}:`, 
+                                        commodity.pickup, '→', matchedPickup,
+                                        '|', commodity.destination, '→', matchedDestination);
+                                    
+                                    // Update the commodity data
+                                    Object.assign(commodityData, {
+                                        commodity: commodity.commodity || '',
+                                        pickup: matchedPickup || '',
+                                        destination: matchedDestination || '',
+                                        quantity: commodity.quantity || '',
+                                        maxBoxSize: commodity.maxBoxSize || '4'
+                                    });
+                                    
+                                    // Update the UI with matched locations
+                                    const row = document.getElementById(commodityId);
+                                    if (row) {
+                                        const selects = row.querySelectorAll('select');
+                                        const input = row.querySelector('input[type="number"]');
+                                        if (selects[0]) selects[0].value = matchedPickup || '';
+                                        if (selects[1]) selects[1].value = commodity.commodity || '';
+                                        if (input) input.value = commodity.quantity || '';
+                                        if (selects[2]) selects[2].value = commodity.maxBoxSize || '4';
+                                        if (selects[3]) selects[3].value = matchedDestination || '';
+                                    }
+                                }
+                            });
+                        }
+                        
+                        successCount++;
+                    } catch (e) {
+                        console.error(`Error importing mission ${missionIndex + 1}:`, e);
                     }
                 });
+                
+                updateDeliveryManager();
+                updateStats();
+                saveSession();
+                
+                // Show success message
+                setTimeout(() => {
+                    alert(`✅ ${successCount} mission${successCount !== 1 ? 's' : ''} imported from OCR Scanner!`);
+                }, 500);
+                
+            } catch (e) {
+                console.error('Error importing batch OCR data:', e);
+                localStorage.removeItem('haulerHelperOCRImportAll');
             }
         }
 
