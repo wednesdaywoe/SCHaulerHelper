@@ -253,6 +253,11 @@ if (typeof window !== 'undefined') {
     window.LOCATIONS_DATABASE = LOCATIONS_DATABASE;
 }
 
+// Export for browser (window object)
+if (typeof window !== 'undefined') {
+    window.LOCATIONS_DATABASE = LOCATIONS_DATABASE;
+}
+
 // Export for Node.js
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { LOCATIONS_DATABASE };

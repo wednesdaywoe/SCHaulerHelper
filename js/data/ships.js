@@ -362,7 +362,13 @@ const SHIP_UTILS = {
     }
 };
 
-// Export for use in other files
+// Export for browser (window object)
+if (typeof window !== 'undefined') {
+    window.SHIPS_DATABASE = SHIPS_DATABASE;
+    window.SHIP_UTILS = SHIP_UTILS;
+}
+
+// Export for Node.js (module system)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { SHIPS_DATABASE, SHIP_UTILS };
 }

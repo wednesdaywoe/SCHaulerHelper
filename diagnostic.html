@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hauler Helper - Module Diagnostic</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e1a 0%, #0d1424 100%);
+            color: #e5e5e5;
+            padding: 40px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #4dd4ac;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .test-section {
+            background: #141b2d;
+            border: 1px solid #2d3d54;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .test-section h2 {
+            color: #4dd4ac;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        
+        .test-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 5px;
+            background: #1a2332;
+            border-radius: 4px;
+        }
+        
+        .test-label {
+            flex: 1;
+        }
+        
+        .test-status {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-pass {
+            background: #4ade80;
+            color: #0a0e1a;
+        }
+        
+        .status-fail {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .summary {
+            background: #1a2332;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .summary-pass {
+            border: 2px solid #4ade80;
+        }
+        
+        .summary-fail {
+            border: 2px solid #ef4444;
+        }
+        
+        .instructions {
+            background: #2a1a24;
+            border: 1px solid #5d3d52;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .instructions h3 {
+            color: #FF006E;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+        
+        .code {
+            background: #0a0e1a;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Hauler Helper - Module Diagnostic</h1>
+        
+        <div class="test-section">
+            <h2>Module Loading Tests</h2>
+            <div id="moduleTests"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Data Files</h2>
+            <div id="dataTests"></div>
+        </div>
+        
+        <div id="summary" class="summary"></div>
+        
+        <div id="instructions" class="instructions" style="display: none;">
+            <h3>⚠️ Some Tests Failed</h3>
+            <p>Follow these steps to fix the issues:</p>
+            <ul id="fixList"></ul>
+        </div>
+    </div>
+
+    <!-- Load data files -->
+    <script src="js/data/theme-colors.js?v=20250106"></script>
+    <script src="js/data/ships.js?v=20250106"></script>
+    <script src="js/data/locations.js?v=20250106"></script>
+    <script src="js/data/commodities.js?v=20250106"></script>
+    <script src="js/data/payouts.js?v=20250106"></script>
+    <script src="js/data/autofill-patterns.js?v=20250106"></script>
+    
+    <!-- Load modules -->
+    <script src="js/route-planner.js?v=20250108"></script>
+    <script src="js/cargo-visualizer.js?v=20250108"></script>
+    <script src="js/mission-manager.js?v=20250108"></script>
+    <script src="js/ocr-import.js?v=20250108"></script>
+    <script src="js/session-manager.js?v=20250108"></script>
+    <script src="js/ui-controller.js?v=20250108"></script>
+    <script src="js/utils.js?v=20250108"></script>
+    
+    <script>
+        window.onload = function() {
+            const moduleTests = [
+                { name: 'mission-manager.js', functions: ['populateShipSelect', 'addMissionPanel', 'updateShip'] },
+                { name: 'route-planner.js', functions: ['generateRoutePlan', 'renderRoutePlan'] },
+                { name: 'cargo-visualizer.js', functions: ['generateCargoGrid', 'updateGridLayout'] },
+                { name: 'ocr-import.js', functions: ['checkForOCRImport', 'matchLocation'] },
+                { name: 'session-manager.js', functions: ['saveSession', 'loadSession'] },
+                { name: 'ui-controller.js', functions: ['updateStats', 'changeTheme'] },
+                { name: 'utils.js', functions: ['calculateBoxBreakdown', 'getBoxIconSVG'] }
+            ];
+            
+            const dataTests = [
+                { name: 'theme-colors.js', variable: 'THEME_COLOR_PALETTES' },
+                { name: 'ships.js', variable: 'SHIPS_DATABASE' },
+                { name: 'locations.js', variable: 'LOCATIONS_DATABASE' },
+                { name: 'commodities.js', variable: 'COMMODITIES_DATABASE' },
+                { name: 'payouts.js', variable: 'PAYOUTS_DATABASE' },
+                { name: 'autofill-patterns.js', variable: 'AUTOFILL_PATTERNS' }
+            ];
+            
+            let passCount = 0;
+            let failCount = 0;
+            const fixes = [];
+            
+            // Test modules
+            const moduleTestsDiv = document.getElementById('moduleTests');
+            moduleTests.forEach(module => {
+                const allPresent = module.functions.every(fn => typeof window[fn] === 'function');
+                const item = document.createElement('div');
+                item.className = 'test-item';
+                item.innerHTML = `
+                    <div class="test-label">${module.name}</div>
+                    <div class="test-status ${allPresent ? 'status-pass' : 'status-fail'}">
+                        ${allPresent ? '✓ PASS' : '✗ FAIL'}
+                    </div>
+                `;
+                moduleTestsDiv.appendChild(item);
+                
+                if (allPresent) {
+                    passCount++;
+                } else {
+                    failCount++;
+                    fixes.push(`Copy <code>${module.name}</code> to the <code>js/</code> directory`);
+                }
+            });
+            
+            // Test data files
+            const dataTestsDiv = document.getElementById('dataTests');
+            dataTests.forEach(data => {
+                const present = typeof window[data.variable] !== 'undefined';
+                const item = document.createElement('div');
+                item.className = 'test-item';
+                item.innerHTML = `
+                    <div class="test-label">${data.name}</div>
+                    <div class="test-status ${present ? 'status-pass' : 'status-fail'}">
+                        ${present ? '✓ PASS' : '✗ FAIL'}
+                    </div>
+                `;
+                dataTestsDiv.appendChild(item);
+                
+                if (present) {
+                    passCount++;
+                } else {
+                    failCount++;
+                    fixes.push(`Copy <code>${data.name}</code> to the <code>js/data/</code> directory`);
+                }
+            });
+            
+            // Show summary
+            const summary = document.getElementById('summary');
+            const totalTests = moduleTests.length + dataTests.length;
+            
+            if (failCount === 0) {
+                summary.className = 'summary summary-pass';
+                summary.innerHTML = `
+                    <h2 style="color: #4ade80;">✅ All Tests Passed!</h2>
+                    <p>All ${totalTests} modules and data files are loading correctly.</p>
+                    <p style="margin-top: 15px;">You can now use Hauler Helper normally.</p>
+                `;
+            } else {
+                summary.className = 'summary summary-fail';
+                summary.innerHTML = `
+                    <h2 style="color: #ef4444;">❌ ${failCount} Test(s) Failed</h2>
+                    <p>${passCount} passed, ${failCount} failed out of ${totalTests} tests.</p>
+                `;
+                
+                // Show fix instructions
+                const instructionsDiv = document.getElementById('instructions');
+                instructionsDiv.style.display = 'block';
+                const fixList = document.getElementById('fixList');
+                fixes.forEach(fix => {
+                    const li = document.createElement('li');
+                    li.innerHTML = fix;
+                    fixList.appendChild(li);
+                });
+            }
+            
+            // Log results to console
+            console.log('%c🔍 MODULE DIAGNOSTIC RESULTS', 'background: #4dd4ac; color: #000; font-size: 16px; padding: 8px;');
+            console.log(`Passed: ${passCount}/${totalTests}`);
+            console.log(`Failed: ${failCount}/${totalTests}`);
+            
+            if (failCount > 0) {
+                console.error('Missing modules:', fixes);
+            }
+        };
+    </script>
+</body>
+</html>
