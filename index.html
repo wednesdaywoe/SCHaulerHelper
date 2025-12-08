@@ -235,7 +235,7 @@
 
         // Initialize
         function init() {
-            console.log('%c🎯 HAULER HELPER v3.3.2 - OCR IMPORT FIX', 'background: #4dd4ac; color: #000; font-size: 16px; padding: 8px;');
+            console.log('%c🎯 HAULER HELPER v3.3.6 - WAREHOUSE LOGIC FIX', 'background: #4dd4ac; color: #000; font-size: 16px; padding: 8px;');
 
             // HANDLE dragstart at document level (since addEventListener on cards doesn't work)
             document.addEventListener('dragstart', function(e) {
@@ -1442,8 +1442,11 @@
                 }
                 
                 const g = cell.group;
-                const typeIcon = g.type === 'pickup' ? '📦' : (g.type === 'delivery' ? '📭' : '🔄');
-                const typeLabel = g.type === 'pickup' ? 'PICKUP' : (g.type === 'delivery' ? 'DELIVERY' : 'PICKUP & DELIVERY');
+                
+                // Separate items by type for organized display
+                const pickupItems = (g.items || []).filter(item => item.type === 'pickup');
+                const deliveryItems = (g.items || []).filter(item => item.type === 'delivery');
+                
                 return `
                     <div class="cargo-group-card" 
                          data-location="${g.location}"
@@ -1466,33 +1469,59 @@
                              style="background-color: ${g.color}; width: 30px; height: 30px; border-radius: 4px; cursor: pointer; margin: 8px 0;"
                              onclick="event.stopPropagation(); editCargoGroupColor('${g.location}')">
                         </div>
-                        <div class="cargo-group-type" style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">
-                            ${typeIcon} ${typeLabel}
-                        </div>
                         <div class="cargo-group-destination">${g.location}</div>
                         <div class="expand-indicator" onclick="event.stopPropagation(); toggleCargoGroupExpand(this.parentElement)">Click to expand</div>
                         <div class="cargo-group-details">
-                            ${(g.items || []).map(item => {
-                                const boxes = calculateBoxBreakdown(item.scu, item.maxBoxSize);
-                                const itemInfo = item.type === 'pickup' 
-                                    ? `→ ${item.destination}` 
-                                    : `← ${item.pickup}`;
-                                return `
-                                    <div class="cargo-group-details-item">
-                                        <span class="mission-num">Mission ${item.missionNum}:</span>
-                                        <span class="commodity">${item.commodity}</span>
-                                        <span>(${item.scu} SCU ${itemInfo})</span>
+                            ${pickupItems.length > 0 ? `
+                                <div style="margin-bottom: 16px;">
+                                    <div style="font-size: 11px; font-weight: 600; color: var(--color-warning); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">
+                                        📦 PICKUPS:
                                     </div>
-                                    <div class="box-breakdown" style="padding-left: 10px; margin-bottom: 8px;">
-                                        ${Object.entries(boxes).map(([size, count]) => `
-                                            <div class="box-icon">
-                                                ${getBoxIconSVG(size)}
-                                                <span class="box-count">× ${count}</span>
+                                    ${pickupItems.map(item => {
+                                        const boxes = calculateBoxBreakdown(item.scu, item.maxBoxSize);
+                                        return `
+                                            <div class="cargo-group-details-item">
+                                                <span class="mission-num">Mission ${item.missionNum}:</span>
+                                                <span class="commodity">${item.commodity}</span>
+                                                <span>(${item.scu} SCU → ${item.destination})</span>
                                             </div>
-                                        `).join('')}
+                                            <div class="box-breakdown" style="padding-left: 10px; margin-bottom: 8px;">
+                                                ${Object.entries(boxes).map(([size, count]) => `
+                                                    <div class="box-icon">
+                                                        ${getBoxIconSVG(size)}
+                                                        <span class="box-count">× ${count}</span>
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            ` : ''}
+                            ${deliveryItems.length > 0 ? `
+                                <div style="margin-bottom: 16px;">
+                                    <div style="font-size: 11px; font-weight: 600; color: var(--color-success); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">
+                                        📭 DROPOFFS:
                                     </div>
-                                `;
-                            }).join('')}
+                                    ${deliveryItems.map(item => {
+                                        const boxes = calculateBoxBreakdown(item.scu, item.maxBoxSize);
+                                        return `
+                                            <div class="cargo-group-details-item">
+                                                <span class="mission-num">Mission ${item.missionNum}:</span>
+                                                <span class="commodity">${item.commodity}</span>
+                                                <span>(${item.scu} SCU ← ${item.pickup})</span>
+                                            </div>
+                                            <div class="box-breakdown" style="padding-left: 10px; margin-bottom: 8px;">
+                                                ${Object.entries(boxes).map(([size, count]) => `
+                                                    <div class="box-icon">
+                                                        ${getBoxIconSVG(size)}
+                                                        <span class="box-count">× ${count}</span>
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
                 `;
@@ -1669,13 +1698,13 @@
             // Get dragged item's current position
             const draggedPosition = cargoGroups[draggedCargoGroup].position;
             
-            if (targetDestination && targetDestination !== draggedCargoGroup) {
+            if (targetLocation && targetLocation !== draggedCargoGroup) {
                 // Swap positions with another card
-                console.log('🔄 SWAPPING:', draggedCargoGroup, '↔️', targetDestination);
-                const temp = cargoGroups[targetDestination].position;
-                cargoGroups[targetDestination].position = draggedPosition;
+                console.log('🔄 SWAPPING:', draggedCargoGroup, '↔️', targetLocation);
+                const temp = cargoGroups[targetLocation].position;
+                cargoGroups[targetLocation].position = draggedPosition;
                 cargoGroups[draggedCargoGroup].position = targetPosition;
-            } else if (!targetDestination) {
+            } else if (!targetLocation) {
                 // Drop on empty cell - just move
                 console.log('📦 MOVING to empty cell:', targetPosition);
                 cargoGroups[draggedCargoGroup].position = targetPosition;
@@ -1952,21 +1981,42 @@ function generateRoutePlan() {
             let currentCargo = 0;
             const shipCapacity = selectedShip ? selectedShip.capacity : 999999;
             
-            // FIX #1: Calculate warehouse pickup totals and identify primary warehouse (largest pickup)
-            const warehousePickupTotals = {};
-            Object.entries(locationMap).forEach(([loc, data]) => {
-                const totalPickup = data.pickups.reduce((s, p) => s + p.scu, 0);
-                if (totalPickup > 0) {
-                    warehousePickupTotals[loc] = totalPickup;
-                }
-            });
+            // FIX: Identify primary warehouse as location with BOTH pickups AND deliveries
+            // Warehouse = distribution hub with cargo going to MANY destinations
+            const warehouseLocations = Object.entries(locationMap)
+                .filter(([loc, data]) => 
+                    data.pickups.length > 0 && 
+                    data.deliveries.length > 0
+                );
             
-            const primaryWarehouse = Object.entries(warehousePickupTotals)
-                .sort((a, b) => b[1] - a[1])[0]?.[0];
+            // Sort by: 1) distinct destinations, 2) pickup count, 3) pickup SCU
+            const primaryWarehouse = warehouseLocations
+                .sort((a, b) => {
+                    // Count distinct destinations for pickups
+                    const aDestinations = new Set(a[1].pickups.map(p => p.destination)).size;
+                    const bDestinations = new Set(b[1].pickups.map(p => p.destination)).size;
+                    if (aDestinations !== bDestinations) return bDestinations - aDestinations;
+                    
+                    // If tied, sort by number of pickup items
+                    const aPickupCount = a[1].pickups.length;
+                    const bPickupCount = b[1].pickups.length;
+                    if (aPickupCount !== bPickupCount) return bPickupCount - aPickupCount;
+                    
+                    // If still tied, sort by pickup SCU
+                    const aPickupSCU = a[1].pickups.reduce((s, p) => s + p.scu, 0);
+                    const bPickupSCU = b[1].pickups.reduce((s, p) => s + p.scu, 0);
+                    return bPickupSCU - aPickupSCU;
+                })[0]?.[0];
             
             console.log('🏭 WAREHOUSE IDENTIFICATION:');
-            console.log('  Warehouse pickup totals:', warehousePickupTotals);
-            console.log(`  Primary warehouse: ${primaryWarehouse} (${warehousePickupTotals[primaryWarehouse]} SCU)`);
+            console.log('  Warehouse locations (have both pickups & deliveries):', 
+                warehouseLocations.map(([loc, data]) => {
+                    const pickupSCU = data.pickups.reduce((s, p) => s + p.scu, 0);
+                    const deliverySCU = data.deliveries.reduce((s, d) => s + d.scu, 0);
+                    const destinations = new Set(data.pickups.map(p => p.destination)).size;
+                    return `${loc} (${pickupSCU} SCU pickup to ${destinations} destinations, ${deliverySCU} SCU delivery)`;
+                }));
+            console.log(`  Primary warehouse: ${primaryWarehouse}`);
             console.log('');
             
             // Keep visiting locations until everything is delivered
@@ -1982,7 +2032,7 @@ function generateRoutePlan() {
                 let bestLocation = null;
                 let bestScore = -1;
                 
-                // FIX #1 (continued): Force first stop to be the largest pickup warehouse
+                // Force first stop to be the primary warehouse (if it has pickups)
                 if (primaryWarehouse && 
                     stops.length === 0 && 
                     locationMap[primaryWarehouse].pickups.some(p => allPickupIds.has(p.id))) {
@@ -2004,50 +2054,36 @@ function generateRoutePlan() {
                             continue;
                         }
                         
-                        // FIX #2: Block return-to-warehouse until end
+                        // FIX: Block return-to-warehouse until all other stops are complete
                         const isWarehouse = location === primaryWarehouse;
                         const hasDeliveriesHere = locationMap[location].deliveries.some(d => cargoOnBoard.has(d.id));
                         
                         console.log(`    - Is primary warehouse: ${isWarehouse}`);
                         
-                        // Block warehouse deliveries if there are ANY other non-warehouse deliveries pending
-                        // CRITICAL: Check this EVEN IF warehouse has unpicked cargo!
+                        // Block warehouse return if ANY non-warehouse location has pending deliveries
                         if (isWarehouse && hasDeliveriesHere) {
                             console.log(`    🔒 WAREHOUSE RETURN CHECK:`);
-                            // Count how many non-warehouse deliveries are still pending (not picked up yet)
-                            let otherPendingDeliveries = 0;
+                            
+                            // Check if any non-warehouse location has pending deliveries (on board or not)
+                            const otherLocationsPending = [];
                             for (const [loc, data] of Object.entries(locationMap)) {
                                 if (loc !== primaryWarehouse) {
-                                    // Check if there are deliveries here that we haven't picked up yet
-                                    const pendingHere = data.deliveries.filter(d => allDeliveryIds.has(d.id) && !cargoOnBoard.has(d.id)).length;
+                                    const pendingHere = data.deliveries.filter(d => allDeliveryIds.has(d.id)).length;
                                     if (pendingHere > 0) {
-                                        console.log(`       - ${loc}: ${pendingHere} pending deliveries (not yet picked up)`);
+                                        otherLocationsPending.push(`${loc} (${pendingHere} pending)`);
                                     }
-                                    otherPendingDeliveries += pendingHere;
                                 }
                             }
                             
-                            // Also check if there are unpicked items at non-warehouse locations
-                            let otherUnpickedCargo = 0;
-                            for (const [loc, data] of Object.entries(locationMap)) {
-                                if (loc !== primaryWarehouse) {
-                                    const unpickedHere = data.pickups.filter(p => allPickupIds.has(p.id)).length;
-                                    if (unpickedHere > 0) {
-                                        console.log(`       - ${loc}: ${unpickedHere} unpicked cargo`);
-                                    }
-                                    otherUnpickedCargo += unpickedHere;
-                                }
-                            }
-                            
-                            if (otherPendingDeliveries > 0 || otherUnpickedCargo > 0) {
-                                console.log(`    🚫 BLOCKED: ${otherUnpickedCargo} pickups and ${otherPendingDeliveries} deliveries still pending at other locations`);
-                                continue; // Skip warehouse deliveries for now
+                            if (otherLocationsPending.length > 0) {
+                                console.log(`    🚫 BLOCKED: ${otherLocationsPending.join(', ')}`);
+                                continue; // Skip warehouse - deliver to other locations first
                             } else {
-                                console.log(`    ✅ ALLOWED: All other pickups and deliveries complete`);
+                                console.log(`    ✅ ALLOWED: All non-warehouse deliveries complete`);
                             }
                         }
                         
-                        // FIX #3: Score by actual SCU, not just presence
+                        // Score by actual SCU delivered/picked up (not just item count)
                         const deliverySCU = locationMap[location].deliveries
                             .filter(d => cargoOnBoard.has(d.id))
                             .reduce((s, d) => s + d.scu, 0);
@@ -2484,7 +2520,7 @@ function generateRoutePlan() {
             const exportData = {
                 metadata: {
                     exportDate: new Date().toISOString(),
-                    version: '3.3.2',
+                    version: '3.3.6',
                     system: selectedSystem,
                     category: selectedCategory,
                     ship: selectedShip ? {
