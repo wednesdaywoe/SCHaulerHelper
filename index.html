@@ -1302,7 +1302,7 @@
                 return;
             }
             
-            // Get cargo groups from missions
+            // Get cargo groups from missions - include BOTH destinations AND pickup-only locations
             const groupData = {};
             
             missions.forEach((mission, missionIndex) => {
@@ -1313,10 +1313,13 @@
                     
                     const scu = parseInt(commodity.quantity) || 0;
                     const destination = commodity.destination;
+                    const pickup = commodity.pickup;
                     
+                    // Create group for DESTINATION (delivery location)
                     if (!groupData[destination]) {
                         groupData[destination] = {
-                            destination: destination,
+                            location: destination,
+                            type: 'delivery', // This is a delivery location
                             totalSCU: 0,
                             items: []
                         };
@@ -1328,8 +1331,35 @@
                         commodity: commodity.commodity,
                         scu: scu,
                         pickup: commodity.pickup,
-                        maxBoxSize: parseInt(commodity.maxBoxSize) || 4
+                        maxBoxSize: parseInt(commodity.maxBoxSize) || 4,
+                        type: 'delivery' // This item is being delivered here
                     });
+                    
+                    // Also create group for PICKUP location (if different from destination)
+                    if (pickup !== destination) {
+                        if (!groupData[pickup]) {
+                            groupData[pickup] = {
+                                location: pickup,
+                                type: 'pickup', // This is a pickup-only location
+                                totalSCU: 0,
+                                items: []
+                            };
+                        }
+                        
+                        // Only add to pickup group if it's not already counted as a delivery
+                        groupData[pickup].totalSCU += scu;
+                        groupData[pickup].items.push({
+                            missionNum: missionIndex + 1,
+                            commodity: commodity.commodity,
+                            scu: scu,
+                            destination: commodity.destination,
+                            maxBoxSize: parseInt(commodity.maxBoxSize) || 4,
+                            type: 'pickup' // This item is being picked up here
+                        });
+                    } else {
+                        // This location has both pickup and delivery
+                        groupData[destination].type = 'both';
+                    }
                 });
             });
             
@@ -1344,10 +1374,10 @@
             const palette = themeColorPalettes[theme] || themeColorPalettes['stardust'];
             let groupIndex = Object.keys(cargoGroups).length; // Start from existing count
             
-            Object.keys(groupData).forEach(destination => {
-                if (!cargoGroups[destination]) {
+            Object.keys(groupData).forEach(location => {
+                if (!cargoGroups[location]) {
                     const groupLetter = String.fromCharCode(65 + groupIndex);
-                    cargoGroups[destination] = {
+                    cargoGroups[location] = {
                         label: groupLetter,
                         color: palette[groupIndex % palette.length],
                         position: null  // Will be set by user
@@ -1372,9 +1402,9 @@
             
             // Place groups in their positions (or auto-place if no position set)
             let autoPosition = 0;
-            Object.keys(groupData).forEach(destination => {
-                const group = cargoGroups[destination];
-                const data = groupData[destination];
+            Object.keys(groupData).forEach(location => {
+                const group = cargoGroups[location];
+                const data = groupData[location];
                 
                 // Use saved position or auto-place
                 let position = group.position;
@@ -1389,9 +1419,13 @@
                 
                 if (position < totalCells) {
                     cells[position].group = {
-                        destination: destination,
-                        ...data,
-                        ...group
+                        location: location,
+                        type: data.type, // 'pickup', 'delivery', or 'both'
+                        label: group.label,
+                        color: group.color,
+                        position: group.position,
+                        totalSCU: data.totalSCU,
+                        items: data.items  // Explicitly take items from data
                     };
                 }
             });
@@ -1408,9 +1442,12 @@
                 }
                 
                 const g = cell.group;
+                const typeIcon = g.type === 'pickup' ? '📦' : (g.type === 'delivery' ? '📭' : '🔄');
+                const typeLabel = g.type === 'pickup' ? 'PICKUP' : (g.type === 'delivery' ? 'DELIVERY' : 'PICKUP & DELIVERY');
                 return `
                     <div class="cargo-group-card" 
-                         data-destination="${g.destination}"
+                         data-location="${g.location}"
+                         data-type="${g.type}"
                          data-position="${index}"
                          style="border-color: ${g.color}"
                          draggable="true">
@@ -1419,7 +1456,7 @@
                                 <div class="cargo-drag-handle" title="Drag to reposition">⋮⋮</div>
                                 <div class="cargo-group-label-edit" 
                                      style="color: ${g.color}; cursor: pointer; pointer-events: auto;"
-                                     onclick="event.stopPropagation(); editCargoGroupLabel('${g.destination}', event)">
+                                     onclick="event.stopPropagation(); editCargoGroupLabel('${g.location}', event)">
                                     ${g.label}
                                 </div>
                             </div>
@@ -1427,18 +1464,24 @@
                         </div>
                         <div class="cargo-group-color-edit"
                              style="background-color: ${g.color}; width: 30px; height: 30px; border-radius: 4px; cursor: pointer; margin: 8px 0;"
-                             onclick="event.stopPropagation(); editCargoGroupColor('${g.destination}')">
+                             onclick="event.stopPropagation(); editCargoGroupColor('${g.location}')">
                         </div>
-                        <div class="cargo-group-destination">${g.destination}</div>
+                        <div class="cargo-group-type" style="font-size: 10px; color: var(--text-secondary); margin-bottom: 4px;">
+                            ${typeIcon} ${typeLabel}
+                        </div>
+                        <div class="cargo-group-destination">${g.location}</div>
                         <div class="expand-indicator" onclick="event.stopPropagation(); toggleCargoGroupExpand(this.parentElement)">Click to expand</div>
                         <div class="cargo-group-details">
-                            ${g.items.map(item => {
+                            ${(g.items || []).map(item => {
                                 const boxes = calculateBoxBreakdown(item.scu, item.maxBoxSize);
+                                const itemInfo = item.type === 'pickup' 
+                                    ? `→ ${item.destination}` 
+                                    : `← ${item.pickup}`;
                                 return `
                                     <div class="cargo-group-details-item">
                                         <span class="mission-num">Mission ${item.missionNum}:</span>
                                         <span class="commodity">${item.commodity}</span>
-                                        <span>(${item.scu} SCU)</span>
+                                        <span>(${item.scu} SCU ${itemInfo})</span>
                                     </div>
                                     <div class="box-breakdown" style="padding-left: 10px; margin-bottom: 8px;">
                                         ${Object.entries(boxes).map(([size, count]) => `
@@ -1507,7 +1550,8 @@
                     hasAttribute: card.hasAttribute('draggable'),
                     getAttribute: card.getAttribute('draggable'),
                     ondragstart: card.ondragstart,
-                    destination: card.getAttribute('data-destination'),
+                    location: card.getAttribute('data-location'),
+                    type: card.getAttribute('data-type'),
                     classList: Array.from(card.classList),
                     computedStyle: {
                         pointerEvents: getComputedStyle(card).pointerEvents,
@@ -1575,11 +1619,11 @@
             // When called from document listener, use e.target instead of e.currentTarget
             const cardElement = e.currentTarget === document ? e.target : e.currentTarget;
             
-            draggedCargoGroup = cardElement.getAttribute('data-destination');
+            draggedCargoGroup = cardElement.getAttribute('data-location');
             console.log('🔵 Drag start:', draggedCargoGroup);
             
             if (!draggedCargoGroup) {
-                console.log('❌ No destination attribute found!');
+                console.log('❌ No location attribute found!');
                 return;
             }
             
@@ -1613,11 +1657,11 @@
             
             const target = e.currentTarget === document ? e.target : e.currentTarget;
             const targetPosition = parseInt(target.getAttribute('data-position'));
-            const targetDestination = target.getAttribute('data-destination');
+            const targetLocation = target.getAttribute('data-location');
             
             console.log('🎯 DROP TARGET:', {
                 targetPosition,
-                targetDestination,
+                targetLocation,
                 draggedGroup: draggedCargoGroup,
                 draggedPosition: cargoGroups[draggedCargoGroup]?.position
             });
@@ -1831,7 +1875,7 @@ function generateRoutePlan() {
                         scu: scu,
                         destination: destination,
                         maxBoxSize: parseInt(commodity.maxBoxSize) || 4,
-                        id: `m${missionIndex + 1}-${commodity.commodity}-${destination}` // Unique ID
+                        id: `m${missionIndex + 1}-${pickup}-${commodity.commodity}-${destination}` // Unique ID with pickup location
                     });
                     
                     // Add delivery action
@@ -1840,7 +1884,7 @@ function generateRoutePlan() {
                         commodity: commodity.commodity,
                         scu: scu,
                         pickup: pickup,
-                        id: `m${missionIndex + 1}-${commodity.commodity}-${destination}` // Same ID as pickup
+                        id: `m${missionIndex + 1}-${pickup}-${commodity.commodity}-${destination}` // Same ID as pickup
                     });
                 });
             });
@@ -1967,25 +2011,39 @@ function generateRoutePlan() {
                         console.log(`    - Is primary warehouse: ${isWarehouse}`);
                         
                         // Block warehouse deliveries if there are ANY other non-warehouse deliveries pending
-                        if (isWarehouse && hasDeliveriesHere && !hasUnpickedCargo) {
+                        // CRITICAL: Check this EVEN IF warehouse has unpicked cargo!
+                        if (isWarehouse && hasDeliveriesHere) {
                             console.log(`    🔒 WAREHOUSE RETURN CHECK:`);
-                            // Count how many non-warehouse deliveries are still pending
-                            let otherDeliveriesCount = 0;
+                            // Count how many non-warehouse deliveries are still pending (not picked up yet)
+                            let otherPendingDeliveries = 0;
                             for (const [loc, data] of Object.entries(locationMap)) {
                                 if (loc !== primaryWarehouse) {
-                                    const pendingHere = data.deliveries.filter(d => allDeliveryIds.has(d.id)).length;
+                                    // Check if there are deliveries here that we haven't picked up yet
+                                    const pendingHere = data.deliveries.filter(d => allDeliveryIds.has(d.id) && !cargoOnBoard.has(d.id)).length;
                                     if (pendingHere > 0) {
-                                        console.log(`       - ${loc}: ${pendingHere} pending deliveries`);
+                                        console.log(`       - ${loc}: ${pendingHere} pending deliveries (not yet picked up)`);
                                     }
-                                    otherDeliveriesCount += pendingHere;
+                                    otherPendingDeliveries += pendingHere;
                                 }
                             }
                             
-                            if (otherDeliveriesCount > 0) {
-                                console.log(`    🚫 BLOCKED: ${otherDeliveriesCount} other deliveries still pending`);
-                                continue; // Skip warehouse for now
+                            // Also check if there are unpicked items at non-warehouse locations
+                            let otherUnpickedCargo = 0;
+                            for (const [loc, data] of Object.entries(locationMap)) {
+                                if (loc !== primaryWarehouse) {
+                                    const unpickedHere = data.pickups.filter(p => allPickupIds.has(p.id)).length;
+                                    if (unpickedHere > 0) {
+                                        console.log(`       - ${loc}: ${unpickedHere} unpicked cargo`);
+                                    }
+                                    otherUnpickedCargo += unpickedHere;
+                                }
+                            }
+                            
+                            if (otherPendingDeliveries > 0 || otherUnpickedCargo > 0) {
+                                console.log(`    🚫 BLOCKED: ${otherUnpickedCargo} pickups and ${otherPendingDeliveries} deliveries still pending at other locations`);
+                                continue; // Skip warehouse deliveries for now
                             } else {
-                                console.log(`    ✅ ALLOWED: All other deliveries complete`);
+                                console.log(`    ✅ ALLOWED: All other pickups and deliveries complete`);
                             }
                         }
                         
