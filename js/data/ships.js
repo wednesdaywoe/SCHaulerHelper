@@ -94,19 +94,7 @@ const SHIPS_DATABASE = [
         manufacturer: "Crusader Industries",
         capacity: 64
     },
-    {
-        id: "crusader_starlancer_max",
-        name: "Crusader Starlancer MAX",
-        manufacturer: "Crusader Industries",
-        capacity: 224,
-        grids: 4
-    },
-    {
-        id: "crusader_starlancer_tac",
-        name: "Crusader Starlancer TAC",
-        manufacturer: "Crusader Industries",
-        capacity: 96
-    },
+    
     
     // DRAKE INTERPLANETARY
     {
@@ -194,7 +182,7 @@ const SHIPS_DATABASE = [
     },
     {
         id: "misc_odyssey",
-        name: "MISC Odyssey",
+        name: "MISC Odyssey please CIG <3 xoxoxo",
         manufacturer: "MISC",
         capacity: 252
     },
@@ -222,7 +210,19 @@ const SHIPS_DATABASE = [
         manufacturer: "MISC",
         capacity: 291
     },
-    
+    {
+        id: "misc_starlancer_max",
+        name: "MISC Starlancer MAX",
+        manufacturer: "MISC",
+        capacity: 224,
+        grids: 4
+    },
+    {
+        id: "misc_starlancer_tac",
+        name: "MISC Starlancer TAC",
+        manufacturer: "MISC",
+        capacity: 96
+    },
     // ORIGIN JUMPWORKS
     {
         id: "origin_125a",
@@ -362,7 +362,13 @@ const SHIP_UTILS = {
     }
 };
 
-// Export for use in other files
+// Export for browser (window object)
+if (typeof window !== 'undefined') {
+    window.SHIPS_DATABASE = SHIPS_DATABASE;
+    window.SHIP_UTILS = SHIP_UTILS;
+}
+
+// Export for Node.js (module system)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { SHIPS_DATABASE, SHIP_UTILS };
 }
