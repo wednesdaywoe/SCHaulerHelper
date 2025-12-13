@@ -1,3 +1,6 @@
+# workflow to build pages Don't forget to enable GitHub Pages:
+# Go to Settings → Pages
+# Under "Source", select GitHub Actions
 name: Deploy to GitHub Pages
 
 on: 
