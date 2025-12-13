@@ -5,7 +5,7 @@
  * 
  * locations[system][category] = [...locations]
  * 
- * SYSTEMS: microtech, hurston, arccorp, crusader, nyx, universal
+ * SYSTEMS: microtech, hurston, arccorp, crusader, nyx, pyro, universal
  * CATEGORIES: planetary, local, stellar, interstellar
  */
 
@@ -220,22 +220,37 @@ const LOCATIONS_DATABASE = {
     },
     
     // ============================================================================
-    // UNIVERSAL (Cross-system, used for interstellar category)
+    // PYRO SYSTEM
     // ============================================================================
-    universal: {
-        interstellar: [
-            // Pyro System
-            "Magnus Gateway",
+    pyro: {
+        // PLANETARY: All planets, moons, and stations in Pyro
+        planetary: [
+            // Space Stations
+            "Ruin Station",
+            "Checkmate Station",
             "Pyro Gateway",
             
-            // Nyx System
-            "Levski",
-            "Ruptura OLP",
-            "Ruptura PAF-I",
-            "Ruptura PAF-II",
-            "Ruptura PAF-III",
+            // Pyro I (Vatra) - Lava planet
+            "Attritus OLP",
             
-            // Other Stations
+            // Pyro II (Ignis) - Desert planet
+            "Orbituary",
+            
+            // Pyro III (Adir) - Gas dwarf
+            "Bacchus Flotilla",
+            
+            // Pyro IV (Fairo) - Gas giant
+            "Prime",
+            
+            // Pyro V (Terminus) - Ice planet
+            "Buloi Sataball Arena",
+            
+            // Pyro VI (Monox) - Rocky planet
+            "Dudley & Daughters"
+        ],
+        
+        // LOCAL: Multi-location routes within Pyro regions
+        local: [
             "Attritus OLP",
             "Bacchus Flotilla",
             "Buloi Sataball Arena",
@@ -244,6 +259,47 @@ const LOCATIONS_DATABASE = {
             "Orbituary",
             "Prime",
             "Ruin Station"
+        ],
+        
+        // STELLAR: Cross-planet in Pyro system
+        stellar: [
+            "Attritus OLP",
+            "Bacchus Flotilla",
+            "Buloi Sataball Arena",
+            "Checkmate Station",
+            "Dudley & Daughters",
+            "Orbituary",
+            "Prime",
+            "Pyro Gateway",
+            "Ruin Station"
+        ]
+    },
+    
+    // ============================================================================
+    // UNIVERSAL (Cross-system, used for interstellar category)
+    // ============================================================================
+    universal: {
+        interstellar: [
+            // Gateways
+            "Magnus Gateway",
+            "Pyro Gateway",
+            
+            // Pyro System
+            "Attritus OLP",
+            "Bacchus Flotilla",
+            "Buloi Sataball Arena",
+            "Checkmate Station",
+            "Dudley & Daughters",
+            "Orbituary",
+            "Prime",
+            "Ruin Station",
+            
+            // Nyx System
+            "Levski",
+            "Ruptura OLP",
+            "Ruptura PAF-I",
+            "Ruptura PAF-II",
+            "Ruptura PAF-III"
         ]
     }
 };
