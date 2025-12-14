@@ -1,277 +1,817 @@
-<!DOC
+<!DOC TYPE html>
+    <html lang="en">
 
-                TYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hauler Helper - Star Citizen</title>
-    <link rel="stylesheet" href="css/themes.css">
-    <link rel="stylesheet" href="css/main.css">
-</head>
-<body data-theme="stardust">
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>HAULER HELPER</h1>
-            <div class="subtitle">Your Ship Manifest for Star Citizen</div>
-            <div style="font-weight: bold; color: var(--color-warning); font-size: 11px; margin-top: 10px; letter-spacing: 1px;">
-                THIS IS A WORK IN PROGRESS, EXPECT BUGS AND MISSING/INCORRECT INFORMATION
-            </div>
-        </div>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Hauler Helper - Star Citizen</title>
+        <link rel="stylesheet" href="css/themes.css">
+        <link rel="stylesheet" href="css/main.css">
+        <!-- OCR Mappings for consistent name normalization -->
+        <script src="js/data/ocr-mappings.js"></script>
+        <!-- Global Databases -->
+        <script src="js/data/global-locations.js?v=20250113"></script>
+        <script src="js/data/global-commodities.js?v=20250113"></script>
+        <script src="js/data/global-payouts.js?v=20250113"></script>
+    </head>
+
+    <body data-theme="stardust">
+        <!-- Global location datalist - used by all location inputs -->
+        <datalist id="globalLocationList">
+            <!-- Populated by populateLocationList() on page load -->
+        </datalist>
         
-        <!-- Decorative gradient line -->
-        <div style="width: 100%; height: 2px; margin: 25px 0 30px 0; background: linear-gradient(90deg, transparent 0%, var(--color-primary) 50%, transparent 100%);"></div>
-       
-        <!-- Navigation -->
-        <div class="nav-bar">
-            <a href="index.html" class="nav-link active">Mission Planner</a>
-            <a href="ocr-scanner.html" class="nav-link">OCR Scanner (experimental)</a>
-        </div>
-        
-        <!-- Controls -->
-        <div class="controls">
-            <div class="control-group">
-                <label>Ship</label>
-                <input type="text" id="shipSelect" list="shipList" placeholder="Search or select ship..." onchange="updateShip()" autocomplete="off">
-                <datalist id="shipList">
-                </datalist>
-            </div>
-            <div class="control-group">
-                <label>System</label>
-                <select id="systemSelect" onchange="updateSystem()">
-                    <option value="">Select System</option>
-                    <option value="microtech">microTech</option>
-                    <option value="hurston">Hurston </option>
-                    <option value="arccorp">ArcCorp</option>
-                    <option value="crusader">Crusader</option>
-                    <option value="nyx">Nyx</option>
-                    <option value="pyro" disabled>Pyro (Coming Soon)</option>
-                </select>
-            </div>
-            <div class="control-group">
-                <label>Mission Category</label>
-                <select id="categorySelect" onchange="updateCategory()">
-                    <option value="">Select Category</option>
-                    <option value="planetary">Planetary</option>
-                    <option value="local">Local</option>
-                    <option value="stellar">Stellar</option>
-                    <option value="interstellar">Interstellar</option>
-                </select>
-            </div>
-            <div class="control-group">
-                <label>Theme</label>
-                <select id="themeSelect" onchange="changeTheme()">
-                    <option value="stardust">Stardust</option>
-                    <option value="lux">Lux</option>
-                    <option value="pulse">Pulse</option>
-                    <option value="flow">Flow</option>
-                    <option value="dark">Dark</option>
-                    <option value="cetacean">Cetacean</option>
-                    <option value="wednesday">Wednesday</option>
-                    <option value="moonshine">Moonshine</option>
-                    <option value="cassette">Cassette</option>
-                    <option value="cargo-explorer">Cargo Explorer</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- Main Layout -->
-        <div class="main-layout">
-            <!-- Column 1: Mission Panels -->
-            <div class="missions-column">
-                <div class="missions-scroll" id="missionsContainer">
-                    <!-- Mission panels will be added here -->
-                </div>
-                <button class="btn-add-mission" onclick="addMissionPanel()">+ Add Mission</button>
-            </div>
-
-            <!-- Column 2: Delivery Manager -->
-            <div class="delivery-summary">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2>Delivery Manager</h2>
-                </div>
-                
-                <!-- Tab Navigation -->
-                <div class="delivery-tabs">
-                    <button class="tab-button active" onclick="switchDeliveryTab('route')">Route Planner</button>
-                    <button class="tab-button" onclick="switchDeliveryTab('grid')">Visualizer</button>
-                </div>
-                
-
-                <!-- Cargo Grid Tab -->
-                <div id="gridTab" class="tab-content" style="display: none;">
-                    <div class="grid-layout-selector">
-                        <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px;">Columns:</span>
-                        <select id="gridColumns" onchange="updateGridLayout()" style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 10px; border-radius: 4px; font-size: 12px;">
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3" selected>3</option>
-                            <option value="4">4</option>
-                        </select>
-                        <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-left: 15px;">Rows:</span>
-                        <select id="gridRows" onchange="updateGridLayout()" style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 10px; border-radius: 4px; font-size: 12px;">
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3" selected>3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
-                            <option value="7">7</option>
-                            <option value="8">8</option>
-                            <option value="9">9</option>
-                            <option value="10">10</option>
-                        </select>
-                    </div>
-                    <div id="cargoGrid" class="cargo-grid-container layout-2x1">
-                        <div class="empty-state">No cargo groups to display</div>
-                    </div>
-                </div>
-                
-                <!-- Route Planner Tab -->
-                <div id="routeTab" class="tab-content" style="display: block;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px;">View:</span>
-                        <select id="routeViewModeSelect" onchange="changeRouteViewMode(this.value)" style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 10px; border-radius: 4px; font-size: 12px;">
-                            <option value="all">Show All Steps</option>
-                            <option value="current">Current Step Only</option>
-                            <option value="current-next">Current + Next Step</option>
-                        </select>
-                    </div>
-                    <button onclick="resetRouteCompletion()" style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 6px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;">
-                        Reset Completion
-                    </button>
-                </div>
-                <div id="routePlanner">
-                        <div class="empty-state">No route planned</div>
-                    </div>
+        <div class="container">
+            <!-- Header -->
+            <div class="header">
+                <h1>HAULER HELPER</h1>
+                <div class="subtitle">Your Ship Manifest for Star Citizen</div>
+                <div
+                    style="font-weight: bold; color: var(--color-warning); font-size: 11px; margin-top: 10px; letter-spacing: 1px;">
+                    THIS IS A WORK IN PROGRESS, EXPECT BUGS AND MISSING/INCORRECT INFORMATION
                 </div>
             </div>
 
-            <!-- Column 3: Stats -->
-            <div class="stats-column">
-                <div class="stat-panel">
-                    <div class="stat-label">Total Payout</div>
-                    <div class="stat-value" id="totalPayout">0K</div>
+            <!-- Decorative gradient line -->
+            <div
+                style="width: 100%; height: 2px; margin: 25px 0 30px 0; background: linear-gradient(90deg, transparent 0%, var(--color-primary) 50%, transparent 100%);">
+            </div>
+
+            <!-- Navigation -->
+            <div class="nav-bar">
+                <a href="index.html" class="nav-link active">Mission Planner</a>
+                <a href="ocr-scanner.html" class="nav-link">OCR Scanner (experimental)</a>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <div class="control-group">
+                    <label>Ship</label>
+                    <input type="text" id="shipSelect" list="shipList" placeholder="Search or select ship..."
+                        onchange="updateShip()" autocomplete="off">
+                    <datalist id="shipList">
+                    </datalist>
                 </div>
-                <div class="stat-panel">
-                    <div class="stat-label">SCU Total</div>
-                    <div class="stat-value" id="scuTotal">0</div>
-                    <div class="capacity-meter">
-                        <div class="capacity-bar">
-                            <div class="capacity-fill" id="capacityFill" style="width: 0%"></div>
+                <div class="control-group">
+                    <label>System</label>
+                    <select id="systemSelect" onchange="updateSystem()">
+                        <option value="">Select System</option>
+                        <option value="stanton">Stanton </option>
+                        <option value="arccorp">ArcCorp</option>
+                        <option value="crusader">Crusader</option>
+                        <option value="hurston">Hurston </option>
+                        <option value="microtech">microTech</option>
+                        <option value="nyx">Nyx</option>
+                        <option value="pyro" disabled>Pyro (Coming Soon)</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Mission Category</label>
+                    <select id="categorySelect" onchange="updateCategory()">
+                        <option value="">Select Category</option>
+                        <option value="planetary">Planetary</option>
+                        <option value="local">Local</option>
+                        <option value="stellar">Stellar</option>
+                        <option value="interstellar">Interstellar</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Theme</label>
+                    <select id="themeSelect" onchange="changeTheme()">
+                        <option value="stardust">Stardust</option>
+                        <option value="lux">Lux</option>
+                        <option value="pulse">Pulse</option>
+                        <option value="flow">Flow</option>
+                        <option value="dark">Dark</option>
+                        <option value="cetacean">Cetacean</option>
+                        <option value="wednesday">Wednesday</option>
+                        <option value="moonshine">Moonshine</option>
+                        <option value="cassette">Cassette</option>
+                        <option value="cargo-explorer">Cargo Explorer</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Main Layout -->
+            <div class="main-layout">
+                <!-- Column 1: Mission Panels -->
+                <div class="missions-column">
+                    <div class="missions-scroll" id="missionsContainer">
+                        <!-- Mission panels will be added here -->
+                    </div>
+                    <button class="btn-add-mission" onclick="addMissionPanel()">+ Add Mission</button>
+                </div>
+
+                <!-- Column 2: Delivery Manager -->
+                <div class="delivery-summary">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2>Delivery Manager</h2>
+                    </div>
+
+                    <!-- Tab Navigation -->
+                    <div class="delivery-tabs">
+                        <button class="tab-button active" onclick="switchDeliveryTab('route')">Route Planner</button>
+                        <button class="tab-button" onclick="switchDeliveryTab('grid')">Visualizer</button>
+                    </div>
+
+
+                    <!-- Cargo Grid Tab -->
+                    <div id="gridTab" class="tab-content" style="display: none;">
+                        <div class="grid-layout-selector">
+                            <span
+                                style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px;">Columns:</span>
+                            <select id="gridColumns" onchange="updateGridLayout()"
+                                style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 10px; border-radius: 4px; font-size: 12px;">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3" selected>3</option>
+                                <option value="4">4</option>
+                            </select>
+                            <span
+                                style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-left: 15px;">Rows:</span>
+                            <select id="gridRows" onchange="updateGridLayout()"
+                                style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 10px; border-radius: 4px; font-size: 12px;">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3" selected>3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                            </select>
                         </div>
-                        <div class="capacity-text" id="capacityText">0 / 0 SCU</div>
+                        <div id="cargoGrid" class="cargo-grid-container layout-2x1">
+                            <div class="empty-state">No cargo groups to display</div>
+                        </div>
+                    </div>
+
+                    <!-- Route Planner Tab -->
+                    <div id="routeTab" class="tab-content" style="display: block;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <span
+                                    style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px;">View:</span>
+                                <select id="routeViewModeSelect" onchange="changeRouteViewMode(this.value)"
+                                    style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 10px; border-radius: 4px; font-size: 12px;">
+                                    <option value="all">Show All Steps</option>
+                                    <option value="current">Current Step Only</option>
+                                    <option value="current-next">Current + Next Step</option>
+                                </select>
+                            </div>
+                            <button onclick="resetRouteCompletion()"
+                                style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 6px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;">
+                                Reset Completion
+                            </button>
+                        </div>
+                        <div id="routePlanner">
+                            <div class="empty-state">No route planned</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Column 3: Stats -->
+                <div class="stats-column">
+                    <div class="stat-panel">
+                        <div class="stat-label">Total Payout</div>
+                        <div class="stat-value" id="totalPayout">0K</div>
+                    </div>
+                    <div class="stat-panel">
+                        <div class="stat-label">SCU Total</div>
+                        <div class="stat-value" id="scuTotal">0</div>
+                        <div class="capacity-meter">
+                            <div class="capacity-bar">
+                                <div class="capacity-fill" id="capacityFill" style="width: 0%"></div>
+                            </div>
+                            <div class="capacity-text" id="capacityText">0 / 0 SCU</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Color Picker Modal -->
-    <div class="color-picker-modal" id="colorPickerModal">
-        <div class="color-picker-content">
-            <div class="color-picker-title">Choose Marker Color</div>
-            <div class="color-palette theme-colors" id="colorPalette">
-                <!-- Colors will be populated dynamically -->
-            </div>
-            <input type="color" class="custom-color-input" id="customColorInput">
-            <div class="color-picker-buttons">
-                <button class="btn-color-picker btn-cancel" onclick="closeColorPicker()">Cancel</button>
-                <button class="btn-color-picker btn-confirm" onclick="confirmColor()">Confirm</button>
+        <!-- Color Picker Modal -->
+        <div class="color-picker-modal" id="colorPickerModal">
+            <div class="color-picker-content">
+                <div class="color-picker-title">Choose Marker Color</div>
+                <div class="color-palette theme-colors" id="colorPalette">
+                    <!-- Colors will be populated dynamically -->
+                </div>
+                <input type="color" class="custom-color-input" id="customColorInput">
+                <div class="color-picker-buttons">
+                    <button class="btn-color-picker btn-cancel" onclick="closeColorPicker()">Cancel</button>
+                    <button class="btn-color-picker btn-confirm" onclick="confirmColor()">Confirm</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <script src="js/data/theme-colors.js?v=20250106"></script>
-    <script src="js/data/ships.js?v=20250106"></script>
-    <script src="js/data/locations.js?v=20250106"></script>
-    <script src="js/data/commodities.js?v=20250106"></script>
-    <script src="js/data/payouts.js?v=20250106"></script>
-    <script src="js/data/autofill-patterns.js?v=20250106"></script>
-    
-    <!-- NEW MODULES -->
-    <script src="js/route-planner.js?v=20250108"></script>
-    <script src="js/cargo-visualizer.js?v=20250108"></script>
-    <script src="js/mission-manager.js?v=20250108"></script>
-    <script src="js/ocr-import.js?v=20250108"></script>
-    <script src="js/session-manager.js?v=20250108"></script>
-    <script src="js/ui-controller.js?v=20250108"></script>
-    <script src="js/utils.js?v=20250108"></script>
-    
-    <script>
-        // Data
-        let missionCounter = 0;
-        let selectedShip = null;
-        let selectedSystem = null;
-        let selectedCategory = null;
-        let missions = [];
-        let locationColors = {};
-        let deliveryOrder = []; // Track custom order of delivery locations
-        let commodityOrder = []; // Track custom order of commodities
-        let cargoGroups = {}; // Store cargo groups for persistent colors/labels
-        let currentColorTarget = null;
-        let isLoadingSession = false;
+        <script src="js/data/theme-colors.js?v=20250106"></script>
+        <script src="js/data/ships.js?v=20250106"></script>
+        <script src="js/data/locations.js?v=20250106"></script>
+        <script src="js/data/commodities.js?v=20250106"></script>
+        <script src="js/data/payouts.js?v=20250106"></script>
+        <script src="js/data/autofill-patterns.js?v=20250106"></script>
 
-        // Theme color palettes (loaded from external file)
-        const themeColorPalettes = window.THEME_COLOR_PALETTES || {};
+        <!-- NEW MODULES -->
+        <script src="js/route-planner.js?v=20250108"></script>
+        <script src="js/cargo-visualizer.js?v=20250108"></script>
+        <script src="js/mission-manager.js?v=20250108"></script>
+        <script src="js/ocr-import.js?v=20250108"></script>
+        <script src="js/session-manager.js?v=20250108"></script>
+        <script src="js/ui-controller.js?v=20250108"></script>
+        <script src="js/utils.js?v=20250108"></script>
 
-        // Ships database (sorted alphabetically by name)
-        const ships = window.SHIPS_DATABASE || [];
+        <script>
+            // Data
+            let missionCounter = 0;
+            let selectedShip = null;
+            let selectedSystem = null;
+            let selectedCategory = null;
+            let missions = [];
+            let locationColors = {};
+            let deliveryOrder = []; // Track custom order of delivery locations
+            let commodityOrder = []; // Track custom order of commodities
+            let cargoGroups = {}; // Store cargo groups for persistent colors/labels
+            let currentColorTarget = null;
+            let isLoadingSession = false;
 
-        // Locations database (sorted alphabetically)
-        const locations = window.LOCATIONS_DATABASE || {};
+            // Theme color palettes (loaded from external file)
+            const themeColorPalettes = window.THEME_COLOR_PALETTES || {};
 
-        // Commodities database (sorted alphabetically)
-        const commodities = window.COMMODITIES_DATABASE || {};
+            // Ships database (sorted alphabetically by name)
+            const ships = window.SHIPS_DATABASE || [];
 
-        // Payouts database (sorted numerically low to high)
-        const payouts = window.PAYOUTS_DATABASE || {};
+            // Locations database (sorted alphabetically)
+            const locations = window.LOCATIONS_DATABASE || {};
+
+            // Commodities database (sorted alphabetically)
+            const commodities = window.COMMODITIES_DATABASE || {};
+
+            // Payouts database (sorted numerically low to high)
+            const payouts = window.PAYOUTS_DATABASE || {};
 
 
-        // Load cargo grid expanded state
+            // Load cargo grid expanded state
 
-        // Initialize
-        // Tab switching function
-        function switchDeliveryTab(tabName) {
-            // Hide all tabs
-            document.getElementById('routeTab').style.display = 'none';
-            document.getElementById('gridTab').style.display = 'none';
-            
-            // Show selected tab
-            if (tabName === 'route') {
-                document.getElementById('routeTab').style.display = 'block';
-            } else if (tabName === 'grid') {
-                document.getElementById('gridTab').style.display = 'block';
-            }
-            
-            // Update button states
-            const buttons = document.querySelectorAll('.tab-button');
-            buttons.forEach(btn => {
-                btn.classList.remove('active');
-                if ((tabName === 'route' && btn.textContent.includes('Route')) ||
-                    (tabName === 'grid' && btn.textContent.includes('Visualizer'))) {
-                    btn.classList.add('active');
+            // Initialize
+            // Tab switching function
+            function switchDeliveryTab(tabName) {
+                // Hide all tabs
+                document.getElementById('routeTab').style.display = 'none';
+                document.getElementById('gridTab').style.display = 'none';
+
+                // Show selected tab
+                if (tabName === 'route') {
+                    document.getElementById('routeTab').style.display = 'block';
+                } else if (tabName === 'grid') {
+                    document.getElementById('gridTab').style.display = 'block';
                 }
-            });
-        }
 
-        function init() {
-            console.log('%c🎯 HAULER HELPER v3.3.6 - WAREHOUSE LOGIC FIX', 'background: #4dd4ac; color: #000; font-size: 16px; padding: 8px;');
+                // Update button states
+                const buttons = document.querySelectorAll('.tab-button');
+                buttons.forEach(btn => {
+                    btn.classList.remove('active');
+                    if ((tabName === 'route' && btn.textContent.includes('Route')) ||
+                        (tabName === 'grid' && btn.textContent.includes('Visualizer'))) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
 
-            // Check if modules are loaded
+            // Check for OCR scanner imports and load all missions
+            function OCRImport() {
+                const ocrImport = localStorage.getItem('haulerHelperOCRImport');
+                if (!ocrImport) {
+                    console.log('📭 No OCR import found');
+                    return;
+                }
+
+                try {
+                    const importData = JSON.parse(ocrImport);
+                    console.log('📥 Found OCR import:', importData.missions?.length || 0, 'missions');
+
+                    if (!importData.missions || importData.missions.length === 0) {
+                        console.log('⚠️ No missions in OCR import');
+                        localStorage.removeItem('haulerHelperOCRImport');
+                        return;
+                    }
+
+                    console.log('🔄 Clearing existing missions and importing from OCR...');
+
+                    // ============ NEW: DETECT AND SET SYSTEM & CATEGORY FIRST ============
+
+                    // Detect system and category from first mission's locations
+                    const firstMission = importData.missions[0];
+                    const sampleLocation = firstMission.commodities?.[0]?.pickup ||
+                        firstMission.commodities?.[0]?.destination || '';
+
+                    console.log('🔍 Detecting system and category from location:', sampleLocation);
+
+                    // Detect system (currently only Stanton is available)
+                    const detectedSystem = 'stanton';
+                    selectedSystem = detectedSystem;
+                    document.getElementById('systemSelect').value = detectedSystem;
+                    console.log('🌍 Set system:', detectedSystem);
+
+                    // Trigger the updateSystem function to ensure state is properly updated
+                    if (typeof updateSystem === 'function') {
+                        updateSystem();
+                    }
+                    // Detect category based on location type
+                    let detectedCategory = 'stellar'; // Default to stellar
+
+                    // Check location patterns
+                    const locationUpper = sampleLocation.toUpperCase();
+                    if (locationUpper.includes('L1') || locationUpper.includes('L2') ||
+                        locationUpper.includes('L3') || locationUpper.includes('L4') ||
+                        locationUpper.includes('L5') || locationUpper.includes('EVERUS') ||
+                        locationUpper.includes('SERAPHIM') || locationUpper.includes('BAIJINI') ||
+                        locationUpper.includes('TRESSLER')) {
+                        detectedCategory = 'stellar';
+                    } else if (locationUpper.includes('SMO') || locationUpper.includes('SMCa') ||
+                        locationUpper.includes('RAYARI') || locationUpper.includes('SHUBIN')) {
+                        detectedCategory = 'local';
+                    } else {
+                        // Check all locations in all missions to be more certain
+                        const allLocations = [];
+                        importData.missions.forEach(m => {
+                            m.commodities.forEach(c => {
+                                if (c.pickup) allLocations.push(c.pickup);
+                                if (c.destination) allLocations.push(c.destination);
+                            });
+                        });
+
+                        const stellarCount = allLocations.filter(loc =>
+                            loc.toUpperCase().includes('L1') || loc.toUpperCase().includes('L2') ||
+                            loc.toUpperCase().includes('EVERUS') || loc.toUpperCase().includes('SERAPHIM')
+                        ).length;
+
+                        const localCount = allLocations.filter(loc =>
+                            loc.toUpperCase().includes('SMO') || loc.toUpperCase().includes('RAYARI')
+                        ).length;
+
+                        if (stellarCount > localCount) {
+                            detectedCategory = 'stellar';
+                        } else if (localCount > 0) {
+                            detectedCategory = 'local';
+                        }
+                    }
+
+                    selectedCategory = detectedCategory;
+                    document.getElementById('categorySelect').value = detectedCategory;
+                    console.log('📂 Set category:', detectedCategory);
+
+                    // Trigger updateCategory to populate location lists
+                    if (typeof updateCategory === 'function') {
+                        updateCategory();
+                    }
+
+                    // Trigger updateCategory to populate location lists
+                    if (typeof updateCategory === 'function') {
+                        updateCategory();
+                    }
+
+                    // ============ END NEW CODE ============
+
+                    // Clear existing missions
+                    missions = [];
+                    missionCounter = 0;
+                    const container = document.getElementById('missionsContainer');
+                    if (container) {
+                        container.innerHTML = '';
+                    }
+
+                    // Import each mission
+                    importData.missions.forEach((missionData, index) => {
+                        console.log(`📦 Importing mission ${index + 1}:`, missionData);
+
+                        missionCounter++;
+                        const missionId = `mission_${missionCounter}`;
+
+                        const mission = {
+                            id: missionId,
+                            payout: missionData.payout || '',
+                            commodities: []
+                        };
+
+                        missions.push(mission);
+
+                        // Create mission panel
+                        if (typeof createMissionPanel === 'function') {
+                            const panel = createMissionPanel(missionId, missionCounter);
+                            container.appendChild(panel);
+
+                            // Set payout in text input
+                            const payoutInput = panel.querySelector('.payout-input');
+                            if (payoutInput && missionData.payout) {
+                                payoutInput.value = missionData.payout;
+                                console.log(`  💰 Set payout: ${missionData.payout}`);
+                            }
+
+                            // Add each commodity
+                            missionData.commodities.forEach((commodityData, cIndex) => {
+                                const commodityId = `${missionId}_commodity_${cIndex}`;
+
+                                mission.commodities.push({
+                                    id: commodityId,
+                                    pickup: commodityData.pickup || '',
+                                    commodity: commodityData.commodity || '',
+                                    quantity: commodityData.quantity || '',
+                                    maxBoxSize: commodityData.maxBoxSize || '4',
+                                    destination: commodityData.destination || ''
+                                });
+
+                                const commoditiesContainer = document.getElementById(`${missionId}_commodities`);
+                                if (commoditiesContainer && typeof createCommodityRow === 'function') {
+                                    const row = createCommodityRow(missionId, commodityId, cIndex > 0);
+                                    commoditiesContainer.appendChild(row);
+
+                                    // Set values
+                                    const selects = row.querySelectorAll('select');
+                                    const input = row.querySelector('input[type="number"]');
+
+                                    if (selects[0]) selects[0].value = commodityData.pickup || '';
+                                    if (selects[1]) selects[1].value = commodityData.commodity || '';
+                                    if (input) input.value = commodityData.quantity || '';
+                                    if (selects[2]) selects[2].value = commodityData.maxBoxSize || '4';
+                                    if (selects[3]) selects[3].value = commodityData.destination || '';
+
+                                    console.log(`    ✅ Added commodity: ${commodityData.commodity} (${commodityData.quantity} SCU) ${commodityData.pickup} → ${commodityData.destination}`);
+                                }
+                            });
+
+                            console.log(`  ✓ Mission ${index + 1} complete: ${missionData.payout}, ${missionData.commodities.length} commodity rows`);
+                        } else {
+                            console.error('❌ createMissionPanel function not found');
+                        }
+                    });
+
+                    console.log(`🎉 Successfully imported ${importData.missions.length} missions from OCR scanner!`);
+
+                    // Update UI
+                    if (typeof updateDeliverySummary === 'function') {
+                        updateDeliverySummary();
+                    }
+                    if (typeof updateStats === 'function') {
+                        updateStats();
+                    }
+                    if (typeof saveSession === 'function') {
+                        saveSession();
+                    }
+
+                    // Clear the OCR import (so it doesn't re-import on next load)
+                    localStorage.removeItem('haulerHelperOCRImport');
+                    console.log('🗑️ Cleared OCR import from localStorage');
+
+                } catch (e) {
+                    console.error('❌ Error loading OCR import:', e);
+                    localStorage.removeItem('haulerHelperOCRImport');
+                }
+            }
+
+            // Location name normalization - fixes common OCR errors
+            function normalizeLocationName(location) {
+                if (!location) return '';
+
+                // Comprehensive location corrections
+                const corrections = {
+                    // Baijini variations
+                    'Baljini': 'Baijini Point',
+                    'Bajini': 'Baijini Point',
+                    'Baijini': 'Baijini Point',
+
+                    // Everus variations
+                    'Evarus': 'Everus Harbor',
+                    'Everus': 'Everus Harbor',
+
+                    // Port Tressler variations
+                    'Tressler': 'Port Tressler',
+                    'Port Tresler': 'Port Tressler',
+
+                    // Seraphim variations
+                    'Seraphim': 'Seraphim Station',
+                    'Serafim': 'Seraphim Station',
+
+                    // Lagrange points
+                    'ARC-L1': 'ARC-L1',
+                    'CRU-L1': 'CRU-L1',
+                    'HUR-L1': 'HUR-L1',
+                    'MIC-L1': 'MIC-L1',
+                    'MIC-L2': 'MIC-L2',
+                    'MIC-L3': 'MIC-L3',
+                    'MIC-L4': 'MIC-L4',
+                    'MIC-L5': 'MIC-L5',
+
+                    // Common misspellings
+                    'New Babage': 'New Babbage',
+                    'New Babagge': 'New Babbage',
+                    'Lorville': 'Lorville',
+                    'Area18': 'Area 18',
+                    'Area-18': 'Area 18',
+                    'Orison': 'Orison',
+
+                    // Add more as you discover them
+                };
+
+                // Check exact matches first
+                if (corrections[location]) {
+                    return corrections[location];
+                }
+
+                // Check partial matches (case insensitive)
+                const locationLower = location.toLowerCase();
+                for (const [key, value] of Object.entries(corrections)) {
+                    if (locationLower === key.toLowerCase()) {
+                        return value;
+                    }
+                }
+
+                // Return original if no correction found
+                return location;
+            }
+
+            // Commodity name normalization - fixes common OCR errors
+            function normalizeCommodityName(commodity) {
+                if (!commodity) return '';
+
+                const corrections = {
+                    'Agricultural Supplies': 'Agricultural Supplies',
+                    'Agri Supplies': 'Agricultural Supplies',
+                    'Processed Food': 'Processed Food',
+                    'Proc Food': 'Processed Food',
+                    'Pressurized Ice': 'Pressurized Ice',
+                    'Press Ice': 'Pressurized Ice',
+                    'Corundum': 'Corundum',
+                    'Aluminum': 'Aluminum',
+                    'Aluminium': 'Aluminum',
+                    'Titanium': 'Titanium',
+                    'Quartz': 'Quartz',
+                    'Waste': 'Waste',
+                    'Tin': 'Tin',
+                    'Hydrogen': 'Hydrogen',
+                    'Quantum Fuel': 'Quantum Fuel',
+                    'Ship Ammo': 'Ship Ammo',
+                    'Stims': 'Stims',
+                    'Scrap': 'Scrap',
+                    'Silicon': 'Silicon',
+                    'Carbon': 'Carbon',
+                    'Tungsten': 'Tungsten',
+                    'Beryl': 'Beryl',
+                };
+
+                return corrections[commodity] || commodity;
+            }
+
+            // Check for OCR scanner imports and load all missions
+            function checkForOCRImport() {
+                const ocrImport = localStorage.getItem('haulerHelperOCRImport');
+                if (!ocrImport) {
+                    console.log('📭 No OCR import found');
+                    return;
+                }
+
+                try {
+                    const importData = JSON.parse(ocrImport);
+                    console.log('📥 Found OCR import:', importData.missions?.length || 0, 'missions');
+
+                    if (!importData.missions || importData.missions.length === 0) {
+                        console.log('⚠️ No missions in OCR import');
+                        localStorage.removeItem('haulerHelperOCRImport');
+                        return;
+                    }
+
+                    console.log('🔄 Clearing existing missions and importing from OCR...');
+
+                    // ============ DETECT SYSTEM & CATEGORY FROM LOCATIONS ============
+
+                    // Collect all locations from all missions
+                    const allLocations = [];
+                    importData.missions.forEach(mission => {
+                        mission.commodities.forEach(commodity => {
+                            if (commodity.pickup) allLocations.push(commodity.pickup);
+                            if (commodity.destination) allLocations.push(commodity.destination);
+                        });
+                    });
+
+                    console.log('🔍 Analyzing locations:', allLocations);
+
+                    // Detect planet-level system from location patterns
+                    let detectedSystem = null;
+
+                    const locationString = allLocations.join(' ').toUpperCase();
+
+                    if (locationString.includes('MIC-L') || locationString.includes('MICROTECH') ||
+                        locationString.includes('NEW BABBAGE') || locationString.includes('TRESSLER')) {
+                        detectedSystem = 'microtech';
+                    } else if (locationString.includes('HUR-L') || locationString.includes('HURSTON') ||
+                        locationString.includes('LORVILLE') || locationString.includes('EVERUS')) {
+                        detectedSystem = 'hurston';
+                    } else if (locationString.includes('ARC-L') || locationString.includes('ARCCORP') ||
+                        locationString.includes('AREA 18') || locationString.includes('BAIJINI')) {
+                        detectedSystem = 'arccorp';
+                    } else if (locationString.includes('CRU-L') || locationString.includes('CRUSADER') ||
+                        locationString.includes('ORISON') || locationString.includes('SERAPHIM')) {
+                        detectedSystem = 'crusader';
+                    } else {
+                        // Default to microtech if can't determine
+                        detectedSystem = 'microtech';
+                        console.log('⚠️ Could not detect system, defaulting to microtech');
+                    }
+
+                    console.log('🌍 Detected system:', detectedSystem);
+
+                    // Detect category from location patterns
+                    let detectedCategory = 'stellar'; // Default
+
+                    const stellarPatterns = ['L1', 'L2', 'L3', 'L4', 'L5', 'EVERUS', 'SERAPHIM', 'BAIJINI', 'TRESSLER'];
+                    const localPatterns = ['SMO', 'SMCa', 'RAYARI', 'SHUBIN', 'DEPOT'];
+
+                    const stellarCount = allLocations.filter(loc =>
+                        stellarPatterns.some(pattern => loc.toUpperCase().includes(pattern))
+                    ).length;
+
+                    const localCount = allLocations.filter(loc =>
+                        localPatterns.some(pattern => loc.toUpperCase().includes(pattern))
+                    ).length;
+
+                    if (localCount > stellarCount) {
+                        detectedCategory = 'local';
+                    } else if (stellarCount > 0) {
+                        detectedCategory = 'stellar';
+                    } else {
+                        detectedCategory = 'planetary';
+                    }
+
+                    console.log('📂 Detected category:', detectedCategory, `(stellar: ${stellarCount}, local: ${localCount})`);
+
+                    // Set system and category
+                    selectedSystem = detectedSystem;
+                    const systemSelect = document.getElementById('systemSelect');
+                    if (systemSelect) {
+                        systemSelect.value = detectedSystem;
+
+                        // Trigger updateSystem if it exists
+                        if (typeof updateSystem === 'function') {
+                            updateSystem();
+                        }
+                    }
+
+                    selectedCategory = detectedCategory;
+                    const categorySelect = document.getElementById('categorySelect');
+                    if (categorySelect) {
+                        categorySelect.value = detectedCategory;
+
+                        // Trigger updateCategory to populate location lists
+                        if (typeof updateCategory === 'function') {
+                            updateCategory();
+                        }
+                    }
+
+                    console.log('✅ System set to:', detectedSystem, '| Category set to:', detectedCategory);
+
+                    // ============ CLEAR EXISTING MISSIONS ============
+
+                    missions = [];
+                    missionCounter = 0;
+                    const container = document.getElementById('missionsContainer');
+                    if (container) {
+                        container.innerHTML = '';
+                    }
+
+                    // ============ IMPORT EACH MISSION ============
+
+                    importData.missions.forEach((missionData, index) => {
+                        console.log(`📦 Importing mission ${index + 1}:`, missionData);
+
+                        missionCounter++;
+                        const missionId = `mission_${missionCounter}`;
+
+                        const mission = {
+                            id: missionId,
+                            payout: missionData.payout || '',
+                            commodities: []
+                        };
+
+                        missions.push(mission);
+
+                        // Create mission panel
+                        if (typeof createMissionPanel === 'function') {
+                            const panel = createMissionPanel(missionId, missionCounter);
+                            container.appendChild(panel);
+
+                            // Set payout in text input
+                            const payoutInput = panel.querySelector('.payout-input');
+                            if (payoutInput && missionData.payout) {
+                                payoutInput.value = missionData.payout;
+                                console.log(`  💰 Set payout: ${missionData.payout}`);
+                            }
+
+                            // Add each commodity
+                            missionData.commodities.forEach((commodityData, cIndex) => {
+                                const commodityId = `${missionId}_commodity_${cIndex}`;
+
+                                // Normalize names before storing
+                                const normalizedPickup = normalizeLocationName(commodityData.pickup);
+                                const normalizedDestination = normalizeLocationName(commodityData.destination);
+                                const normalizedCommodity = normalizeCommodityName(commodityData.commodity);
+
+                                mission.commodities.push({
+                                    id: commodityId,
+                                    pickup: normalizedPickup,
+                                    commodity: normalizedCommodity,
+                                    quantity: commodityData.quantity || '',
+                                    maxBoxSize: commodityData.maxBoxSize || '4',
+                                    destination: normalizedDestination
+                                });
+
+                                const commoditiesContainer = document.getElementById(`${missionId}_commodities`);
+                                if (commoditiesContainer && typeof createCommodityRow === 'function') {
+                                    const row = createCommodityRow(missionId, commodityId, cIndex > 0);
+                                    commoditiesContainer.appendChild(row);
+
+                                    // Set values with normalized names
+                                    const selects = row.querySelectorAll('select');
+                                    const input = row.querySelector('input[type="number"]');
+
+                                    if (selects[0]) {
+                                        selects[0].value = normalizedPickup;
+                                        if (selects[0].value !== normalizedPickup) {
+                                            console.warn(`    ⚠️ Pickup "${normalizedPickup}" not in dropdown options`);
+                                        }
+                                    }
+                                    if (selects[1]) {
+                                        selects[1].value = normalizedCommodity;
+                                        if (selects[1].value !== normalizedCommodity) {
+                                            console.warn(`    ⚠️ Commodity "${normalizedCommodity}" not in dropdown options`);
+                                        }
+                                    }
+                                    if (input) {
+                                        input.value = commodityData.quantity || '';
+                                    }
+                                    if (selects[2]) {
+                                        selects[2].value = commodityData.maxBoxSize || '4';
+                                    }
+                                    if (selects[3]) {
+                                        selects[3].value = normalizedDestination;
+                                        if (selects[3].value !== normalizedDestination) {
+                                            console.warn(`    ⚠️ Destination "${normalizedDestination}" not in dropdown options`);
+                                        }
+                                    }
+
+                                    console.log(`    ✅ Added commodity: ${normalizedCommodity} (${commodityData.quantity} SCU) ${normalizedPickup} → ${normalizedDestination}`);
+                                }
+                            });
+
+                            console.log(`  ✓ Mission ${index + 1} complete: ${missionData.payout}, ${missionData.commodities.length} commodity rows`);
+                        } else {
+                            console.error('❌ createMissionPanel function not found');
+                        }
+                    });
+
+                    console.log(`🎉 Successfully imported ${importData.missions.length} missions from OCR scanner!`);
+
+                    // ============ UPDATE UI ============
+
+                    if (typeof updateDeliverySummary === 'function') {
+                        updateDeliverySummary();
+                    }
+                    if (typeof updateStats === 'function') {
+                        updateStats();
+                    }
+                    if (typeof saveSession === 'function') {
+                        saveSession();
+                    }
+
+                    // Clear the OCR import (so it doesn't re-import on next load)
+                    localStorage.removeItem('haulerHelperOCRImport');
+                    console.log('🗑️ Cleared OCR import from localStorage');
+
+                } catch (e) {
+                    console.error('❌ Error loading OCR import:', e);
+                    localStorage.removeItem('haulerHelperOCRImport');
+                }
+            }
+
+            // Main initialization function
+            function init() {
+                console.log('%c🎯 HAULER HELPER v3.3.6 - WAREHOUSE LOGIC FIX', 'background: #4dd4ac; color: #000; font-size: 16px; padding: 8px;');
+                checkForOCRImport();
+                // Check if modules are loaded
             const requiredFunctions = [
                 'populateShipSelect',
-                'generateRoutePlan', 
+                'generateRoutePlan',
                 'generateCargoGrid',
                 'loadSession',
                 'updateStats',
                 'calculateBoxBreakdown'
             ];
-            
+
             const missingFunctions = requiredFunctions.filter(fn => typeof window[fn] === 'undefined');
-            
+
             if (missingFunctions.length > 0) {
                 console.error('❌ MISSING MODULES! The following functions are not loaded:', missingFunctions);
                 console.error('📁 Please ensure all module files are in the js/ directory:');
@@ -284,322 +824,327 @@
                 alert('ERROR: Module files not loaded!\n\nPlease ensure all .js files are in the js/ directory.\n\nSee console for details.');
                 return;
             }
-            
+
             console.log('✅ All modules loaded successfully');
 
             // HANDLE dragstart at document level (since addEventListener on cards doesn't work)
-            document.addEventListener('dragstart', function(e) {
+            document.addEventListener('dragstart', function (e) {
                 // Check if it's a cargo card
                 if (e.target.classList && e.target.classList.contains('cargo-group-card')) {
                     handleCargoGridDragStart(e);
                 }
             }, true); // Use capture phase
-            
-            document.addEventListener('dragend', function(e) {
+
+            document.addEventListener('dragend', function (e) {
                 if (e.target.classList && e.target.classList.contains('cargo-group-card')) {
                     handleCargoGridDragEnd(e);
                 }
             }, true);
-            
-            document.addEventListener('dragover', function(e) {
+
+            document.addEventListener('dragover', function (e) {
                 if ((e.target.classList && e.target.classList.contains('cargo-group-card')) ||
                     (e.target.classList && e.target.classList.contains('empty-cell'))) {
                     handleCargoGridDragOver(e);
                 }
             }, true);
-            
-            document.addEventListener('drop', function(e) {
+
+            document.addEventListener('drop', function (e) {
                 if ((e.target.classList && e.target.classList.contains('cargo-group-card')) ||
                     (e.target.classList && e.target.classList.contains('empty-cell'))) {
                     handleCargoGridDrop(e);
                 }
             }, true);
-            
+
             // Route stop drag handlers
-            document.addEventListener('dragstart', function(e) {
+            document.addEventListener('dragstart', function (e) {
                 if (e.target.classList && e.target.classList.contains('route-stop')) {
                     handleRouteStopDragStart(e);
                 }
             }, true);
-            
-            document.addEventListener('dragend', function(e) {
+
+            document.addEventListener('dragend', function (e) {
                 if (e.target.classList && e.target.classList.contains('route-stop')) {
                     handleRouteStopDragEnd(e);
                 }
             }, true);
-            
-            document.addEventListener('dragover', function(e) {
+
+            document.addEventListener('dragover', function (e) {
                 if (e.target.closest && e.target.closest('.route-stop')) {
                     handleRouteStopDragOver(e);
                 }
             }, true);
-            
-            document.addEventListener('drop', function(e) {
+
+            document.addEventListener('drop', function (e) {
                 if (e.target.closest && e.target.closest('.route-stop')) {
                     handleRouteStopDrop(e);
                 }
             }, true);
-            
+
 
 
             populateShipSelect();
+            populateLocationList();
             loadSession();
             loadTheme();
             loadDeliveryLayout();
             loadDeliveryOrder();
             loadCommodityOrder();
             loadCargoGridLayout();
-            loadRouteViewMode();
-            updateColorPalette();
-            checkForOCRImport();
-            checkForOCRImportAll();
-        }
-
-        // Check for OCR Scanner import data
-        // Helper: Match abbreviated location to full database name
-
-
-        // Helper: Match payout to database format and find closest
-
-
-
-
-        // Check for batch OCR import (Import All)
-
-        // Load delivery layout preference (removed - tabs removed)
-        function loadDeliveryLayout() {
-            // Function removed - By Location and By Commodity tabs removed
-        }
-
-        // Populate ship select
-
-        // Update ship
-
-        // Update system
-
-        // Update category
-
-        // Change theme
-
-        // Toggle delivery organizer layout
-        function toggleDeliveryLayout() {
-            // const container = document.getElementById('deliverySummary'); // Removed - By Location tab removed
-            // const containerCommodity = document.getElementById('deliverySummaryCommodity'); // Removed - By Commodity tab removed
-            const icon = document.getElementById('layoutIcon');
-            const iconCommodity = document.getElementById('layoutIconCommodity');
-            
-            if (container.classList.contains('two-column')) {
-                container.classList.remove('two-column');
-                containerCommodity.classList.remove('two-column');
-                icon.textContent = '⚏'; // Single column icon
-                iconCommodity.textContent = '⚏';
-                localStorage.setItem('haulerHelperDeliveryLayout', 'single');
-            } else {
-                container.classList.add('two-column');
-                containerCommodity.classList.add('two-column');
-                icon.textContent = '☰'; // Two column icon
-                iconCommodity.textContent = '☰';
-                localStorage.setItem('haulerHelperDeliveryLayout', 'two-column');
+                loadRouteViewMode();
+                updateColorPalette();
+                checkForOCRImport();
+                checkForOCRImportAll();
             }
-        }
+        
+    
 
-        // Drag and drop handlers for delivery organizer
-        let draggedElement = null;
+            // Check for OCR Scanner import data
+            // Helper: Match abbreviated location to full database name
 
-        function handleDragStart(e) {
-            draggedElement = e.target;
-            e.target.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/html', e.target.innerHTML);
-        }
 
-        function handleDragEnd(e) {
-            e.target.classList.remove('dragging');
-            
-            // Remove drag-over class from all elements
-            document.querySelectorAll('.delivery-location').forEach(el => {
-                el.classList.remove('drag-over');
-            });
-        }
+            // Helper: Match payout to database format and find closest
 
-        function handleDragOver(e) {
-            if (e.preventDefault) {
-                e.preventDefault();
+
+
+
+            // Check for batch OCR import (Import All)
+
+            // Load delivery layout preference (removed - tabs removed)
+            function loadDeliveryLayout() {
+                // Function removed - By Location and By Commodity tabs removed
             }
-            e.dataTransfer.dropEffect = 'move';
-            return false;
-        }
 
+            // Populate ship select
 
-        function handleDragLeave(e) {
-            e.target.classList.remove('drag-over');
-        }
+            // Update ship
 
-        function handleDrop(e) {
-            if (e.stopPropagation) {
-                e.stopPropagation();
-            }
-            e.preventDefault();
+            // Update system
 
-            const dropTarget = e.target.closest('.delivery-location');
-            if (draggedElement && dropTarget && draggedElement !== dropTarget) {
-                const draggedItem = draggedElement.getAttribute('data-location');
-                const targetItem = dropTarget.getAttribute('data-location');
-                
-                // Determine which order array to use based on current grouping mode
-                const orderArray = organizerGroupBy === 'commodity' ? commodityOrder : deliveryOrder;
-                
-                // Reorder the appropriate array
-                const draggedIndex = orderArray.indexOf(draggedItem);
-                const targetIndex = orderArray.indexOf(targetItem);
-                
-                orderArray.splice(draggedIndex, 1);
-                orderArray.splice(targetIndex, 0, draggedItem);
-                
-                // Save order and refresh display
-                if (organizerGroupBy === 'commodity') {
-                    saveCommodityOrder();
+            // Update category
+
+            // Change theme
+
+            // Toggle delivery organizer layout
+            function toggleDeliveryLayout() {
+                // const container = document.getElementById('deliverySummary'); // Removed - By Location tab removed
+                // const containerCommodity = document.getElementById('deliverySummaryCommodity'); // Removed - By Commodity tab removed
+                const icon = document.getElementById('layoutIcon');
+                const iconCommodity = document.getElementById('layoutIconCommodity');
+
+                if (container.classList.contains('two-column')) {
+                    container.classList.remove('two-column');
+                    containerCommodity.classList.remove('two-column');
+                    icon.textContent = '⚏'; // Single column icon
+                    iconCommodity.textContent = '⚏';
+                    localStorage.setItem('haulerHelperDeliveryLayout', 'single');
                 } else {
-                    saveDeliveryOrder();
-                }
-                // updateDeliverySummary removed
-            }
-
-            return false;
-        }
-
-        function saveDeliveryOrder() {
-            localStorage.setItem('haulerHelperDeliveryOrder', JSON.stringify(deliveryOrder));
-        }
-
-        function saveCommodityOrder() {
-            localStorage.setItem('haulerHelperCommodityOrder', JSON.stringify(commodityOrder));
-        }
-
-        function loadDeliveryOrder() {
-            const saved = localStorage.getItem('haulerHelperDeliveryOrder');
-            if (saved) {
-                try {
-                    deliveryOrder = JSON.parse(saved);
-                } catch (e) {
-                    deliveryOrder = [];
+                    container.classList.add('two-column');
+                    containerCommodity.classList.add('two-column');
+                    icon.textContent = '☰'; // Two column icon
+                    iconCommodity.textContent = '☰';
+                    localStorage.setItem('haulerHelperDeliveryLayout', 'two-column');
                 }
             }
-        }
 
-        function loadCommodityOrder() {
-            const saved = localStorage.getItem('haulerHelperCommodityOrder');
-            if (saved) {
-                try {
-                    commodityOrder = JSON.parse(saved);
-                } catch (e) {
-                    commodityOrder = [];
+            // Drag and drop handlers for delivery organizer
+            let draggedElement = null;
+
+            function handleDragStart(e) {
+                draggedElement = e.target;
+                e.target.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', e.target.innerHTML);
+            }
+
+            function handleDragEnd(e) {
+                e.target.classList.remove('dragging');
+
+                // Remove drag-over class from all elements
+                document.querySelectorAll('.delivery-location').forEach(el => {
+                    el.classList.remove('drag-over');
+                });
+            }
+
+            function handleDragOver(e) {
+                if (e.preventDefault) {
+                    e.preventDefault();
+                }
+                e.dataTransfer.dropEffect = 'move';
+                return false;
+            }
+
+
+            function handleDragLeave(e) {
+                e.target.classList.remove('drag-over');
+            }
+
+            function handleDrop(e) {
+                if (e.stopPropagation) {
+                    e.stopPropagation();
+                }
+                e.preventDefault();
+
+                const dropTarget = e.target.closest('.delivery-location');
+                if (draggedElement && dropTarget && draggedElement !== dropTarget) {
+                    const draggedItem = draggedElement.getAttribute('data-location');
+                    const targetItem = dropTarget.getAttribute('data-location');
+
+                    // Determine which order array to use based on current grouping mode
+                    const orderArray = organizerGroupBy === 'commodity' ? commodityOrder : deliveryOrder;
+
+                    // Reorder the appropriate array
+                    const draggedIndex = orderArray.indexOf(draggedItem);
+                    const targetIndex = orderArray.indexOf(targetItem);
+
+                    orderArray.splice(draggedIndex, 1);
+                    orderArray.splice(targetIndex, 0, draggedItem);
+
+                    // Save order and refresh display
+                    if (organizerGroupBy === 'commodity') {
+                        saveCommodityOrder();
+                    } else {
+                        saveDeliveryOrder();
+                    }
+                    // updateDeliverySummary removed
+                }
+
+                return false;
+            }
+
+            function saveDeliveryOrder() {
+                localStorage.setItem('haulerHelperDeliveryOrder', JSON.stringify(deliveryOrder));
+            }
+
+            function saveCommodityOrder() {
+                localStorage.setItem('haulerHelperCommodityOrder', JSON.stringify(commodityOrder));
+            }
+
+            function loadDeliveryOrder() {
+                const saved = localStorage.getItem('haulerHelperDeliveryOrder');
+                if (saved) {
+                    try {
+                        deliveryOrder = JSON.parse(saved);
+                    } catch (e) {
+                        deliveryOrder = [];
+                    }
                 }
             }
-        }
+
+            function loadCommodityOrder() {
+                const saved = localStorage.getItem('haulerHelperCommodityOrder');
+                if (saved) {
+                    try {
+                        commodityOrder = JSON.parse(saved);
+                    } catch (e) {
+                        commodityOrder = [];
+                    }
+                }
+            }
 
 
 
-        // Load theme
+            // Load theme
 
-        // Update color palette in picker
+            // Update color palette in picker
 
-        // Add mission panel
+            // Add mission panel
 
-        // Create mission panel HTML
+            // Create mission panel HTML
 
-        // Add commodity row
+            // Add commodity row
 
-        // Create commodity row HTML
+            // Create commodity row HTML
 
-        // Update commodity data
+            // Update commodity data
 
-        // Update mission payout
+            // Update mission payout
 
-        // AUTO-FILL HELPER FUNCTION
+            // AUTO-FILL HELPER FUNCTION
 
-        // Remove commodity row
+            // Remove commodity row
 
-        // Remove mission panel
+            // Remove mission panel
 
-        // Get inline SVG icon for box sizes (supports currentColor for theming)
+            // Get inline SVG icon for box sizes (supports currentColor for theming)
 
-        // Calculate box breakdown
+            // Calculate box breakdown
 
-        // Update delivery summary
+            // Update delivery summary
 
-        // Group deliveries by location
+            // Group deliveries by location
 
-        // Tab switching function
+            // Tab switching function
 
-        // Generate optimized route plan
-        // Update cargo grid layout based on columns and rows dropdowns
-        // Generate cargo grid with free positioning
-        // DIAGNOSTIC: Check actual DOM state
-        // Attach drag handlers to all cargo cards after grid generation
-
-
-
-
-        
-
-        // Color picker functions
+            // Generate optimized route plan
+            // Update cargo grid layout based on columns and rows dropdowns
+            // Generate cargo grid with free positioning
+            // DIAGNOSTIC: Check actual DOM state
+            // Attach drag handlers to all cargo cards after grid generation
 
 
 
 
 
 
-        // Session management
+            // Color picker functions
 
 
-        // =============================================================================
-        // MISSION DATA EXPORT FUNCTIONS
-        // =============================================================================
-        
-        /**
-         * Export current session data to JSON file for analysis
-         * Captures all mission details for pattern identification
-         */
-        
-        /**
-         * Export current session data to CSV for Excel analysis
-         * One row per commodity delivery
-         */
-        
-        /**
-         * Download JSON data as a file
-         */
-        
-        /**
-         * Download CSV data as a file
-         */
 
-                // Initialize on load
-        window.onload = init;
 
-        // Reset missions only (keep ship, system, category, theme)
 
-        // Reset function
-    </script>
 
-    <button class="btn-reset" onclick="resetMissions()" title="Clear missions only" style="bottom: 80px;">Reset Missions</button>
+            // Session management
+
+
+            // =============================================================================
+            // MISSION DATA EXPORT FUNCTIONS
+            // =============================================================================
+
+            /**
+             * Export current session data to JSON file for analysis
+             * Captures all mission details for pattern identification
+             */
+
+            /**
+             * Export current session data to CSV for Excel analysis
+             * One row per commodity delivery
+             */
+
+            /**
+             * Download JSON data as a file
+             */
+
+            /**
+             * Download CSV data as a file
+             */
+
+            // Initialize on load
+            window.onload = init;
+
+            // Reset missions only (keep ship, system, category, theme)
+
+            // Reset function
+        </script>
+
+        <button class="btn-reset" onclick="resetMissions()" title="Clear missions only" style="bottom: 80px;">Reset
+            Missions</button>
         <!-- Export Buttons -->
-    <div class="export-buttons-bottom">
-        <button class="btn-export-bottom" onclick="exportSessionData()" title="Export as JSON for analysis">
-            📊 Export JSON
-        </button>
-        <button class="btn-export-bottom" onclick="exportSessionCSV()" title="Export as CSV for Excel">
-            📈 Export CSV
-        </button>
-    </div>
+        <div class="export-buttons-bottom">
+            <button class="btn-export-bottom" onclick="exportSessionData()" title="Export as JSON for analysis">
+                📊 Export JSON
+            </button>
+            <button class="btn-export-bottom" onclick="exportSessionCSV()" title="Export as CSV for Excel">
+                📈 Export CSV
+            </button>
+        </div>
 
-    <button class="btn-reset" onclick="resetAll()" title="Reset all data and preferences">Reset All</button>
+        <button class="btn-reset" onclick="resetAll()" title="Reset all data and preferences">Reset All</button>
 
-    <footer class="footer">
-        This is an unofficial Star Citizen fansite, not affiliated with the Cloud Imperium group of companies.<br>
-        2025 Wednesdaywoe<br>
-        <a href="https://www.youtube.com/@wednesdaywoeplays" target="_blank">youtube.com/@wednesdaywoeplays</a>
-    </footer>
-</body>
-</html>
+        <footer class="footer">
+            This is an unofficial Star Citizen fansite, not affiliated with the Cloud Imperium group of companies.<br>
+            2025 Wednesdaywoe<br>
+            <a href="https://www.youtube.com/@wednesdaywoeplays" target="_blank">youtube.com/@wednesdaywoeplays</a>
+        </footer>
+    </body>
+
+    </html>

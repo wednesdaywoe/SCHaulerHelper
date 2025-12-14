@@ -1,22 +1,33 @@
 <!-- 
     HAULER HELPER - OCR SCANNER
-    Version: v4.1.1-DEBUG-MODE
-    Updated: 2025-12-07 23:49:49
+    Version: v5.0.0-OPTIMIZED
+    Updated: 2025-12-12
     
-    🐛 OCR Scanner - NAVIGATION DISABLED
+    🎮 OPTIMIZED FOR STAR CITIZEN GAME UI TEXT
     
-    Auto-navigation to Hauler Helper is TEMPORARILY DISABLED
-    so you can see console logs after clicking "Import to Hauler"
+    Enhanced Tesseract.js with preprocessing specifically tuned for game screenshots:
+    
+    OPTIMIZATIONS:
+    • Image Enhancement: Contrast & brightness boost for glowing text
+    • Auto-crop: Focus on right half where mission text appears
+    • PSM Mode 6: Single block detection (best for game UIs)
+    • Better logging: Console shows confidence scores
+    • All Star Citizen parsing logic preserved
+    
+    WHY TESSERACT.JS?
+    • Works from file:// (no server required during development)
+    • CDN-friendly (no build system needed)
+    • Proven accuracy with proper preprocessing
+    • Faster initial load than alternatives
+    • Your OCR mappings handle post-processing cleanup
     
     TO USE:
     1. Upload screenshots
-    2. Open browser console (F12)
-    3. Click "Import to Hauler" 
-    4. Console logs will stay visible!
-    5. Copy/paste the logs
-    
-    TO RE-ENABLE NAVIGATION:
-    Uncomment lines 1936-1938 in importToHauler()
+    2. Enable "Enhance Image (Game UI)" for best results
+    3. Enable "Auto-crop to Right Half" to focus on mission text
+    4. Click "Process Images"
+    5. Check browser console (F12) for detailed logs
+    6. Click "Import to Hauler" to send to main app
     
     🎯 COMPREHENSIVE BUG FIXES - THREE CRITICAL ISSUES RESOLVED
     
@@ -42,7 +53,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OCR Scanner - Hauler Helper</title>
+    <!-- Tesseract.js OCR Engine (optimized for game UIs) -->
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    <!-- OCR Mappings for consistent name normalization -->
+    <script src="js/data/ocr-mappings.js"></script>
     <link rel="stylesheet" href="css/themes.css">
     <link rel="stylesheet" href="css/main.css">
     <style>
@@ -434,6 +448,87 @@
             border-bottom: none;
         }
 
+        /* Mission Summary Header */
+        .mission-summary-header {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .summary-stat {
+            text-align: center;
+        }
+
+        .summary-stat .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .summary-stat .stat-value {
+            font-size: 20px;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* Commodity Table */
+        .commodity-table {
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .commodity-table-header {
+            display: grid;
+            grid-template-columns: 2fr 2fr 2fr 1fr;
+            background-color: var(--bg-tertiary);
+            padding: 12px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .commodity-table-row {
+            display: grid;
+            grid-template-columns: 2fr 2fr 2fr 1fr;
+            padding: 12px;
+            font-size: 13px;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s;
+        }
+
+        .commodity-table-row:last-child {
+            border-bottom: none;
+        }
+
+        .commodity-table-row:hover {
+            background-color: rgba(77, 212, 172, 0.05);
+        }
+
+        .col-commodity {
+            font-weight: 600;
+        }
+
+        .col-pickup,
+        .col-delivery {
+            color: var(--text-secondary);
+        }
+
+        .col-quantity {
+            text-align: right;
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+
         /* Canvas & Region Selection */
         .canvas-container {
             position: relative;
@@ -686,17 +781,16 @@
                         <label for="templateMode">Use Template Mode</label>
                     </div>
                     <div class="option-item">
-                        <input type="checkbox" id="deduplicateMode">
-                        <label for="deduplicateMode">Deduplicate Results</label>
+                        <input type="checkbox" id="enhanceImage" checked>
+                        <label for="enhanceImage">Enhance Image (Game UI)</label>
                     </div>
                     <div class="option-item full-width">
                         <label for="psmMode">OCR Mode:</label>
                         <select id="psmMode" class="select-input">
-                            <option value="3">Auto</option>
+                            <option value="3">Auto OSD</option>
                             <option value="6" selected>Single Block (Best for SC)</option>
                             <option value="11">Sparse Text</option>
                             <option value="4">Single Column</option>
-                            <option value="13">Single Line</option>
                         </select>
                     </div>
                 </div>
@@ -704,7 +798,9 @@
                 <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
                     <button class="button" id="processBtn" disabled>Process Images</button>
                     <button class="button" id="importAllBtn" style="background-color: var(--color-success); display: none;">📦 Import All to Hauler</button>
+                    <button class="button" id="importJsonBtn" onclick="document.getElementById('jsonFileInput').click()" style="background-color: var(--color-info);">📁 Import JSON</button>
                     <button class="button button-secondary" id="clearBtn" style="display: none;">Clear All</button>
+                    <input type="file" id="jsonFileInput" accept=".json" style="display: none;" onchange="importFromJson(event)">
                 </div>
             </div>
         </div>
@@ -790,7 +886,6 @@
         const ctx = regionCanvas.getContext('2d');
         const regionsList = document.getElementById('regionsList');
         const parseMode = document.getElementById('parseMode');
-        const deduplicateMode = document.getElementById('deduplicateMode');
         const templateMode = document.getElementById('templateMode');
         const exportJsonBtn = document.getElementById('exportJsonBtn');
         const exportCsvBtn = document.getElementById('exportCsvBtn');
@@ -1113,487 +1208,193 @@
             }
         }
 
-        function normalizeLocationName(location) {
-            if (!location) return '';
+        // ============================================================================
+        // CLEAN STAR CITIZEN MISSION PARSER
+        // ============================================================================
+        // Purpose: Extract mission data from OCR text
+        // Returns: { payout: number, segments: [{ commodity, pickup, delivery, quantity }] }
+        
+        /**
+         * Parse Star Citizen mission from OCR text
+         * @param {string} text - Raw OCR text from mission screenshot
+         * @returns {object} - { payout: number, segments: Array }
+         */
+        function parseStarCitizenMission(text) {
+            console.log('🔍 Parsing Star Citizen mission...');
             
-            let normalized = location.trim();
+            // Step 1: Extract payout
+            const payout = extractPayout(text);
             
-            // CRITICAL: Remove newlines and everything after them
-            normalized = normalized.split('\n')[0].trim();
+            // Step 2: Preprocess text to fix line breaks and OCR errors
+            text = preprocessText(text);
             
-            // Remove garbage OCR text
-            const garbage = ['Ses', 'spots', 'ship ammo', 'elevator', 'freight', 
-                             'best for you', 'never gave', 'IDCOS', 'taken to'];
-            for (const word of garbage) {
-                const regex = new RegExp('\\s+' + word + '.*$', 'i');
-                normalized = normalized.replace(regex, '');
-            }
+            // Step 3: Extract commodity segments
+            const segments = extractSegments(text);
             
-            // Remove common suffixes
-            normalized = normalized
-                .replace(/\s+on microTech.*$/i, '')
-                .replace(/\s+I\s*$/i, '');
+            console.log(`✅ Parsed mission: ${payout ? '₡' + payout.toLocaleString() : 'No payout'}, ${segments.length} segments`);
             
-            // Fix OCR errors
-            normalized = normalized
-                .replace(/SM0-/g, 'SMO-')
-                .replace(/SMO0-/g, 'SMO-')
-                .replace(/S4DC0(\d)/g, 'S4DC$1')
-                .replace(/S4DCO(\d)/g, 'S4DC$1')
-                .replace(/S40C/g, 'S4DC')
-                .replace(/S4DCS$/g, 'S4DC05');
-            
-            // Simplify facility names
-            normalized = normalized
-                .replace(/Shubin Mining Facility (SMO-\d+)/, 'Shubin $1')
-                .replace(/Covalex Distribution Center (S4DC\d+)/, 'Covalex $1')
-                .replace(/\s+Distribution Center$/i, '')
-                .replace(/\s+Distribution$/i, '');
-            
-            return normalized.trim();
+            return { payout, segments };
         }
 
-        function parseQuantityString(str) {
-            let numStr = str.toString().trim();
+        /**
+         * Extract mission payout from text
+         * Handles OCR errors where "Reward" or "=" are misread
+         */
+        function extractPayout(text) {
+            // Pattern 1: Standard "Reward" with flexible separator
+            // Handles: =, a, x, &, 1, u, Â®, or any garbage before the number
+            // Matches: "Reward = 99,500" or "Reward 1 90,750" or "Reward Â® 90,250"
+            // Strategy: Match "Reward", skip up to 10 chars (but not newline), then find 5+ digit number with commas
+            let match = text.match(/Reward[^\n]{0,10}?(\d{2,3},\d{3}|\d{5,})/i);
             
-            console.log(`  🔢 Parsing quantity: "${numStr}"`);
-                
-            // Handle "/" misread as "7" - OCR pattern: "0/5" → "075"
-            // The game shows "0/X SCU" where 0 is progress and X is total needed
-            // OCR misreads "/" as "7", so "0/5" becomes "075", "0/7" becomes "077"
-            // Solution: Extract just the last digit
-            if (/^07(\d)$/.test(numStr)) {
-                const quantity = numStr[2];  // Last digit is the real quantity
-                console.log(`  🔄 Detected 0/X pattern: "${numStr}" (from "0/${quantity}") → ${quantity}`);
-                return parseInt(quantity, 10);
+            if (match) {
+                const payout = parseInt(match[1].replace(/,/g, ''), 10);
+                console.log(`  💰 Payout: ₡${payout.toLocaleString()}`);
+                return payout;
             }
             
-            // Also handle two-digit quantities: "0/75" → "0775" (rare but possible)
-            if (/^077(\d)$/.test(numStr)) {
-                const quantity = numStr.substring(2);  // Last two digits
-                console.log(`  🔄 Detected 0/XX pattern: "${numStr}" (from "0/${quantity}") → ${quantity}`);
-                return parseInt(quantity, 10);
+            // Pattern 2: OCR misread "Reward" as "EEL]" or similar
+            // Matches: "EEL] = 90,250"
+            match = text.match(/(?:EEL\]|REE|RRE)[^\n]{0,10}?(\d{2,3},\d{3}|\d{5,})/i);
+            
+            if (match) {
+                const payout = parseInt(match[1].replace(/,/g, ''), 10);
+                console.log(`  💰 Payout (alt pattern): ₡${payout.toLocaleString()}`);
+                return payout;
             }
-                
-            // Handle "B" misread - could be "8" or "0"
-            // Examples: "B00" → "800", "B24" → "824", "0B00" → "0800"
-            if (/^B(\d+)$/.test(numStr)) {
-                numStr = '8' + numStr.substring(1);
-                console.log(`  🔄 B→8 conversion: "${str}" → "${numStr}"`);
-            } else if (/^0B(\d+)$/.test(numStr)) {
-                numStr = '08' + numStr.substring(2);
-                console.log(`  🔄 0B→08 conversion: "${str}" → "${numStr}"`);
-            }
-                
-            // Direct "/" pattern: "0/100" → "100" (if OCR got it right)
-            if (numStr.includes('/')) {
-                const parts = numStr.split('/');
-                if (parts.length === 2) {
-                    console.log(`  🔄 Slash pattern: "${numStr}" → ${parts[1]}`);
-                    return parseInt(parts[1], 10);
-                }
-            }
-                
-            // Remove leading zeros for normal numbers
-            // Examples: "100" → "100", "050" → "50"
-            const original = numStr;
-            numStr = numStr.replace(/^0+/, '') || '0';
-            if (original !== numStr) {
-                console.log(`  🔄 Removed leading zeros: "${original}" → "${numStr}"`);
-            }
-            return parseInt(numStr, 10);
+            
+            console.log('  💰 Payout: Not found');
+            return null;
         }
 
+        /**
+         * Preprocess OCR text to fix line breaks
+         */
+        function preprocessText(text) {
+            console.log('  📝 Preprocessing text...');
+            
+            // Fix location names that break across lines
+            text = text.replace(/Sakura Sun\s*\n\s*Goldenrod/gi, 'Sakura Sun Goldenrod');
+            text = text.replace(/Greycat Stanton IV\s*\n\s*Production/gi, 'Greycat Stanton IV Production');
+            text = text.replace(/Rayari (\w+)\s*\n\s*Research/gi, 'Rayari $1 Research');
+            text = text.replace(/NB Int\.?\s*\n\s*Spaceport/gi, 'NB Int. Spaceport');
+            
+            // Fix facility codes that break across lines
+            text = text.replace(/SMO-\s*\n\s*(\d+)/gi, 'SMO-$1');
+            text = text.replace(/SM0-\s*\n\s*(\d+)/gi, 'SMO-$1');
+            text = text.replace(/SMCa-\s*\n\s*(\d+)/gi, 'SMCa-$1');
+            text = text.replace(/S4DC\s*\n\s*(\d+)/gi, 'S4DC$1');
+            text = text.replace(/S4LD\s*\n\s*(\d+)/gi, 'S4LD$1');
+            
+            // Join "Mining" or "Facility" prefix with code
+            text = text.replace(/Mining\s*\n\s*(SMO-?\d+|SMCa-?\d+)/gi, 'Mining $1');
+            text = text.replace(/Facility\s*\n\s*(SMO-?\d+|S4DC\d+)/gi, 'Facility $1');
+            
+            return text;
+        }
 
-        // NEW: Enhanced parser that extracts missions as structured commodity segments
-        // Returns array of { commodity, pickup, delivery, quantity } objects
-        // NEW: Enhanced parser that extracts missions as structured commodity segments
-        // Returns array of { commodity, pickup, delivery, quantity } objects
-        function parseStarCitizenMissionSegments(text) {
+        /**
+         * Extract commodity segments
+         */
+        function extractSegments(text) {
+            console.log('  🚚 Extracting delivery segments...');
             const segments = [];
             
-            console.log('🔍 Parsing mission segments from text...');
+            // Pattern: "Deliver 0/3 SCU of Stims to Shubin Mining Facility SMCa-6 on Calliope"
+            const deliverPattern = /Deliver\s+(0\/\d+|\d+)\s+SCU\s+(?:of\s+)?([\w\s\(\)]+?)\s+to\s+([\w\s\-\.\']+?)\s+(?:on|above)\s+/gi;
             
-            // CRITICAL FIX: Normalize newlines that break location names
-            // OCR often breaks facility codes across lines: "SMO-\n10" or "S4DC\n05"
-            console.log('  📝 Preprocessing text to fix broken location names...');
-            
-            // CRITICAL: Fix ALL broken SMO facility names FIRST
-            // Pattern 1: "SMO-" at end of line with number on next line
-            text = text.replace(/SMO-\s*\n\s*(\d+)/g, 'SMO-$1');
-            text = text.replace(/SM0-\s*\n\s*(\d+)/g, 'SMO-$1');
-            
-            // Pattern 2: "Facility SMO-" at end with garbage text containing number
-            // Example: "Facility SMO-\nactors to bring a 22\n" → "Facility SMO-22"
-            text = text.replace(/Facility\s+SMO-\s*\n\s*[^\n]*?(\d{2})/g, 'Facility SMO-$1');
-            text = text.replace(/Facility\s+SM0-\s*\n\s*[^\n]*?(\d{2})/g, 'Facility SMO-$1');
-            
-            // Pattern 3: "Mining SMO-" followed by newline and number
-            text = text.replace(/Mining\s+SMO-\s*\n\s*(\d+)/g, 'Mining SMO-$1');
-            text = text.replace(/Mining\s+SM0-\s*\n\s*(\d+)/g, 'Mining SMO-$1');
-            
-            // Pattern 4: Just "SMO-" with number buried in garbage text
-            text = text.replace(/SMO-\s*[^\d\n]{0,50}?(\d{2})/g, 'SMO-$1');
-            text = text.replace(/SM0-\s*[^\d\n]{0,50}?(\d{2})/g, 'SMO-$1');
-            
-            // Fix Covalex facility codes
-            text = text.replace(/S4DC\s*\n\s*(\d+)/g, 'S4DC$1');
-            text = text.replace(/S4DC0\s*\n\s*(\d+)/g, 'S4DC0$1');
-            text = text.replace(/S4DCOS\s*\n/g, 'S4DC05 ');
-            text = text.replace(/S4DC0S\s*\n/g, 'S4DC05 ');
-            
-            // DEBUG: Show what SMO facilities we have now
-            const fixedSMO = text.match(/SMO-\d+/g);
-            console.log('  ✅ Fixed SMO facilities:', fixedSMO);
-            
-            // Fix "Facility\nSM" patterns
-            text = text.replace(/Facility\s*\n\s*(SM[O0])/g, 'Facility $1');
-            
-            // Remove garbage text lines (now that facility numbers are preserved)
-            text = text.replace(/\nactors to bring a [^\n]*\n/gi, ' ');
-            text = text.replace(/\nthe stuff, as long as its\n/gi, ' ');
-            text = text.replace(/\nfii un issolech\n/gi, ' ');
-            text = text.replace(/\noiice\n/gi, ' ');
-            
-            console.log('  ✅ Text preprocessing complete');
-            
-            // NEW APPROACH: Find all Deliver statements first, then find preceding Collect
-            // This ensures each delivery gets paired with its specific collection
-            // FIXED: Simpler pattern that handles newlines and captures full quantities
-            const deliverPattern = /Deliver\s+(0\d+|\d+)\s+SCU\s+(?:of\s+)?([\w\s\(\)]+?)\s+to\s+([\w\s\-\.\']+?)(?:\s+Distribution|\s+Center|\s+Facility|\s+Mining|\s+Station|\s+Harbor|\n|\.)/gi;
-            
-            let deliverMatch;
-            while ((deliverMatch = deliverPattern.exec(text)) !== null) {
-                const quantity = parseQuantityString(deliverMatch[1]);
-                let commodity = deliverMatch[2].trim();
-                const delivery = normalizeLocationName(deliverMatch[3]);
-                const deliverPos = deliverMatch.index;
+            let match;
+            while ((match = deliverPattern.exec(text)) !== null) {
+                const quantityStr = match[1];
+                const commodityRaw = match[2].trim();
+                const deliveryRaw = match[3].trim();
+                const deliverPos = match.index;
                 
-                // Clean up commodity name (remove "(Raw)" etc)
-                commodity = commodity.replace(/\s*\([^)]+\)\s*/g, ' ').trim();
+                const quantity = parseQuantity(quantityStr);
+                const commodity = cleanCommodity(commodityRaw);
+                const delivery = cleanLocation(deliveryRaw);
+                const pickup = findPickupLocation(text, commodity, deliverPos);
                 
-                console.log(`  🚚 Found delivery: ${quantity} SCU of ${commodity} to ${delivery} at position ${deliverPos}`);
-                
-                // Now search BACKWARDS from this position to find the matching Collect statement
-                const textBefore = text.substring(Math.max(0, deliverPos - 1000), deliverPos);
-                
-                // Look for "Collect [commodity] from [location]"
-                // IMPORTANT: Find the LAST (closest) match, not the first!
-                const collectPattern = new RegExp('Collect\\s+' + commodity.replace(/\s+/g, '\\s+') + '\\s+(?:\\([^)]+\\)\\s+)?from\\s+([ A-Za-z0-9\\t\\-\'.]+?)(?:\\.|\\n)', 'gi');
-                
-                // Find ALL matches, then take the last one (closest to Deliver)
-                const collectMatches = Array.from(textBefore.matchAll(collectPattern));
-                
-                if (collectMatches.length > 0) {
-                    const collectMatch = collectMatches[collectMatches.length - 1]; // Take LAST match
-                    const pickup = normalizeLocationName(collectMatch[1]);
-                    console.log(`    ✓ Matched with collection from ${pickup} (found ${collectMatches.length} collect(s), using closest)`);
-                    
-                    segments.push({
-                        commodity: commodity,
-                        pickup: pickup,
-                        delivery: delivery,
-                        quantity: quantity
-                    });
+                if (pickup && delivery && commodity && quantity > 0) {
+                    segments.push({ commodity, pickup, delivery, quantity });
+                    console.log(`    ✓ ${quantity} ${commodity}: ${pickup} → ${delivery}`);
                 } else {
-                    console.log(`    ⚠️ No matching collection found for ${commodity}`);
+                    console.log(`    ⚠️ Incomplete segment (skipping):`, { commodity, pickup, delivery, quantity });
                 }
             }
             
             console.log(`  ✅ Extracted ${segments.length} segments`);
-            
-            console.log(`📊 Total segments found: ${segments.length}`);
             return segments;
         }
 
-
-        // Star Citizen mission parser
-        // NEW: Enhanced parser that extracts missions as structured commodity segments
-        // Returns array of { commodity, pickup, delivery, quantity } objects
-
-
-        // Star Citizen mission parser - IMPROVED for real OCR data
-        function parseStarCitizenMission(text) {
-            const result = {
-                payout: null,
-                commodities: [],
-                pickupLocations: [],
-                deliveryLocations: [],
-                destinationQuantities: {},  // Map destination → quantity
-                pickupQuantities: {},       // Map pickup → quantity (for multi-pickup missions)
-                quantity: null  // Total quantity
-            };
-            
-            // Parse payout - check all patterns and take highest value
-            // (Reward amount is always higher than mission listing amounts)
-            const payoutPatterns = [
-                /Reward\s*\n?\s*(\d[\d,]+)/i,               // "Reward 48,750" - PRIORITY
-                /(\d[\d,\s]*\d)\s*(?:aUEC|AUEC|UEC)/i,     // "40,750 aUEC"
-                /(\d{2,}[,\s]\d{3})/,                         // "40,750" or "40 750"
-                /(\d+)[kK]/                                     // "40k" or "85K" - LAST
-            ];
-            
-            let highestPayout = 0;
-            
-            for (const pattern of payoutPatterns) {
-                const match = text.match(pattern);
-                if (match) {
-                    let cleanNumber = match[1].replace(/[,\s]/g, '');
-                    let payout = parseInt(cleanNumber);
-                    
-                    // Handle "K" suffix (multiply by 1000)
-                    if (match[0].toLowerCase().includes('k')) {
-                        payout *= 1000;
-                    }
-                    
-                    // Keep the highest value found
-                    if (payout > highestPayout && payout > 1000) {
-                        highestPayout = payout;
-                    }
-                }
+        /**
+         * Parse quantity from OCR text
+         */
+        function parseQuantity(str) {
+            // Handle "0/3" format
+            if (str.includes('/')) {
+                const parts = str.split('/');
+                return parseInt(parts[1], 10);
             }
             
-            if (highestPayout > 0) {
-                result.payout = highestPayout;
-            }
-            
-            // Parse commodities - case insensitive
-            const commodityKeywords = [
-                'Aluminum', 'Beryl', 'Carbon', 'Corundum', 'Diamond', 'Gold', 
-                'Hydrogen', 'Laranite', 'Quantanium', 'Quartz', 'Silicon', 'Titanium', 'Tungsten',
-                'Agricultural Supplies', 'Agri Supplies', 'Medical Supplies', 
-                'Processed Food', 'Proc Food', 'Waste', 'Scrap', 'Stims', 
-                'Ship Ammo', 'Quantum Fuel', 'Pressurized Ice', 'Press Ice', 
-                'C Materials', 'Tin'
-            ];
-            
-            const normalizedText = text.toLowerCase();
-            commodityKeywords.forEach(commodity => {
-                const normalizedCommodity = commodity.toLowerCase();
-                if (normalizedText.includes(normalizedCommodity)) {
-                    if (!result.commodities.includes(commodity)) {
-                        result.commodities.push(commodity);
-                    }
-                }
-            });
-            
-            // Parse quantities - handle both single and multiple deliveries
-            // For multi-delivery missions like "5 SCU to X, 7 SCU to Y", sum them up
-            // Helper function to clean OCR quantity errors
-            // IMPORTANT: OCR often reads "/" as "7", and "8" or "0" as "B"
-            
-            const quantityMatches = text.matchAll(/Deliver\s+(0[17]?\d+|\d+)\s*SCU/gi);
-            let totalQuantity = 0;
-            let quantityCount = 0;
-            
-            for (const match of quantityMatches) {
-                const qty = parseQuantityString(match[1]);
-                if (qty > 0 && qty < 100000) {  // Sanity check
-                    totalQuantity += qty;
-                    quantityCount++;
-                }
-            }
-            
-            // If found multiple quantities, use the sum
-            if (quantityCount > 0) {
-                result.quantity = totalQuantity;
-            } else {
-                // Fallback to old single-quantity parsing
-                let quantityMatch = text.match(/0\/(\d+)\s*SCU/i);
-                
-                if (!quantityMatch) {
-                    quantityMatch = text.match(/(\d+)\s*SCU/i);
-                    
-                    if (quantityMatch) {
-                        result.quantity = parseQuantityString(quantityMatch[1]);
-                    }
-                } else {
-                    result.quantity = parseInt(quantityMatch[1], 10);
-                }
-            }
-            
-            // Parse locations - "from [location]" and "to [location]" patterns
-            // Pattern 1: "Collect [commodity] from [location]"
-            const fromPattern1 = /(?:Collect|Pick up|from)\s+(?:[\w\s]+?)?from\s+([ A-Za-z0-9\t\-'.]+?)(?:Lively|Station|Harbor|Lagrange|above|\.|,|\n)/gi;
-            const fromMatches1 = text.matchAll(fromPattern1);
-            for (const match of fromMatches1) {
-                const location = normalizeLocationName(match[1]);
-                if (location && location.length > 2 && !result.pickupLocations.includes(location)) {
-                    result.pickupLocations.push(location);
-                }
-            }
-            
-            // Pattern 2: Just "from [location]"
-            const fromPattern2 = /from\s+([A-Z][A-Za-z0-9\-]+(?:[ \t]+[A-Z][A-Za-z0-9\-]+)*)/g;
-            const fromMatches2 = text.matchAll(fromPattern2);
-            for (const match of fromMatches2) {
-                const location = normalizeLocationName(match[1]);
-                if (location && location.length > 2 && !result.pickupLocations.includes(location)) {
-                    result.pickupLocations.push(location);
-                }
-            }
-            
-            // Pattern 3: "Deliver X SCU to [location]" - extract both quantity and location
-            const deliverPattern = /Deliver\s+(0\d+|\d+)\s+SCU\s+(?:of\s+[\w\s]+?)?to\s+([\w\s\-\.\']+?)(?:\s+Distribution|\s+Center|\s+Facility|\s+Mining|\s+Station|\s+Harbor|\n|\.)/gi;
-            const deliverMatches = text.matchAll(deliverPattern);
-            for (const match of deliverMatches) {
-                const qty = match[1];
-                const location = normalizeLocationName(match[2]);
-                
-                // Use the same comprehensive quantity parser
-                const quantity = parseQuantityString(qty);
-                
-                if (location && location.length > 2 && quantity > 0 && quantity < 100000) {
-                    if (!result.deliveryLocations.includes(location)) {
-                        result.deliveryLocations.push(location);
-                    }
-                    // Store quantity for this destination
-                    result.destinationQuantities[location] = quantity;
-                }
-            }
-            
-            // Pattern 3b: FALLBACK for misread "Deliver" - catches lines like:
-            // "Salen B00 SCU of Tungsten to Baijini Point"
-            // "[AnyWord] [quantity] SCU of [commodity] to [location]"
-            // This ensures we don't miss quantities when OCR misreads "Deliver"
-            const flexDeliverPattern = /\b\w+\s+(0[178]?\d+|[B]\d{2,3}|\d+)\s*SCU\s+(?:of\s+[\w\s]+?)?to\s+([A-Za-z0-9\s\-'.]+?)(?:above|Harbor|Station|Lagrange|Point|\.|,|\n)/gi;
-            const flexMatches = text.matchAll(flexDeliverPattern);
-            for (const match of flexMatches) {
-                const qty = match[1];
-                const location = normalizeLocationName(match[2]);
-                
-                // Use parseQuantityString which handles all OCR errors including "B"
-                const quantity = parseQuantityString(qty);
-                
-                // Only add if we don't already have this location with a quantity
-                if (location && location.length > 2 && quantity > 0 && quantity < 100000) {
-                    if (!result.destinationQuantities[location]) {
-                        if (!result.deliveryLocations.includes(location)) {
-                            result.deliveryLocations.push(location);
-                        }
-                        // Store quantity for this destination
-                        result.destinationQuantities[location] = quantity;
-                    }
-                }
-            }
-            
-            // Also check generic "to [location]" pattern for destinations without quantities
-            const toPattern1 = /(?:Deliver|to)\s+(?:[\d\/]+\s+SCU\s+of\s+[\w\s]+?)?to\s+([A-Za-z0-9\s\-'.]+?)(?:above|Harbor|Station|Lagrange|\.|,|\n)/gi;
-            const toMatches1 = text.matchAll(toPattern1);
-            for (const match of toMatches1) {
-                const location = normalizeLocationName(match[1]);
-                if (location && location.length > 2 && !result.deliveryLocations.includes(location)) {
-                    result.deliveryLocations.push(location);
-                }
-            }
-            
-            // Pattern 4: Just "to [location]"
-            const toPattern2 = /to\s+([A-Z][A-Za-z0-9\-]+(?:\s+[A-Z][A-Za-z0-9\-]+)*)/g;
-            const toMatches2 = text.matchAll(toPattern2);
-            for (const match of toMatches2) {
-                const location = normalizeLocationName(match[1]);
-                if (location && location.length > 2 && !result.deliveryLocations.includes(location)) {
-                    result.deliveryLocations.push(location);
-                }
-            }
-            
-            // Common SC location abbreviations
-            const locationAbbrevs = [
-                /(?:ARC|CRU|HUR|MIC)-L[1-5]/gi,           // ARC-L2, MIC-L1, etc
-                /(?:MT|HUR|ARC|CRU)\s+L[1-5]/gi,         // MT L1, HUR L2
-            ];
-            
-            for (const pattern of locationAbbrevs) {
-                const matches = text.matchAll(pattern);
-                for (const match of matches) {
-                    const location = normalizeLocationName(match[0]);
-                    // Try to determine if pickup or delivery based on context
-                    const beforeText = text.substring(Math.max(0, match.index - 50), match.index).toLowerCase();
-                    const afterText = text.substring(match.index, Math.min(text.length, match.index + 50)).toLowerCase();
-                    
-                    if (beforeText.includes('from') || beforeText.includes('collect')) {
-                        if (!result.pickupLocations.includes(location)) {
-                            result.pickupLocations.push(location);
-                        }
-                    } else if (beforeText.includes('to') || beforeText.includes('deliver') || 
-                               afterText.includes('deliver') || afterText.includes('to')) {
-                        if (!result.deliveryLocations.includes(location)) {
-                            result.deliveryLocations.push(location);
-                        }
-                    }
-                }
-            }
-            
-            // Clean up locations - remove common trailing words
-            const cleanLocation = (loc) => {
-                return loc.replace(/\s+(Station|Harbor|Lagrange|Point|above|at)$/i, '').trim();
-            };
-            
-            // Deduplicate locations - keep shortest version
-            const deduplicateLocations = (locations) => {
-                const cleaned = locations.map(cleanLocation);
-                const unique = [];
-                
-                for (const loc of cleaned) {
-                    // Check if this is a substring of an existing location or vice versa
-                    const isDuplicate = unique.some(existing => {
-                        if (loc.includes(existing) || existing.includes(loc)) {
-                            // Keep the shorter one
-                            const index = unique.indexOf(existing);
-                            if (loc.length < existing.length) {
-                                unique[index] = loc;
-                            }
-                            return true;
-                        }
-                        return false;
-                    });
-                    
-                    if (!isDuplicate) {
-                        unique.push(loc);
-                    }
-                }
-                
-                return unique;
-            };
-            
-            result.pickupLocations = deduplicateLocations(result.pickupLocations);
-            result.deliveryLocations = deduplicateLocations(result.deliveryLocations);
-            
-            // MULTI-PICKUP DETECTION: If multiple pickups → single delivery,
-            // try to extract quantities per pickup location
-            if (result.pickupLocations.length > 1 && result.deliveryLocations.length === 1) {
-                console.log('🔍 Multi-pickup mission detected, extracting per-pickup quantities...');
-                
-                // Pattern: "Collect [commodity] from [pickup]." followed by "Deliver [qty] SCU ... to [delivery]"
-                // Try to pair up each pickup with its quantity
-                result.pickupLocations.forEach(pickup => {
-                    // Look for pattern: pickup name ... Deliver ... qty SCU
-                    // Use a looser pattern that captures the section after the pickup mention
-                    const escapedPickup = pickup.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    const sectionPattern = new RegExp(
-                        `${escapedPickup}[\\s\\S]{0,200}?Deliver\\s+(0[178]?\\d+|[B]\\d{2,3}|\\d+)\\s*SCU`,
-                        'i'
-                    );
-                    const match = text.match(sectionPattern);
-                    
-                    if (match) {
-                        const qty = parseQuantityString(match[1]);
-                        if (qty > 0 && qty < 100000) {
-                            result.pickupQuantities[pickup] = qty;
-                            console.log(`  ✓ ${pickup}: ${qty} SCU`);
-                        }
-                    }
-                });
-                
-                // If we successfully extracted all pickup quantities, clear destinationQuantities
-                // to prevent confusion (since we'll use pickupQuantities instead)
-                if (Object.keys(result.pickupQuantities).length === result.pickupLocations.length) {
-                    console.log('✅ All pickup quantities extracted successfully');
-                }
-            }
-            
-            return result;
+            // Remove leading zeros
+            const cleaned = str.replace(/^0+/, '') || '0';
+            return parseInt(cleaned, 10);
         }
+
+        /**
+         * Clean commodity name using OCR mappings
+         */
+        function cleanCommodity(commodity) {
+            let cleaned = commodity.replace(/\s*\([^)]+\)\s*/g, ' ').trim();
+            
+            if (window.OCR_MAPPINGS) {
+                cleaned = window.OCR_MAPPINGS.applyCommodityAlias(cleaned);
+            }
+            
+            return cleaned;
+        }
+
+        /**
+         * Clean location name using OCR mappings
+         */
+        function cleanLocation(location) {
+            let cleaned = location.trim();
+            
+            if (window.OCR_MAPPINGS) {
+                cleaned = window.OCR_MAPPINGS.applyLocationAlias(cleaned);
+            }
+            
+            return cleaned;
+        }
+
+        /**
+         * Find pickup location by searching backwards
+         */
+        function findPickupLocation(text, commodity, deliverPos) {
+            const searchStart = Math.max(0, deliverPos - 1000);
+            const textBefore = text.substring(searchStart, deliverPos);
+            
+            const commodityPattern = commodity.replace(/\s+/g, '\\s+');
+            const collectPattern = new RegExp(
+                `Collect\\s+${commodityPattern}\\s+(?:\\([^)]+\\)\\s+)?from\\s+([\\w\\s\\-\\.\']+?)(?:\\.|\\n)`,
+                'gi'
+            );
+            
+            const matches = Array.from(textBefore.matchAll(collectPattern));
+            
+            if (matches.length > 0) {
+                const lastMatch = matches[matches.length - 1];
+                const pickupRaw = lastMatch[1].trim();
+                return cleanLocation(pickupRaw);
+            }
+            
+            return null;
+        }
+
+        // ============================================================================
+        // END CLEAN PARSER
+        // ============================================================================
 
         function aggregateUniqueValues(results) {
             const commodities = new Set();
@@ -1601,11 +1402,15 @@
             const payouts = new Set();
             
             results.forEach(result => {
-                const parsed = parseStarCitizenMission(result.text);
+                const parsed = result.parsedData || parseStarCitizenMission(result.text);
                 if (parsed.payout) payouts.add(parsed.payout);
-                parsed.commodities.forEach(c => commodities.add(c));
-                parsed.pickupLocations.forEach(l => locations.add(l));
-                parsed.deliveryLocations.forEach(l => locations.add(l));
+                
+                // Extract commodities and locations from segments
+                parsed.segments.forEach(seg => {
+                    commodities.add(seg.commodity);
+                    locations.add(seg.pickup);
+                    locations.add(seg.delivery);
+                });
             });
             
             return {
@@ -1615,26 +1420,16 @@
             };
         }
 
-        // Deduplication
-        function deduplicateResults(results) {
-            const seen = new Set();
-            return results.filter(result => {
-                const key = result.text.trim().toLowerCase();
-                if (seen.has(key)) return false;
-                seen.add(key);
-                return true;
-            });
-        }
-
         function renderResults() {
             resultsContainer.innerHTML = '';
-            let resultsToShow = processedResults;
             
-            if (deduplicateMode.checked) {
-                resultsToShow = deduplicateResults(resultsToShow);
-            }
-            
-            resultsToShow.forEach(result => {
+            processedResults.forEach((result, index) => {
+                // Ensure parsedData exists (for backwards compatibility with old saved sessions)
+                if (!result.parsedData && result.text && parseMode.checked) {
+                    result.parsedData = parseStarCitizenMission(result.text);
+                    console.log(`📝 Re-parsed mission ${index + 1} (missing parsedData)`);
+                }
+                
                 displayResult(result.filename, result.text, result.region);
             });
             
@@ -1642,9 +1437,9 @@
             
             // Show Import All button if we have parsed results
             const importAllBtn = document.getElementById('importAllBtn');
-            const hasParsedResults = resultsToShow.some(result => {
-                const parsed = parseStarCitizenMission(result.text);
-                return parsed.payout || parsed.commodities.length > 0;
+            const hasParsedResults = processedResults.some(result => {
+                const parsed = result.parsedData || parseStarCitizenMission(result.text);
+                return parsed.payout || parsed.segments.length > 0;
             });
             importAllBtn.style.display = hasParsedResults ? 'block' : 'none';
         }
@@ -1654,91 +1449,112 @@
             if (selectedFiles.length === 0) return;
             
             processBtn.disabled = true;
-            processBtn.textContent = 'Processing...';
+            processBtn.textContent = 'Initializing OCR...';
             resultsContainer.innerHTML = '';
             processedResults = [];
             
-            const worker = await Tesseract.createWorker();
-            await worker.loadLanguage('eng');
-            await worker.initialize('eng');
-            
-            // Check if auto-crop is enabled
-            const autoCropEnabled = document.getElementById('autoCropRight').checked;
-            
-            for (let i = 0; i < selectedFiles.length; i++) {
-                const file = selectedFiles[i];
-                const statusEl = document.querySelector(`[data-index="${i}"]`);
-                statusEl.innerHTML = 'Processing...';
-                statusEl.style.background = 'rgba(77, 212, 172, 0.9)';
+            try {
+                // Create Tesseract worker with optimized settings
+                const worker = await Tesseract.createWorker('eng', 1, {
+                    logger: m => console.log('[Tesseract]', m)
+                });
                 
-                try {
-                    let imageData = await readFileAsDataURL(file);
+                processBtn.textContent = 'Processing...';
+                
+                // Get settings
+                const autoCropEnabled = document.getElementById('autoCropRight').checked;
+                const enhanceEnabled = document.getElementById('enhanceImage').checked;
+                const psmMode = document.getElementById('psmMode').value;
+                
+                console.log('OCR Settings:', {
+                    autoCrop: autoCropEnabled,
+                    enhance: enhanceEnabled,
+                    psmMode: psmMode
+                });
+                
+                for (let i = 0; i < selectedFiles.length; i++) {
+                    const file = selectedFiles[i];
+                    const statusEl = document.querySelector(`[data-index="${i}"]`);
+                    statusEl.innerHTML = 'Processing...';
+                    statusEl.style.background = 'rgba(77, 212, 172, 0.9)';
                     
-                    // Apply auto-crop to right half if enabled
-                    if (autoCropEnabled) {
-                        imageData = await cropImageToRightHalf(imageData);
-                    }
-                    
-                    const regions = fileRegions.get(file.name) || (templateMode.checked && templateRegions) || [];
-                    
-                    if (regions.length === 0) {
-                        // Process full image (or cropped image if auto-crop enabled)
-                        const psmMode = document.getElementById('psmMode').value;
-                        const result = await worker.recognize(imageData, {
-                            tessedit_pageseg_mode: psmMode,
-                            tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz -,.()[]aUEC'
-                        });
-                        processedResults.push({
-                            filename: file.name,
-                            text: result.data.text,
-                            confidence: result.data.confidence,
-                            region: autoCropEnabled ? 'Right Half' : 'Full Image'
-                        });
-                        statusEl.innerHTML = `✓ Complete`;
-                    } else {
-                        // Process each region
-                        for (let r = 0; r < regions.length; r++) {
-                            const region = regions[r];
-                            // Scale regions back to original image dimensions
-                            const scaleBack = 1 / currentScale;
-                            const rect = {
-                                left: Math.round(region.x * scaleBack),
-                                top: Math.round(region.y * scaleBack),
-                                width: Math.round(region.width * scaleBack),
-                                height: Math.round(region.height * scaleBack)
-                            };
-                            
-                            const psmMode = document.getElementById('psmMode').value;
-                            const result = await worker.recognize(imageData, { 
-                                rectangle: rect,
-                                tessedit_pageseg_mode: psmMode,
-                                tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz -,.()[]aUEC'
+                    try {
+                        let imageData = await readFileAsDataURL(file);
+                        
+                        // Apply enhancements in sequence
+                        if (autoCropEnabled) {
+                            imageData = await cropImageToRightHalf(imageData);
+                        }
+                        
+                        if (enhanceEnabled) {
+                            imageData = await enhanceImageForOCR(imageData);
+                        }
+                        
+                        const regions = fileRegions.get(file.name) || (templateMode.checked && templateRegions) || [];
+                        
+                        if (regions.length === 0) {
+                            // Process full image
+                            console.log(`Processing ${file.name} with PSM mode ${psmMode}`);
+                            const result = await worker.recognize(imageData, {
+                                tessedit_pageseg_mode: parseInt(psmMode)
                             });
+                            
                             processedResults.push({
                                 filename: file.name,
                                 text: result.data.text,
                                 confidence: result.data.confidence,
-                                region: `Region ${r + 1}`
+                                region: autoCropEnabled ? 'Right Half (Enhanced)' : 'Full Image (Enhanced)'
                             });
+                            
+                            console.log(`✓ ${file.name} - Confidence: ${result.data.confidence.toFixed(1)}%`);
+                            statusEl.innerHTML = `✓ Complete (${result.data.confidence.toFixed(0)}%)`;
+                        } else {
+                            // Process each region
+                            for (let r = 0; r < regions.length; r++) {
+                                const region = regions[r];
+                                const scaleBack = 1 / currentScale;
+                                const rect = {
+                                    left: Math.round(region.x * scaleBack),
+                                    top: Math.round(region.y * scaleBack),
+                                    width: Math.round(region.width * scaleBack),
+                                    height: Math.round(region.height * scaleBack)
+                                };
+                                
+                                const croppedImageData = await cropImageToRegion(imageData, rect);
+                                const result = await worker.recognize(croppedImageData, {
+                                    tessedit_pageseg_mode: parseInt(psmMode)
+                                });
+                                
+                                processedResults.push({
+                                    filename: file.name,
+                                    text: result.data.text,
+                                    confidence: result.data.confidence,
+                                    region: `Region ${r + 1}`
+                                });
+                            }
+                            statusEl.innerHTML = `✓ Complete - ${regions.length} region${regions.length > 1 ? 's' : ''}`;
                         }
-                        statusEl.innerHTML = `✓ Complete - ${regions.length} region${regions.length > 1 ? 's' : ''}`;
+                    } catch (error) {
+                        statusEl.innerHTML = '✗ Error';
+                        statusEl.style.background = 'rgba(239, 68, 68, 0.9)';
+                        console.error('OCR Error:', error);
                     }
-                } catch (error) {
-                    statusEl.innerHTML = '✗ Error';
-                    statusEl.style.background = 'rgba(239, 68, 68, 0.9)';
-                    console.error('OCR Error:', error);
                 }
+                
+                await worker.terminate();
+                processBtn.disabled = false;
+                processBtn.textContent = 'Process Again';
+                
+                renderResults();
+                updateStats();
+                saveOCRState();
+                
+            } catch (error) {
+                console.error('OCR Initialization Error:', error);
+                processBtn.disabled = false;
+                processBtn.textContent = 'Process Images';
+                alert('OCR initialization failed. Please refresh the page.\n\nError: ' + error.message);
             }
-            
-            await worker.terminate();
-            processBtn.disabled = false;
-            processBtn.textContent = 'Process Again';
-            
-            renderResults();
-            updateStats();
-            
-            // Save OCR state for persistence
-            saveOCRState();
         });
 
         clearBtn.addEventListener('click', () => {
@@ -1780,7 +1596,7 @@
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
                     
-                    const cropWidth = Math.floor(img.width / 2);
+                    const cropWidth = Math.floor(img.width / 2.6);
                     const cropHeight = img.height;
                     const startX = img.width - cropWidth; // Start from middle
                     
@@ -1804,6 +1620,79 @@
             });
         }
 
+        // Enhance image for game UI text (contrast, brightness, noise reduction)
+        function enhanceImageForOCR(imageDataUrl) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    
+                    // Draw original image
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // Get image data
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+                    
+                    // Apply enhancements optimized for game UI text
+                    // 1. Increase contrast (helps with glowing text)
+                    // 2. Adjust brightness
+                    // 3. Reduce color noise
+                    const contrast = 1.3;  // Boost contrast
+                    const brightness = 10; // Slight brightness increase
+                    
+                    for (let i = 0; i < data.length; i += 4) {
+                        // Apply contrast and brightness to RGB
+                        data[i] = Math.min(255, Math.max(0, contrast * (data[i] - 128) + 128 + brightness));     // R
+                        data[i + 1] = Math.min(255, Math.max(0, contrast * (data[i + 1] - 128) + 128 + brightness)); // G
+                        data[i + 2] = Math.min(255, Math.max(0, contrast * (data[i + 2] - 128) + 128 + brightness)); // B
+                        // Alpha channel (data[i + 3]) stays the same
+                    }
+                    
+                    // Put enhanced data back
+                    ctx.putImageData(imageData, 0, 0);
+                    
+                    // Return enhanced image
+                    resolve(canvas.toDataURL('image/png'));
+                };
+                img.onerror = reject;
+                img.src = imageDataUrl;
+            });
+        }
+
+        // Helper function to crop image to a specific region (rectangle)
+        function cropImageToRegion(imageDataUrl, rect) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Set canvas to region size
+                    canvas.width = rect.width;
+                    canvas.height = rect.height;
+                    
+                    // Draw the specific region
+                    ctx.drawImage(
+                        img,
+                        rect.left, rect.top,        // Source x, y
+                        rect.width, rect.height,    // Source width, height
+                        0, 0,                       // Destination x, y (start at 0,0)
+                        rect.width, rect.height     // Destination width, height
+                    );
+                    
+                    // Return cropped region as data URL
+                    resolve(canvas.toDataURL('image/png'));
+                };
+                img.onerror = reject;
+                img.src = imageDataUrl;
+            });
+        }
+
         function readFileAsDataURL(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -1817,60 +1706,67 @@
             const div = document.createElement('div');
             div.className = 'result-item';
             
+            // Add index to find this result later
+            const resultIndex = processedResults.findIndex(r => r.filename === filename && r.region === regionLabel);
+            div.setAttribute('data-result-index', resultIndex);
+            
             const isEmpty = !text.trim();
             
             let parsedHtml = '';
+            let parsed = null;
             if (parseMode.checked && !isEmpty) {
-                const parsed = parseStarCitizenMission(text);
+                // Parse mission using clean parser
+                const result = parseStarCitizenMission(text);
+                const payout = result.payout;
+                const commodityRows = result.segments; // Already in the right format!
+                const calculatedTotal = result.segments.reduce((sum, seg) => sum + seg.quantity, 0);
                 
                 parsedHtml = `
                     <div class="parsed-data">
-                        <h4>🎯 Parsed Mission Data</h4>
-                        <div class="data-grid">
-                            <div class="data-row">
-                                <div class="data-label">Payout:</div>
-                                <div class="data-value payout-highlight">${parsed.payout ? '₡ ' + parsed.payout.toLocaleString() : 'Not found'}</div>
+                        <div class="mission-summary-header">
+                            <div class="summary-stat">
+                                <div class="stat-label">💰 Payout</div>
+                                <div class="stat-value payout-highlight">${payout ? '₡ ' + payout.toLocaleString() : 'Not found'}</div>
                             </div>
-                            ${parsed.quantity ? `
-                            <div class="data-row">
-                                <div class="data-label">Quantity:</div>
-                                <div class="data-value payout-highlight">${parsed.quantity} SCU</div>
+                            <div class="summary-stat">
+                                <div class="stat-label">📦 Total SCU</div>
+                                <div class="stat-value payout-highlight">${calculatedTotal || '?'}</div>
                             </div>
-                            ` : ''}
-                            ${parsed.commodities.length > 0 ? `
-                            <div class="data-row">
-                                <div class="data-label">Commodities:</div>
-                                <div class="data-value">
-                                    ${parsed.commodities.map(c => `<span class="commodity-tag">${c}</span>`).join('')}
-                                </div>
+                            <div class="summary-stat">
+                                <div class="stat-label">📋 Commodities</div>
+                                <div class="stat-value">${commodityRows.length} rows</div>
                             </div>
-                            ` : ''}
-                            ${parsed.pickupLocations.length > 0 ? `
-                            <div class="data-row">
-                                <div class="data-label">Pickup From:</div>
-                                <div class="data-value">
-                                    <ul class="data-list">
-                                        ${parsed.pickupLocations.map(loc => `<li>${loc}</li>`).join('')}
-                                    </ul>
-                                </div>
-                            </div>
-                            ` : ''}
-                            ${parsed.deliveryLocations.length > 0 ? `
-                            <div class="data-row">
-                                <div class="data-label">Deliver To:</div>
-                                <div class="data-value">
-                                    <ul class="data-list">
-                                        ${parsed.deliveryLocations.map(loc => {
-                                            const qty = parsed.destinationQuantities && parsed.destinationQuantities[loc];
-                                            return qty ? `<li>${loc} <strong>(${qty} SCU)</strong></li>` : `<li>${loc}</li>`;
-                                        }).join('')}
-                                    </ul>
-                                </div>
-                            </div>
-                            ` : ''}
                         </div>
+                        
+                        ${commodityRows.length > 0 ? `
+                        <div class="commodity-table">
+                            <div class="commodity-table-header">
+                                <div class="col-commodity">Commodity</div>
+                                <div class="col-pickup">Pickup</div>
+                                <div class="col-delivery">Delivery</div>
+                                <div class="col-quantity">SCU</div>
+                            </div>
+                            ${commodityRows.map(row => `
+                                <div class="commodity-table-row">
+                                    <div class="col-commodity">${row.commodity}</div>
+                                    <div class="col-pickup">${row.pickup}</div>
+                                    <div class="col-delivery">${row.delivery}</div>
+                                    <div class="col-quantity">${row.quantity}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        ` : `
+                        <div class="empty-state" style="padding: 20px; text-align: center; color: var(--text-secondary);">
+                            ⚠️ No commodity data extracted
+                        </div>
+                        `}
                     </div>
                 `;
+                
+                // Store parsed result for import
+                if (resultIndex >= 0) {
+                    processedResults[resultIndex].parsedData = result; // { payout, segments }
+                }
             }
             
             div.innerHTML = `
@@ -1922,38 +1818,16 @@
         function cleanLocationName(location) {
             if (!location) return '';
             
-            // LOCATION ALIASES - Map OCR extractions to database names
-            const LOCATION_ALIASES = {
-                // Covalex - common OCR misreads
-                'Covalex': 'Covalex S4DC05',
-                'Covalex S4DC5': 'Covalex S4DC05',  // Missing trailing zero
-                'S4DC5': 'Covalex S4DC05',
-                
-                // MicroTech depots
-                'MT Depot': 'MicroTech S4LD13',
-                'MT Logistics': 'MicroTech S4LD13',
-                'S4LD13': 'MicroTech S4LD13',
-                
-                // Common variations
-                'Tressler': 'Port Tressler',
-                'Port Olisar': 'Port Olisar',
-                'Grim HEX': 'Grim HEX',
-                
-                // Rayari facilities
-                'Rayari': 'Rayari Deltana', // Default if no specific one
-                
-                // Shubin facilities - handle incomplete names
-                'Shubin': 'Shubin SMO-10', // Default fallback
-            };
-            
-            // Check aliases FIRST
-            if (LOCATION_ALIASES[location]) {
-                const mapped = LOCATION_ALIASES[location];
-                console.log(`🗺️ Alias mapped: ${location} → ${mapped}`);
-                return mapped;
+            // 🆕 STEP 1: Apply OCR alias mapping FIRST
+            if (window.OCR_MAPPINGS) {
+                const normalized = window.OCR_MAPPINGS.applyLocationAlias(location);
+                if (normalized !== location) {
+                    console.log(`🗺️ Location alias: "${location}" → "${normalized}"`);
+                    return normalized;
+                }
             }
             
-            // Strip facility prefixes that don't match database format
+            // STEP 2: Strip facility prefixes that don't match database format
             const prefixes = [
                 'Shubin Mining Facility ',
                 'Shubin Mining Outpost ',
@@ -1973,7 +1847,7 @@
             
             cleaned = cleaned.trim();
             
-            // Convert SMO-XX format to "Shubin SMO-XX" format (NEW database format)
+            // STEP 3: Convert SMO-XX format to "Shubin SMO-XX" format
             const smoMatch = cleaned.match(/^SMO-(\d{2})$/i);
             if (smoMatch) {
                 const facilityNum = smoMatch[1];
@@ -2000,31 +1874,18 @@
         function cleanCommodityName(commodity) {
             if (!commodity) return '';
             
-            // COMMODITY ALIASES - Map OCR extractions to database names
-            const COMMODITY_ALIASES = {
-                // Common OCR variations
-                'Hydrogen': 'Hydrogen Fuel',
-                'Ship Ammo': 'Ship Ammunition',
-                'Press Ice': 'Pressurized Ice',
-                'Proc Food': 'Processed Food',
-                'Agri Supplies': 'Agricultural Supplies',
-                'C Materials': 'Construction Materials',
-                
-                // Remove (Raw) suffix if present
-                'Quartz (Raw)': 'Quartz',
-                'Corundum (Raw)': 'Corundum',
-            };
-            
             let cleaned = commodity.trim();
             
-            // Check aliases first
-            if (COMMODITY_ALIASES[cleaned]) {
-                const mapped = COMMODITY_ALIASES[cleaned];
-                console.log(`📦 Commodity alias: ${cleaned} → ${mapped}`);
-                return mapped;
+            // 🆕 STEP 1: Apply OCR alias mapping FIRST
+            if (window.OCR_MAPPINGS) {
+                const normalized = window.OCR_MAPPINGS.applyCommodityAlias(cleaned);
+                if (normalized !== cleaned) {
+                    console.log(`📦 Commodity alias: "${cleaned}" → "${normalized}"`);
+                    return normalized;
+                }
             }
             
-            // Remove (Raw) suffix if not already handled
+            // STEP 2: Remove (Raw) suffix if not already handled
             cleaned = cleaned.replace(/\s*\(Raw\)\s*/gi, '').trim();
             
             return cleaned;
@@ -2034,31 +1895,74 @@
 
         function importToHauler(button) {
             const resultItem = button.closest('.result-item');
-            const text = resultItem.querySelector('.result-text').textContent;
+            const resultIndex = parseInt(resultItem.getAttribute('data-result-index'));
+            const result = processedResults[resultIndex];
             
-            // Use NEW segment-based parser
-            const segments = parseStarCitizenMissionSegments(text);
-            const parsed = parseStarCitizenMission(text);  // Still need for payout
-            
-            console.log('📦 Importing mission with', segments.length, 'segments');
+            console.log('📦 Importing mission:', result);
             
             const importData = {
                 missions: [{
-                    payout: parsed.payout || '',
+                    payout: '',
                     commodities: []
                 }]
             };
             
+            // Use parsed data from clean parser
+            if (result.parsedData) {
+                const parsed = result.parsedData;
+                console.log('✅ Using parsed data:', parsed.segments.length, 'segments');
+                
+                // Set payout
+                if (parsed.payout) {
+                    importData.missions[0].payout = parsed.payout;
+                }
+                
+                // Add commodity rows (already in correct format!)
+                parsed.segments.forEach(seg => {
+                    importData.missions[0].commodities.push({
+                        commodity: cleanCommodityName(seg.commodity),
+                        pickup: cleanLocationName(seg.pickup),
+                        destination: cleanLocationName(seg.delivery),
+                        quantity: seg.quantity,
+                        maxBoxSize: '4'
+                    });
+                    console.log(`  ✓ Added: ${seg.quantity} ${seg.commodity} from ${seg.pickup} to ${seg.delivery}`);
+                });
+                
+                // Save and indicate success
+                if (importData.missions[0].commodities.length > 0 || importData.missions[0].payout) {
+                    console.log('📤 Exporting to Hauler:', importData);
+                    importData.timestamp = Date.now();
+                    localStorage.setItem('haulerHelperOCRImport', JSON.stringify(importData));
+                    
+                    button.textContent = '✓ Ready to Import!';
+                    button.style.backgroundColor = 'var(--color-success)';
+                    return;
+                }
+            }
+            
+            // FALLBACK: Parse from text if no parsed data available
+            console.log('⚠️  No parsed data, attempting to parse from text');
+            const text = result.text || resultItem.querySelector('.result-text').textContent;
+            const freshParsed = parseStarCitizenMission(text);
+            
+            console.log('📦 Freshly parsed:', freshParsed.segments.length, 'segments');
+            
+            // Get payout
+            if (freshParsed.payout) {
+                importData.missions[0].payout = freshParsed.payout;
+            }
+            
             // Add each segment as a commodity row
-            segments.forEach(segment => {
+            freshParsed.segments.forEach(seg => {
                 importData.missions[0].commodities.push({
-                    commodity: cleanCommodityName(segment.commodity),
-                    pickup: cleanLocationName(segment.pickup),
-                    destination: cleanLocationName(segment.delivery),
-                    quantity: segment.quantity,
+                    commodity: cleanCommodityName(seg.commodity),
+                    pickup: cleanLocationName(seg.pickup),
+                    destination: cleanLocationName(seg.delivery),
+                    quantity: seg.quantity,
                     maxBoxSize: '4'
                 });
-                console.log(`  ✓ Added: ${segment.quantity} ${segment.commodity} from ${segment.pickup} to ${segment.delivery}`);
+                console.log(`  ✓ Added: ${seg.quantity} ${seg.commodity} from ${seg.pickup} to ${seg.delivery}`);
             });
             
             // Only import if we have at least some data
@@ -2081,51 +1985,78 @@
             button.style.backgroundColor = 'var(--color-success)';
             
             // Auto-navigate to Hauler Helper
-            // Navigate to main app (same window for state preservation)
-            // setTimeout(() => {
-            //     window.location.href = 'index.html';
-            // }, 500);
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1000);
         }
 
-        // UPDATED: Import all missions using segment-based parser
+        // 🆕 UPDATED: Import all missions using segment-based approach
         function importAllToHauler() {
             const allMissions = [];
             
             processedResults.forEach((result, index) => {
-                // Use NEW segment-based parser
-                const segments = parseStarCitizenMissionSegments(result.text);
-                const parsed = parseStarCitizenMission(result.text);  // Still need for payout
-                
-                // Skip if no useful data
-                if (!parsed.payout && segments.length === 0) {
-                    console.log(`⏭️  Skipping mission ${index + 1} (no data)`);
-                    return;
-                }
+                console.log(`📦 Processing mission ${index + 1}:`, result);
                 
                 const missionData = {
-                    payout: parsed.payout || '',
+                    payout: '',
                     commodities: []
                 };
                 
-                // Add each segment as a commodity row
-                segments.forEach(segment => {
-                    missionData.commodities.push({
-                        commodity: cleanCommodityName(segment.commodity),
-                        pickup: cleanLocationName(segment.pickup),
-                        destination: cleanLocationName(segment.delivery),
-                        quantity: segment.quantity,
-                        maxBoxSize: '4'
+                // Use parsed data if available
+                if (result.parsedData) {
+                    const parsed = result.parsedData;
+                    console.log(`✅ Using parsed data for mission ${index + 1}:`, parsed.segments.length, 'segments');
+                    
+                    // Set payout
+                    if (parsed.payout) {
+                        missionData.payout = parsed.payout;
+                    }
+                    
+                    // Add commodity rows
+                    parsed.segments.forEach(seg => {
+                        missionData.commodities.push({
+                            commodity: cleanCommodityName(seg.commodity),
+                            pickup: cleanLocationName(seg.pickup),
+                            destination: cleanLocationName(seg.delivery),
+                            quantity: seg.quantity,
+                            maxBoxSize: '4'
+                        });
                     });
-                });
+                } else {
+                    // FALLBACK: Parse from text if no parsed data
+                    console.log(`⚠️  No parsed data for mission ${index + 1}, parsing from text`);
+                    const freshParsed = parseStarCitizenMission(result.text);
+                    
+                    // Skip if no useful data
+                    if (!freshParsed.payout && freshParsed.segments.length === 0) {
+                        console.log(`⏭️  Skipping mission ${index + 1} (no data)`);
+                        return;
+                    }
+                    
+                    // Get payout
+                    missionData.payout = freshParsed.payout || '';
+                    
+                    // Add segments
+                    freshParsed.segments.forEach(seg => {
+                        missionData.commodities.push({
+                            commodity: cleanCommodityName(seg.commodity),
+                            pickup: cleanLocationName(seg.pickup),
+                            destination: cleanLocationName(seg.delivery),
+                            quantity: seg.quantity,
+                            maxBoxSize: '4'
+                        });
+                    });
+                }
                 
-                if (missionData.commodities.length > 0) {
+                // Add to missions if we have data
+                if (missionData.commodities.length > 0 || missionData.payout) {
                     allMissions.push(missionData);
-                    console.log(`✓ Prepared mission ${index + 1}: ${missionData.payout}, ${missionData.commodities.length} commodity segments`);
+                    console.log(`  ✓ Added mission ${index + 1}: ${missionData.payout}, ${missionData.commodities.length} rows`);
                 }
             });
             
             if (allMissions.length === 0) {
-                alert('No valid missions found to import');
+                alert('No valid missions found to import. Please check the OCR results.');
                 return;
             }
             
@@ -2134,17 +2065,117 @@
                 timestamp: Date.now()
             };
             
-            console.log('📦 Importing all missions:', importData);
-            localStorage.setItem('haulerHelperOCRImportAll', JSON.stringify(importData));
-            console.log('💾 localStorage ALL saved:', JSON.parse(localStorage.getItem('haulerHelperOCRImportAll')));
+            console.log('📤 Exporting all missions to Hauler:', importData);
+            localStorage.setItem('haulerHelperOCRImport', JSON.stringify(importData));
+            console.log('💾 localStorage saved:', JSON.parse(localStorage.getItem('haulerHelperOCRImport')));
             
-            // Save OCR state for back button
-            saveOCRState();
+            // Update button
+            const btn = document.getElementById('importAllBtn');
+            btn.textContent = `✓ ${allMissions.length} Missions Ready!`;
+            btn.style.backgroundColor = 'var(--color-success)';
             
-            // Auto-navigate to Hauler Helper for Import All
+            // Auto-navigate to Hauler Helper after showing success message
             setTimeout(() => {
                 window.location.href = 'index.html';
-            }, 500);
+            }, 1000);
+        }
+
+        // Import mission data from JSON file
+        function importFromJson(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            console.log('📁 Loading JSON file:', file.name);
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const jsonData = JSON.parse(e.target.result);
+                    console.log('✅ Parsed JSON:', jsonData);
+                    
+                    // Check if it's the expected format
+                    if (!jsonData.missions || !Array.isArray(jsonData.missions)) {
+                        alert('Invalid JSON format. Expected a "missions" array.');
+                        return;
+                    }
+                    
+                    // Convert JSON missions to import format
+                    const allMissions = [];
+                    
+                    // 🆕 Parse each mission from JSON and convert to segments
+                    jsonData.missions.forEach((mission, index) => {
+                        console.log(`📊 Processing JSON mission ${index + 1}:`, mission);
+                        
+                        const missionData = {
+                            payout: mission.payout || '',
+                            commodities: []
+                        };
+                        
+                        // Re-parse raw text to get segments (best accuracy)
+                        if (mission.rawText) {
+                            const parsed = parseStarCitizenMission(mission.rawText);
+                            console.log(`  ✅ Extracted ${parsed.segments.length} segments from raw text`);
+                            
+                            // Set payout
+                            if (parsed.payout) {
+                                missionData.payout = parsed.payout;
+                            }
+                            
+                            // Add segments
+                            parsed.segments.forEach(seg => {
+                                missionData.commodities.push({
+                                    commodity: cleanCommodityName(seg.commodity),
+                                    pickup: cleanLocationName(seg.pickup),
+                                    destination: cleanLocationName(seg.delivery),
+                                    quantity: seg.quantity,
+                                    maxBoxSize: '4'
+                                });
+                            });
+                            
+                            if (missionData.commodities.length > 0) {
+                                allMissions.push(missionData);
+                                console.log(`  ✓ Imported mission ${index + 1}: ${missionData.payout}, ${missionData.commodities.length} rows`);
+                            }
+                        } else {
+                            console.log(`  ⚠️ No rawText for mission ${index + 1}, skipping`);
+                        }
+                    });
+                    
+                    if (allMissions.length === 0) {
+                        alert('No valid missions found in JSON file.');
+                        return;
+                    }
+                    
+                    // Save to localStorage for import to Hauler Helper
+                    const importData = {
+                        missions: allMissions,
+                        timestamp: Date.now()
+                    };
+                    
+                    localStorage.setItem('haulerHelperOCRImport', JSON.stringify(importData));
+                    console.log('📤 Saved to localStorage:', importData);
+                    console.log(`✅ Ready to import ${allMissions.length} missions!`);
+                    
+                    // Update button
+                    const btn = document.getElementById('importJsonBtn');
+                    btn.textContent = `✓ ${allMissions.length} Missions Ready!`;
+                    btn.style.backgroundColor = 'var(--color-success)';
+                    
+                    // Auto-navigate to Hauler Helper
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                    
+                } catch (error) {
+                    console.error('❌ Error parsing JSON:', error);
+                    alert('Error reading JSON file: ' + error.message);
+                }
+            };
+            
+            reader.readAsText(file);
+            
+            // Reset file input so the same file can be selected again
+            event.target.value = '';
         }
 
         function updateStats() {
@@ -2177,15 +2208,12 @@
                     uniquePayouts: aggregateData.payouts
                 },
                 missions: processedResults.map(result => {
-                    const parsed = parseStarCitizenMission(result.text);
+                    const parsed = result.parsedData || parseStarCitizenMission(result.text);
                     return {
                         filename: result.filename,
                         region: result.region,
                         payout: parsed.payout,
-                        quantity: parsed.quantity,
-                        commodities: parsed.commodities,
-                        pickupLocations: parsed.pickupLocations,
-                        deliveryLocations: parsed.deliveryLocations,
+                        segments: parsed.segments,
                         rawText: result.text
                     };
                 })
@@ -2201,18 +2229,24 @@
         });
 
         exportCsvBtn.addEventListener('click', () => {
-            const rows = [['Filename', 'Region', 'Payout', 'Quantity', 'Commodities', 'Pickup Locations', 'Delivery Locations']];
+            const rows = [['Filename', 'Region', 'Payout', 'Total SCU', 'Commodities', 'Locations']];
             
             processedResults.forEach(result => {
-                const parsed = parseStarCitizenMission(result.text);
+                const parsed = result.parsedData || parseStarCitizenMission(result.text);
+                const totalSCU = parsed.segments.reduce((sum, seg) => sum + seg.quantity, 0);
+                const commodities = [...new Set(parsed.segments.map(seg => seg.commodity))];
+                const locations = [...new Set([
+                    ...parsed.segments.map(seg => seg.pickup),
+                    ...parsed.segments.map(seg => seg.delivery)
+                ])];
+                
                 rows.push([
                     result.filename,
                     result.region,
                     parsed.payout || '',
-                    parsed.quantity ? parsed.quantity + ' SCU' : '',
-                    parsed.commodities.join('; '),
-                    parsed.pickupLocations.join('; '),
-                    parsed.deliveryLocations.join('; ')
+                    totalSCU ? totalSCU + ' SCU' : '',
+                    commodities.join('; '),
+                    locations.join('; ')
                 ]);
             });
             

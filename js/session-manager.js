@@ -82,10 +82,10 @@ function loadSession() {
                 const panel = createMissionPanel(mission.id, index + 1);
                 container.appendChild(panel);
                 
-                // Set payout
-                const payoutSelect = panel.querySelector('select');
-                if (payoutSelect && mission.payout) {
-                    payoutSelect.value = mission.payout;
+                // Set payout in text input
+                const payoutInput = panel.querySelector('.payout-input');
+                if (payoutInput && mission.payout) {
+                    payoutInput.value = mission.payout;
                 }
                 
                 // Restore commodities
@@ -94,14 +94,21 @@ function loadSession() {
                     const row = createCommodityRow(mission.id, commodity.id, cIndex > 0);
                     commoditiesContainer.appendChild(row);
                     
-                    // Set values
+                    // Set values - updated for new input structure
+                    const textInputs = row.querySelectorAll('input[type="text"]');
                     const selects = row.querySelectorAll('select');
-                    const input = row.querySelector('input');
-                    if (selects[0]) selects[0].value = commodity.pickup || '';
-                    if (selects[1]) selects[1].value = commodity.commodity || '';
-                    if (input) input.value = commodity.quantity || '';
-                    if (selects[2]) selects[2].value = commodity.maxBoxSize || '4';
-                    if (selects[3]) selects[3].value = commodity.destination || '';
+                    const numberInput = row.querySelector('input[type="number"]');
+                    
+                    // Set location inputs (text inputs)
+                    if (textInputs[0]) textInputs[0].value = commodity.pickup || '';
+                    if (textInputs[1]) textInputs[1].value = commodity.destination || '';
+                    
+                    // Set commodity and maxBoxSize selects
+                    if (selects[0]) selects[0].value = commodity.commodity || '';
+                    if (selects[1]) selects[1].value = commodity.maxBoxSize || '4';
+                    
+                    // Set quantity input
+                    if (numberInput) numberInput.value = commodity.quantity || '';
                 });
             });
         }

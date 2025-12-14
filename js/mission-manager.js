@@ -23,6 +23,31 @@ function populateShipSelect() {
 }
 
 /**
+ * Populate global location datalist with all available locations
+ */
+function populateLocationList() {
+    const datalist = document.getElementById('globalLocationList');
+    if (!datalist) {
+        console.warn('⚠️ Location datalist not found');
+        return;
+    }
+    
+    if (!window.GLOBAL_LOCATIONS || window.GLOBAL_LOCATIONS.length === 0) {
+        console.error('❌ GLOBAL_LOCATIONS not loaded!');
+        return;
+    }
+    
+    datalist.innerHTML = '';
+    window.GLOBAL_LOCATIONS.forEach(location => {
+        const option = document.createElement('option');
+        option.value = location;
+        datalist.appendChild(option);
+    });
+    
+    console.log('✅ Populated global location list:', window.GLOBAL_LOCATIONS.length, 'locations');
+}
+
+/**
  * Update selected ship based on user input
  */
 function updateShip() {
@@ -107,11 +132,8 @@ function updateCategory() {
  * Add a new mission panel to the UI
  */
 function addMissionPanel() {
-    if (!selectedCategory) {
-        alert('Please select a mission category first');
-        return;
-    }
-
+    // No category required - allow free mission creation
+    
     missionCounter++;
     const missionId = `mission_${missionCounter}`;
     
@@ -141,28 +163,18 @@ function createMissionPanel(missionId, missionNumber) {
     panel.className = 'mission-panel';
     panel.id = missionId;
     
-    const system = selectedSystem || 'microtech';
-    const category = selectedCategory || 'planetary';
-    
-    // For interstellar missions, use universal data instead of system-specific
-    const isInterstellar = category === 'interstellar';
-    const dataSource = isInterstellar ? 'universal' : system;
-    
-    const categoryLocations = (locations[dataSource] && locations[dataSource][category]) || [];
-    const categoryCommodities = (commodities[dataSource] && commodities[dataSource][category]) || [];
-    const categoryPayouts = (payouts[dataSource] && payouts[dataSource][category]) || [];
-    console.log(`✅ ${system}.${category} - Found ${categoryPayouts.length} payouts`);
-    
     panel.innerHTML = `
         <div class="mission-header">
             <div class="mission-title">Mission ${missionNumber}</div>
             <div style="display: flex; gap: 10px; align-items: center;">
                 <div class="mission-payout">
                     <label>Payout:</label>
-                    <select onchange="updateMissionPayout('${missionId}', this.value)">
-                        <option value="">-</option>
-                        ${categoryPayouts.map(p => `<option value="${p}">${p}</option>`).join('')}
-                    </select>
+                    <input type="text" 
+                           class="payout-input" 
+                           placeholder="e.g., 163.75k"
+                           onchange="updateMissionPayout('${missionId}', this.value)"
+                           onfocus="this.select()"
+                           autocomplete="off">
                 </div>
                 <button class="btn-remove-mission" onclick="removeMissionPanel('${missionId}')">Remove</button>
             </div>
@@ -231,11 +243,16 @@ function addCommodityRow(missionId) {
     
     // Set default values in the new row
     const newCommodity = mission.commodities[mission.commodities.length - 1];
+    const textInputs = row.querySelectorAll('input[type="text"]');
     const selects = row.querySelectorAll('select');
-    if (selects[0]) selects[0].value = newCommodity.pickup;
-    if (selects[1]) selects[1].value = newCommodity.commodity;
-    if (selects[2]) selects[2].value = newCommodity.maxBoxSize;
-    if (selects[3]) selects[3].value = newCommodity.destination;
+    
+    // Set location inputs (text inputs)
+    if (textInputs[0]) textInputs[0].value = newCommodity.pickup;
+    if (textInputs[1]) textInputs[1].value = newCommodity.destination;
+    
+    // Set commodity and maxBoxSize selects
+    if (selects[0]) selects[0].value = newCommodity.commodity;
+    if (selects[1]) selects[1].value = newCommodity.maxBoxSize;
     
     saveSession();
 }
@@ -248,27 +265,25 @@ function createCommodityRow(missionId, commodityId, showRemove) {
     row.className = 'commodity-row';
     row.id = commodityId;
     
-    // Get category-specific locations and commodities
-    const system = selectedSystem || 'microtech';
-    const category = selectedCategory || 'planetary';
-    
-    // For interstellar missions, use universal data instead of system-specific
-    const isInterstellar = category === 'interstellar';
-    const dataSource = isInterstellar ? 'universal' : system;
-    
-    const categoryLocations = (locations[dataSource] && locations[dataSource][category]) || [];
-    const categoryCommodities = (commodities[dataSource] && commodities[dataSource][category]) || [];
+    // Use global commodities instead of category-specific
+    const globalCommodities = window.GLOBAL_COMMODITIES || [];
     
     row.innerHTML = `
-        <select onchange="updateCommodity('${commodityId}', 'pickup', this.value)">
-            <option value="">Pickup Location</option>
-            ${categoryLocations.map(loc => `<option value="${loc}">${loc}</option>`).join('')}
-        </select>
+        <input type="text" 
+               list="globalLocationList" 
+               placeholder="Pickup Location..."
+               class="location-input"
+               onchange="updateCommodity('${commodityId}', 'pickup', this.value)"
+               onfocus="this.select()"
+               autocomplete="off">
+        
         <select onchange="updateCommodity('${commodityId}', 'commodity', this.value)">
             <option value="">Commodity</option>
-            ${categoryCommodities.map(c => `<option value="${c}">${c}</option>`).join('')}
+            ${globalCommodities.map(c => `<option value="${c}">${c}</option>`).join('')}
         </select>
+        
         <input type="number" placeholder="SCU" min="1" onchange="updateCommodity('${commodityId}', 'quantity', this.value)">
+        
         <select onchange="updateCommodity('${commodityId}', 'maxBoxSize', this.value)">
             <option value="1">Max: 1 SCU</option>
             <option value="2">Max: 2 SCU</option>
@@ -278,10 +293,15 @@ function createCommodityRow(missionId, commodityId, showRemove) {
             <option value="24">Max: 24 SCU</option>
             <option value="32">Max: 32 SCU</option>
         </select>
-        <select onchange="updateCommodity('${commodityId}', 'destination', this.value)">
-            <option value="">Destination</option>
-            ${categoryLocations.map(loc => `<option value="${loc}">${loc}</option>`).join('')}
-        </select>
+        
+        <input type="text" 
+               list="globalLocationList" 
+               placeholder="Destination..."
+               class="location-input"
+               onchange="updateCommodity('${commodityId}', 'destination', this.value)"
+               onfocus="this.select()"
+               autocomplete="off">
+        
         ${showRemove ? 
             `<button class="btn-remove-commodity" onclick="removeCommodityRow('${missionId}', '${commodityId}')">-</button>` :
             `<div></div>`

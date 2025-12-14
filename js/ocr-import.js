@@ -15,19 +15,22 @@
 function matchLocation(ocrName, system, category) {
     if (!ocrName || !system || !category) return '';
     
+    // 🆕 STEP 1: Apply OCR alias mapping FIRST
+    let normalized = window.OCR_MAPPINGS ? window.OCR_MAPPINGS.applyLocationAlias(ocrName) : ocrName;
+    
     // Get locations for this system/category
     const systemData = window.LOCATIONS_DATABASE[system];
-    if (!systemData || !systemData[category]) return ocrName;
+    if (!systemData || !systemData[category]) return normalized;
     
     const locations = systemData[category];
     
-    // Try exact match first
-    if (locations.includes(ocrName)) {
-        return ocrName;
+    // STEP 2: Try exact match on normalized name
+    if (locations.includes(normalized)) {
+        console.log(`✅ Exact match: "${ocrName}" → "${normalized}"`);
+        return normalized;
     }
     
-    // === PREPROCESSING: Normalize OCR errors ===
-    let normalized = ocrName;
+    // STEP 3: Fix common OCR character confusions
     
     // Fix common OCR character confusions
     normalized = normalized
@@ -43,8 +46,9 @@ function matchLocation(ocrName, system, category) {
         .replace(/\bl4\b/gi, 'L4')         // l4 → L4
         .replace(/\bl5\b/gi, 'L5');        // l5 → L5
     
-    // Try exact match on normalized
+    // Try exact match again after OCR fixes
     if (locations.includes(normalized)) {
+        console.log(`✅ Match after OCR fixes: "${ocrName}" → "${normalized}"`);
         return normalized;
     }
     
@@ -70,13 +74,19 @@ function matchLocation(ocrName, system, category) {
             const exactCode = locations.find(loc => 
                 loc.toLowerCase() === code.toLowerCase()
             );
-            if (exactCode) return exactCode;
+            if (exactCode) {
+                console.log(`✅ Code exact match: "${ocrName}" → "${exactCode}"`);
+                return exactCode;
+            }
             
             // Try to find location containing this code
             const containsCode = locations.find(loc =>
                 loc.toLowerCase().includes(code.toLowerCase())
             );
-            if (containsCode) return containsCode;
+            if (containsCode) {
+                console.log(`✅ Code match: "${ocrName}" → "${containsCode}"`);
+                return containsCode;
+            }
         }
     }
 
@@ -92,7 +102,10 @@ function matchLocation(ocrName, system, category) {
     const exactCleaned = locations.find(loc => 
         loc.toLowerCase() === cleaned.toLowerCase()
     );
-    if (exactCleaned) return exactCleaned;
+    if (exactCleaned) {
+        console.log(`✅ Cleaned match: "${ocrName}" → "${exactCleaned}"`);
+        return exactCleaned;
+    }
     
     // === BIDIRECTIONAL FUZZY MATCHING ===
     const match = locations.find(loc => {
@@ -120,7 +133,14 @@ function matchLocation(ocrName, system, category) {
         );
     });
     
-    return match || ocrName;
+    if (match) {
+        console.log(`✅ Fuzzy match: "${ocrName}" → "${match}"`);
+        return match;
+    }
+    
+    // No match found - return normalized name
+    console.log(`⚠️ No match found for: "${ocrName}"`);
+    return normalized;
 }
 
 // =============================================================================

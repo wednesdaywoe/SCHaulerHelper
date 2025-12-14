@@ -20,12 +20,6 @@ const SHIPS_DATABASE = [
         capacity: 8
     },
     {
-        id: "aegis_idris",
-        name: "Aegis Idris",
-        manufacturer: "Aegis Dynamics",
-        capacity: 1326
-    },
-    {
         id: "aegis_reclaimer",
         name: "Aegis Reclaimer",
         manufacturer: "Aegis Dynamics",

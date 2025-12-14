@@ -191,7 +191,7 @@
             color: var(--text-secondary);
         }
 
-        .mission-payout select {
+        .mission-payout .payout-input {
             background-color: var(--bg-tertiary);
             color: var(--color-primary);
             border: 1px solid var(--border-color);
@@ -199,6 +199,21 @@
             font-size: 13px;
             border-radius: 4px;
             font-weight: 600;
+            width: 100px;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+
+        .mission-payout .payout-input:hover,
+        .mission-payout .payout-input:focus {
+            border-color: var(--color-primary);
+            outline: none;
+        }
+
+        .mission-payout .payout-input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.5;
+            font-size: 11px;
         }
 
         .commodity-row {
@@ -222,6 +237,34 @@
         .commodity-row input[type="number"] {
             text-align: center;
             font-weight: 600;
+        }
+
+        /* Searchable location inputs */
+        .location-input {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            font-size: 13px;
+            border-radius: 4px;
+            width: 100%;
+            transition: border-color 0.3s;
+        }
+
+        .location-input:hover,
+        .location-input:focus {
+            border-color: var(--color-primary);
+            outline: none;
+        }
+
+        .location-input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+
+        /* Hide datalist dropdown indicator */
+        .location-input::-webkit-calendar-picker-indicator {
+            display: none;
         }
 
         .btn-remove-commodity {

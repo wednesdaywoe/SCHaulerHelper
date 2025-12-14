@@ -355,7 +355,6 @@ body[data-theme="cassette"] .mission-title {
     color: var(--text-highlight);
 }
 
-/* Theme: Starkitten (kawaii brand) - Comprehensive palette */
 /* Theme: Cetacean (executive gold/grey) - Concierge palette */
 body[data-theme="cetacean"] {
     /* Backgrounds - Deep executive blacks and greys */
@@ -405,7 +404,7 @@ body[data-theme="cetacean"] .mission-title {
     color: var(--color-info);
 }
 
-body[data-theme="cassette-explorer"] {
+body[data-theme="cargo-explorer"] {
     /* Backgrounds */
     --bg-primary: #000000;      /* Blood Iron - Main page background (dark red-black) */
     --bg-secondary: #110000;    /* Dark Crimson - Panels (medium dark red) */
@@ -431,8 +430,8 @@ body[data-theme="cassette-explorer"] {
     --text-highlight: #fffd84;  /* Pirate Gold - important values */
 }
 
-/* Cassette Explorer theme - Component-specific styling */
-body[data-theme="cassette-explorer"] .mission-payout select {
+/* Cargo Explorer theme - Component-specific styling */
+body[data-theme="cargo-explorer"] .mission-payout select {
     color: var(--color-success);
     font-weight: 700;
 }
