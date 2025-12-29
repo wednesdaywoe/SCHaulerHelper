@@ -56,6 +56,8 @@ window.GLOBAL_LOCATIONS = [
     "Shubin SMCa-6",
     "Shubin SMCa-8",
     
+    "Shubin SAL-2",
+    
     // Rayari Facilities
     "Rayari Anvik",
     "Rayari Cantwell",
@@ -85,6 +87,8 @@ window.GLOBAL_LOCATIONS = [
     "Hdms-Perlman",
     "Hdms-Stanhope",
     "Hdms-Thedus",
+
+    "Grim HEX",
     
     // Hurston Stations (Additional)
     "Hdms-Anderson",
@@ -92,6 +96,8 @@ window.GLOBAL_LOCATIONS = [
     "Hdms-Norgaard",
     "Hdms-Pinewood",
     "Hdms-Ryder",
+    
+    "Reclamation & Disposal Orinth",
     
     // ArcCorp Stations (Additional)
     "Hdms-Lathan",
@@ -105,6 +111,11 @@ window.GLOBAL_LOCATIONS = [
     "Levski",
     "Delamar",
     
+    //Pyro
+
+    //Pyro IV
+    "Sacren's Plot",
+
     // Add more as discovered...
 ];
 
