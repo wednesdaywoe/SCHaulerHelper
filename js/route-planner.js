@@ -12,6 +12,30 @@ let routeStops = []; // Store current route stops for reordering
 let routeStepCompletion = {}; // Track which route steps are completed
 let routeViewMode = 'all'; // 'all', 'current', 'current-next'
 
+/**
+ * Normalize a location string for consistent comparison
+ * Trims whitespace and converts to lowercase for matching,
+ * but preserves original case for display
+ */
+function normalizeLocation(location) {
+    if (!location) return '';
+    return location.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/**
+ * Get or create a canonical location key, preserving the first-seen display name
+ * @param {string} location - The location string to normalize
+ * @param {Object} canonicalNames - Map of normalized keys to display names
+ * @returns {string} - The normalized key
+ */
+function getCanonicalLocationKey(location, canonicalNames) {
+    const normalized = normalizeLocation(location);
+    if (!canonicalNames[normalized]) {
+        canonicalNames[normalized] = location.trim(); // Store first-seen display name
+    }
+    return normalized;
+}
+
 // =============================================================================
 // ROUTE GENERATION
 // =============================================================================
@@ -29,38 +53,49 @@ function generateRoutePlan() {
     console.log('═══════════════════════════════════════════════');
     
     // Build comprehensive location map
-    const locationMap = {}; // { location: { pickups: [], deliveries: [] } }
-    
+    const locationMap = {}; // { normalizedLocation: { pickups: [], deliveries: [], displayName: string } }
+    const canonicalNames = {}; // Map of normalized keys to display names
+
     missions.forEach((mission, missionIndex) => {
         mission.commodities.forEach(commodity => {
             if (!commodity.pickup || !commodity.destination || !commodity.commodity || !commodity.quantity) {
                 return;
             }
-            
+
             const scu = parseInt(commodity.quantity) || 0;
-            const pickup = commodity.pickup;
-            const destination = commodity.destination;
-            
-            // Initialize location entries
-            if (!locationMap[pickup]) locationMap[pickup] = { pickups: [], deliveries: [] };
-            if (!locationMap[destination]) locationMap[destination] = { pickups: [], deliveries: [] };
-            
-            // Add pickup action
+            const pickupRaw = commodity.pickup;
+            const destinationRaw = commodity.destination;
+
+            // Normalize locations to prevent duplicates from case/whitespace differences
+            const pickup = getCanonicalLocationKey(pickupRaw, canonicalNames);
+            const destination = getCanonicalLocationKey(destinationRaw, canonicalNames);
+
+            // Initialize location entries with display names
+            if (!locationMap[pickup]) {
+                locationMap[pickup] = { pickups: [], deliveries: [], displayName: canonicalNames[pickup] };
+            }
+            if (!locationMap[destination]) {
+                locationMap[destination] = { pickups: [], deliveries: [], displayName: canonicalNames[destination] };
+            }
+
+            // Add pickup action (use normalized destination for grouping)
             locationMap[pickup].pickups.push({
                 missionNum: missionIndex + 1,
                 commodity: commodity.commodity,
                 scu: scu,
-                destination: destination,
+                destination: destination, // Normalized key
+                destinationDisplay: canonicalNames[destination], // Display name
                 maxBoxSize: parseInt(commodity.maxBoxSize) || 4,
-                id: `m${missionIndex + 1}-${pickup}-${commodity.commodity}-${destination}` // Unique ID with pickup location
+                id: `m${missionIndex + 1}-${pickup}-${commodity.commodity}-${destination}` // Unique ID with normalized locations
             });
-            
+
             // Add delivery action
             locationMap[destination].deliveries.push({
                 missionNum: missionIndex + 1,
                 commodity: commodity.commodity,
                 scu: scu,
-                pickup: pickup,
+                pickup: pickup, // Normalized key
+                pickupDisplay: canonicalNames[pickup], // Display name
                 id: `m${missionIndex + 1}-${pickup}-${commodity.commodity}-${destination}` // Same ID as pickup
             });
         });
@@ -77,17 +112,17 @@ function generateRoutePlan() {
     Object.entries(locationMap).forEach(([loc, data]) => {
         const pickupSCU = data.pickups.reduce((s, p) => s + p.scu, 0);
         const deliverySCU = data.deliveries.reduce((s, d) => s + d.scu, 0);
-        console.log(`  ${loc}:`);
+        console.log(`  ${data.displayName} (key: ${loc}):`);
         if (data.pickups.length > 0) {
             console.log(`    📦 Pickups: ${pickupSCU} SCU (${data.pickups.length} items)`);
             data.pickups.forEach(p => {
-                console.log(`       - Mission ${p.missionNum}: ${p.commodity} ${p.scu} SCU → ${p.destination}`);
+                console.log(`       - Mission ${p.missionNum}: ${p.commodity} ${p.scu} SCU → ${p.destinationDisplay}`);
             });
         }
         if (data.deliveries.length > 0) {
             console.log(`    📭 Deliveries: ${deliverySCU} SCU (${data.deliveries.length} items)`);
             data.deliveries.forEach(d => {
-                console.log(`       - Mission ${d.missionNum}: ${d.commodity} ${d.scu} SCU from ${d.pickup}`);
+                console.log(`       - Mission ${d.missionNum}: ${d.commodity} ${d.scu} SCU from ${d.pickupDisplay}`);
             });
         }
     });
@@ -286,7 +321,8 @@ function generateRoutePlan() {
         const deliverySCU = deliveriesHere.reduce((sum, d) => sum + d.scu, 0);
         const pickupSCU = pickupsHere.reduce((sum, p) => sum + p.scu, 0);
         
-        console.log(`📍 STOP ${stops.length + 1}: ${bestLocation}`);
+        const displayName = loc.displayName;
+        console.log(`📍 STOP ${stops.length + 1}: ${displayName}`);
         if (deliveriesHere.length > 0) {
             console.log(`   📭 Delivering ${deliverySCU} SCU:`);
             deliveriesHere.forEach(d => {
@@ -296,14 +332,16 @@ function generateRoutePlan() {
         if (pickupsHere.length > 0) {
             console.log(`   📦 Picking up ${pickupSCU} SCU:`);
             pickupsHere.forEach(p => {
-                console.log(`      - Mission ${p.missionNum}: ${p.commodity} ${p.scu} SCU → ${p.destination}`);
+                console.log(`      - Mission ${p.missionNum}: ${p.commodity} ${p.scu} SCU → ${p.destinationDisplay}`);
             });
         }
         console.log(`   Cargo: ${currentCargo} → ${currentCargo - deliverySCU + pickupSCU} SCU`);
-        
+
         // Record this stop (with both pickups AND deliveries)
+        // Use displayName for rendering, but keep normalized key for lookups
         stops.push({
-            location: bestLocation,
+            location: displayName, // Use display name for UI
+            locationKey: bestLocation, // Keep normalized key for internal lookups
             pickups: pickupsHere,
             deliveries: deliveriesHere,
             cargoBeforeStop: currentCargo,
@@ -420,7 +458,7 @@ function renderRoutePlan(stops) {
                                 <span style="font-size: 16px; margin-right: 8px;">▼</span> DELIVERY
                             </div>
                             ${stop.deliveries.map(item => {
-                                const group = cargoGroups[stop.location];
+                                const group = cargoGroups[stop.locationKey || normalizeLocation(stop.location)];
                                 return `
                                     <div class="route-mission-item" style="border-left: 3px solid ${group?.color || '#888'}; padding-left: 12px; margin-left: 20px;">
                                         <span class="mission-number">Mission ${item.missionNum}:</span>
@@ -432,7 +470,7 @@ function renderRoutePlan(stops) {
                             }).join('')}
                         </div>
                     ` : ''}
-                    
+
                     ${hasPickups ? `
                         <div class="route-action-section">
                             <div class="route-action-header" style="color: var(--color-warning);">
