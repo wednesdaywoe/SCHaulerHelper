@@ -28,20 +28,38 @@
         </head>
 
     <body data-theme="stardust">
+        <div id="wip-banner" style="background: linear-gradient(135deg, #7a0353, #a70f74); color: white; padding: 12px 20px; text-align: center; font-size: 14px; font-weight: bold; border-bottom: 3px solid #cc4455; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);">
+            <span style="margin-right: 8px;">⚠️ WORK IN PROGRESS - This application is incomplete and under active development - expect changes and bugs</span>
+            <span style="margin-left: 8px;">🛠️ Last updated: <span id="last-updated">Loading...</span></span>
+        </div>
+        <script>
+            // Update the WIP banner with the last updated timestamp
+            // Update this date whenever you make significant changes
+            const LAST_UPDATED = '2026-01-20T22:57:00';
+            const lastUpdatedEl = document.getElementById('last-updated');
+            if (lastUpdatedEl) {
+                const date = new Date(LAST_UPDATED);
+                const options = {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true,
+                };
+                lastUpdatedEl.textContent = date.toLocaleString('en-US', options);
+            }
+        </script>
         <!-- Global location datalist - used by all location inputs -->
         <datalist id="globalLocationList">
             <!-- Populated by populateLocationList() on page load -->
         </datalist>
-        
+
         <div class="container">
             <!-- Header -->
             <div class="header">
                 <h1>HAULER HELPER</h1>
                 <div class="subtitle">Your Ship Manifest for Star Citizen</div>
-                <div
-                    style="font-weight: bold; color: var(--color-warning); font-size: 11px; margin-top: 10px; letter-spacing: 1px;">
-                    THIS IS A WORK IN PROGRESS, EXPECT BUGS AND MISSING/INCORRECT INFORMATION
-                </div>
             </div>
 
             <!-- Decorative gradient line -->
