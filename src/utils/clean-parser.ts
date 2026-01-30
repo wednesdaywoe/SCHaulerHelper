@@ -21,11 +21,27 @@ function extractPayout(text: string): number | null {
 }
 
 function preprocessText(text: string): string {
+  // Remove leading < or similar bullet characters from lines (UI artifact)
+  text = text.replace(/^[<>[\]•-]\s*/gm, '');
+
+  // Normalize lagrange point descriptions to simple format
+  // "Wide Forest Station at ArcCorp's L1 Lagrange point" -> "ARC-L1 Wide Forest"
+  // Note: \s+ handles line breaks between words (common OCR artifact)
+  text = text.replace(/Wide\s+Forest\s+Station\s+at\s+ArcCorp.s\s+L1\s+Lagrange\s+point/gi, 'ARC-L1 Wide Forest');
+  text = text.replace(/Shallow\s+Frontier\s+Station\s+at\s+MicroTech.s\s+L1\s+Lagrange\s+point/gi, 'MIC-L1 Shallow Frontier');
+  text = text.replace(/Endless\s+Odyssey\s+Station\s+at\s+Hurston.s\s+L1\s+Lagrange\s+point/gi, 'HUR-L1 Endless Odyssey');
+  text = text.replace(/Evergreen\s+Harbor\s+Station\s+at\s+Crusader.s\s+L1\s+Lagrange\s+point/gi, 'CRU-L1 Evergreen Harbor');
+  // Generic single-word station pattern as fallback
+  text = text.replace(/(\w+)\s+Station\s+at\s+(\w+).s\s+L(\d)\s+Lagrange\s+point/gi, '$2-L$3 $1');
+
   // Fix location names that break across lines
   text = text.replace(/Sakura Sun\s*\n\s*Goldenrod/gi, 'Sakura Sun Goldenrod');
   text = text.replace(/Greycat Stanton IV\s*\n\s*Production/gi, 'Greycat Stanton IV Production');
   text = text.replace(/Rayari (\w+)\s*\n\s*Research/gi, 'Rayari $1 Research');
   text = text.replace(/NB Int\.?\s*\n\s*Spaceport/gi, 'NB Int. Spaceport');
+  // Fix lagrange station names that break across lines
+  text = text.replace(/Red\s*\n\s*microTech-L4\s+Crossroads/gi, 'MIC-L4 Red Crossroads');
+  text = text.replace(/microTech-L(\d)\s+([\w\s]+)/gi, 'MIC-L$1 $2');
 
   // Fix facility codes that break across lines
   text = text.replace(/SMO-\s*\n\s*(\d+)/gi, 'SMO-$1');
@@ -43,8 +59,11 @@ function preprocessText(text: string): string {
 
 function extractSegments(text: string): ParsedSegment[] {
   const segments: ParsedSegment[] = [];
+  // Pattern handles:
+  // - "Deliver 0/6 SCU of Medical Supplies to Shubin Mining on Calliope"
+  // - "Deliver 0/6 SCU of Medical Supplies to ARC-L1 Wide Forest."
   const deliverPattern =
-    /Deliver\s+(0\/\d+|\d+)\s+SCU\s+(?:of\s+)?([\w\s()]+?)\s+to\s+([\w\s\-.']+?)\s+(?:on|above)\s+/gi;
+    /Deliver\s+(0\/\d+|\d+)\s+SCU\s+(?:of\s+)?([\w\s()]+?)\s+to\s+([\w\s\-.']+?)(?:\s+(?:on|above|at)\s+[\w\s\-.']+?)?(?:\.|$)/gi;
 
   let match;
   while ((match = deliverPattern.exec(text)) !== null) {
