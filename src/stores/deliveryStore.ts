@@ -333,6 +333,8 @@ export const useDeliveryStore = create<DeliveryState>()(
             currentLocation = bestLocation;
           }
 
+          console.log('[Route] Greedy route order:', stops.map(s => `${s.type}: ${s.location}`));
+
           // --- 2-opt improvement ---
           // Try swapping pairs of delivery stops to reduce total route distance
           // Only swap deliveries (not pickups) to maintain pickup-before-delivery constraint
@@ -394,6 +396,7 @@ export const useDeliveryStore = create<DeliveryState>()(
 
                   // If swap improves route, do it
                   if (swapCost < currentCost) {
+                    console.log(`[Route] 2-opt swapping ${locA} ↔ ${locB} (cost ${currentCost} → ${swapCost})`);
                     const temp = stops[idxA];
                     stops[idxA] = stops[idxB];
                     stops[idxB] = temp;
@@ -403,6 +406,8 @@ export const useDeliveryStore = create<DeliveryState>()(
               }
             }
           }
+
+          console.log('[Route] Final route order:', stops.map(s => `${s.type}: ${s.location}`));
 
           // Build delivery-only map for cargo groups (unchanged logic)
           const deliveries = new Map<string, RouteItem[]>();
