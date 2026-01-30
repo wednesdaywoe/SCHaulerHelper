@@ -11,7 +11,38 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { useDeliveryStore } from '@/stores/deliveryStore';
 import { useUIStore } from '@/stores/uiStore';
+import { calculateBoxBreakdown } from '@/utils/box-breakdown';
 import type { CargoGroup } from '@/types';
+
+// Container icon component
+function ContainerIcon({ size }: { size: number }) {
+  return (
+    <img
+      src={`${import.meta.env.BASE_URL}icons/${size}.svg`}
+      alt={`${size} SCU`}
+      className="inline-block w-5 h-5"
+      style={{ filter: 'var(--icon-filter, none)' }}
+    />
+  );
+}
+
+// Box breakdown display with icons
+function BoxBreakdownDisplay({ breakdown }: { breakdown: Record<string, number> }) {
+  const entries = Object.entries(breakdown).filter(([, count]) => count > 0);
+  if (entries.length === 0) return null;
+
+  return (
+    <div className="flex items-center gap-1 flex-wrap">
+      {entries.map(([size, count], i) => (
+        <span key={size} className="flex items-center gap-0.5">
+          {i > 0 && <span className="text-[var(--text-tertiary)] mx-0.5">+</span>}
+          <span className="text-xs">{count}x</span>
+          <ContainerIcon size={parseInt(size)} />
+        </span>
+      ))}
+    </div>
+  );
+}
 
 interface DraggableCargoCardProps {
   location: string;
@@ -66,16 +97,19 @@ function DraggableCargoCard({ location, group, onOpenColorPicker }: DraggableCar
           title="Change color"
         />
       </div>
-      <div className="space-y-0.5">
-        {group.items.map((item, i) => (
-          <div
-            key={i}
-            className="flex justify-between text-xs text-[var(--text-secondary)]"
-          >
-            <span className="truncate">{item.commodity}</span>
-            <span className="ml-1 shrink-0">{item.quantity}</span>
-          </div>
-        ))}
+      <div className="space-y-1">
+        {group.items.map((item, i) => {
+          const breakdown = calculateBoxBreakdown(item.quantity);
+          return (
+            <div key={i} className="text-xs text-[var(--text-secondary)]">
+              <div className="flex justify-between">
+                <span className="truncate">{item.commodity}</span>
+                <span className="ml-1 shrink-0">{item.quantity} SCU</span>
+              </div>
+              <BoxBreakdownDisplay breakdown={breakdown} />
+            </div>
+          );
+        })}
       </div>
     </div>
   );

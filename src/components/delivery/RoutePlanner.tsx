@@ -27,7 +27,7 @@ function ContainerIcon({ size }: { size: number }) {
     <img
       src={`${import.meta.env.BASE_URL}icons/${size}.svg`}
       alt={`${size} SCU`}
-      className="inline-block w-4 h-4"
+      className="inline-block w-6 h-6"
       style={{ filter: 'var(--icon-filter, none)' }}
     />
   );
