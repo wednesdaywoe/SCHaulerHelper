@@ -338,12 +338,18 @@ export const useDeliveryStore = create<DeliveryState>()(
           // --- 2-opt improvement ---
           // Try swapping pairs of delivery stops to reduce total route distance
           // Only swap deliveries (not pickups) to maintain pickup-before-delivery constraint
+          // SKIP 2-opt when there are interstellar destinations - the gateway-aware routing
+          // already optimizes for the journey to the gateway, and 2-opt would undo that
           const deliveryStopIndices = stops
             .map((s, i) => ({ stop: s, index: i }))
             .filter(({ stop }) => stop.type === 'delivery')
             .map(({ index }) => index);
 
-          if (deliveryStopIndices.length >= 2) {
+          const skip2opt = interstellarGateways.size > 0;
+          if (skip2opt) {
+            console.log('[Route] Skipping 2-opt (interstellar route detected)');
+          }
+          if (deliveryStopIndices.length >= 2 && !skip2opt) {
             let improved = true;
             let iterations = 0;
             const MAX_ITERATIONS = 50; // Prevent infinite loops
