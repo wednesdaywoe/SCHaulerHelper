@@ -8,6 +8,7 @@ import type {
   RouteViewMode,
   Mission,
 } from '@/types';
+import { travelCost } from '@/data/location-graph';
 
 let nextStopId = 0;
 
@@ -45,13 +46,31 @@ export const useDeliveryStore = create<DeliveryState>()(
 
       generateRoute: (missions) =>
         set((state) => {
-          // Group items by location, separating pickups and deliveries
-          const pickups = new Map<string, RouteItem[]>();
-          const deliveries = new Map<string, RouteItem[]>();
+          // Build detailed pickup/delivery data with tracking IDs
+          interface PickupAction {
+            id: string; // Unique ID for tracking
+            location: string;
+            destination: string;
+            item: RouteItem;
+            scu: number;
+          }
+          interface DeliveryAction {
+            id: string;
+            location: string;
+            pickupId: string; // Must pick up before delivering
+            item: RouteItem;
+            scu: number;
+          }
+
+          const allPickups: PickupAction[] = [];
+          const allDeliveries: DeliveryAction[] = [];
 
           missions.forEach((mission) => {
-            mission.commodities.forEach((c) => {
-              if (!c.commodity || !c.quantity) return;
+            mission.commodities.forEach((c, idx) => {
+              if (!c.commodity || !c.quantity || !c.pickup || !c.destination) return;
+
+              const pickupId = `${mission.id}_${idx}`;
+              const scu = c.quantity || 0;
 
               const item: RouteItem = {
                 missionId: mission.id,
@@ -60,37 +79,151 @@ export const useDeliveryStore = create<DeliveryState>()(
                 maxBoxSize: c.maxBoxSize,
               };
 
-              if (c.pickup) {
-                const existing = pickups.get(c.pickup) ?? [];
-                existing.push(item);
-                pickups.set(c.pickup, existing);
-              }
-              if (c.destination) {
-                const existing = deliveries.get(c.destination) ?? [];
-                existing.push(item);
-                deliveries.set(c.destination, existing);
-              }
+              allPickups.push({
+                id: pickupId,
+                location: c.pickup,
+                destination: c.destination,
+                item,
+                scu,
+              });
+
+              allDeliveries.push({
+                id: `${pickupId}_delivery`,
+                location: c.destination,
+                pickupId,
+                item,
+                scu,
+              });
             });
           });
+
+          // Track state during route building
+          const pendingPickups = new Set(allPickups.map(p => p.id));
+          const pendingDeliveries = new Set(allDeliveries.map(d => d.id));
+          const pickedUpCargo = new Set<string>(); // Pickup IDs that are on board
 
           const stops: RouteStop[] = [];
+          let currentLocation = '';
 
-          // Pickups first, then deliveries
-          pickups.forEach((items, location) => {
-            stops.push({
-              id: `stop_${++nextStopId}`,
-              type: 'pickup',
-              location,
-              items,
-            });
-          });
+          // Distance penalty multiplier (higher = stronger preference for nearby locations)
+          const DISTANCE_PENALTY = 0.5;
 
-          deliveries.forEach((items, location) => {
-            stops.push({
-              id: `stop_${++nextStopId}`,
-              type: 'delivery',
-              location,
-              items,
+          // Greedy algorithm: pick best next stop until done
+          while (pendingPickups.size > 0 || pendingDeliveries.size > 0) {
+            // Build candidate locations with scores
+            const candidates = new Map<string, {
+              pickups: PickupAction[];
+              deliveries: DeliveryAction[];
+              score: number;
+            }>();
+
+            // Add pickup locations
+            for (const pickupId of pendingPickups) {
+              const pickup = allPickups.find(p => p.id === pickupId)!;
+              if (!candidates.has(pickup.location)) {
+                candidates.set(pickup.location, { pickups: [], deliveries: [], score: 0 });
+              }
+              candidates.get(pickup.location)!.pickups.push(pickup);
+            }
+
+            // Add deliverable locations (only if cargo has been picked up)
+            for (const deliveryId of pendingDeliveries) {
+              const delivery = allDeliveries.find(d => d.id === deliveryId)!;
+              if (!pickedUpCargo.has(delivery.pickupId)) continue; // Can't deliver yet
+
+              if (!candidates.has(delivery.location)) {
+                candidates.set(delivery.location, { pickups: [], deliveries: [], score: 0 });
+              }
+              candidates.get(delivery.location)!.deliveries.push(delivery);
+            }
+
+            if (candidates.size === 0) break;
+
+            // Score each candidate location
+            for (const [location, data] of candidates) {
+              const pickupSCU = data.pickups.reduce((sum, p) => sum + p.scu, 0);
+              const deliverySCU = data.deliveries.reduce((sum, d) => sum + d.scu, 0);
+
+              // Base score: deliveries worth more (free up cargo space)
+              const deliveryScore = deliverySCU * 3;
+              const pickupScore = pickupSCU * 2;
+              const comboBonus = (deliverySCU > 0 && pickupSCU > 0) ? 200 : 0;
+
+              // Distance penalty
+              let distancePenalty = 0;
+              if (currentLocation) {
+                const cost = travelCost(currentLocation, location);
+                distancePenalty = cost * DISTANCE_PENALTY;
+              }
+
+              data.score = deliveryScore + pickupScore + comboBonus - distancePenalty;
+            }
+
+            // Pick best location
+            let bestLocation = '';
+            let bestScore = -Infinity;
+            for (const [location, data] of candidates) {
+              if (data.score > bestScore) {
+                bestScore = data.score;
+                bestLocation = location;
+              }
+            }
+
+            if (!bestLocation) break;
+
+            const chosen = candidates.get(bestLocation)!;
+
+            // Process deliveries at this location
+            if (chosen.deliveries.length > 0) {
+              const deliveryItems = chosen.deliveries.map(d => d.item);
+              stops.push({
+                id: `stop_${++nextStopId}`,
+                type: 'delivery',
+                location: bestLocation,
+                items: deliveryItems,
+              });
+
+              // Mark deliveries complete and remove cargo from ship
+              for (const delivery of chosen.deliveries) {
+                pendingDeliveries.delete(delivery.id);
+                pickedUpCargo.delete(delivery.pickupId);
+              }
+            }
+
+            // Process pickups at this location
+            if (chosen.pickups.length > 0) {
+              const pickupItems = chosen.pickups.map(p => p.item);
+              stops.push({
+                id: `stop_${++nextStopId}`,
+                type: 'pickup',
+                location: bestLocation,
+                items: pickupItems,
+              });
+
+              // Mark pickups complete and add cargo to ship
+              for (const pickup of chosen.pickups) {
+                pendingPickups.delete(pickup.id);
+                pickedUpCargo.add(pickup.id);
+              }
+            }
+
+            currentLocation = bestLocation;
+          }
+
+          // Build delivery-only map for cargo groups (unchanged logic)
+          const deliveries = new Map<string, RouteItem[]>();
+          missions.forEach((mission) => {
+            mission.commodities.forEach((c) => {
+              if (!c.commodity || !c.quantity || !c.destination) return;
+              const item: RouteItem = {
+                missionId: mission.id,
+                commodity: c.commodity,
+                quantity: c.quantity,
+                maxBoxSize: c.maxBoxSize,
+              };
+              const existing = deliveries.get(c.destination) ?? [];
+              existing.push(item);
+              deliveries.set(c.destination, existing);
             });
           });
 

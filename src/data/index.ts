@@ -9,3 +9,11 @@ export {
   applyLocationAlias,
   applyCommodityAlias,
 } from './ocr-mappings';
+export {
+  LOCATION_GRAPH,
+  travelCost,
+  getLocationId,
+  getSystem,
+  getPlanet,
+} from './location-graph';
+export type { LocationNode, LocationType } from './location-graph';
