@@ -23,6 +23,18 @@ function useAppContext() {
     category: selectedCategory || 'All',
     theme,
     missionCount: missions.length,
+    missions: missions.map((mission, index) => ({
+      missionNumber: index + 1,
+      missionId: mission.id,
+      payout: mission.payout,
+      commodities: mission.commodities.map((c) => ({
+        commodity: c.commodity,
+        pickup: c.pickup,
+        destination: c.destination,
+        quantity: c.quantity,
+        maxBoxSize: c.maxBoxSize,
+      })),
+    })),
   };
 }
 
