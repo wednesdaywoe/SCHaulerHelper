@@ -1332,7 +1332,12 @@
 
             // Normalize lagrange point descriptions to simple format
             // "Wide Forest Station at ArcCorp's L1 Lagrange point" -> "ARC-L1 Wide Forest"
-            text = text.replace(/Wide Forest Station\s+at\s+ArcCorp.s\s+L1\s+Lagrange\s+point/gi, 'ARC-L1 Wide Forest');
+            // Note: \s+ handles line breaks between words (common OCR artifact)
+            text = text.replace(/Wide\s+Forest\s+Station\s+at\s+ArcCorp.s\s+L1\s+Lagrange\s+point/gi, 'ARC-L1 Wide Forest');
+            text = text.replace(/Shallow\s+Frontier\s+Station\s+at\s+MicroTech.s\s+L1\s+Lagrange\s+point/gi, 'MIC-L1 Shallow Frontier');
+            text = text.replace(/Endless\s+Odyssey\s+Station\s+at\s+Hurston.s\s+L1\s+Lagrange\s+point/gi, 'HUR-L1 Endless Odyssey');
+            text = text.replace(/Evergreen\s+Harbor\s+Station\s+at\s+Crusader.s\s+L1\s+Lagrange\s+point/gi, 'CRU-L1 Evergreen Harbor');
+            // Generic single-word station pattern as fallback
             text = text.replace(/(\w+)\s+Station\s+at\s+(\w+).s\s+L(\d)\s+Lagrange\s+point/gi, '$2-L$3 $1');
 
             // Fix location names that break across lines
