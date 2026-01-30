@@ -1326,7 +1326,15 @@
          */
         function preprocessText(text) {
             console.log('  📝 Preprocessing text...');
-            
+
+            // Remove leading < or similar bullet characters from lines (UI artifact)
+            text = text.replace(/^[<>\[\]•\-]\s*/gm, '');
+
+            // Normalize lagrange point descriptions to simple format
+            // "Wide Forest Station at ArcCorp's L1 Lagrange point" -> "ARC-L1 Wide Forest"
+            text = text.replace(/Wide Forest Station\s+at\s+ArcCorp.s\s+L1\s+Lagrange\s+point/gi, 'ARC-L1 Wide Forest');
+            text = text.replace(/(\w+)\s+Station\s+at\s+(\w+).s\s+L(\d)\s+Lagrange\s+point/gi, '$2-L$3 $1');
+
             // Fix location names that break across lines
             text = text.replace(/Sakura Sun\s*\n\s*Goldenrod/gi, 'Sakura Sun Goldenrod');
             text = text.replace(/Greycat Stanton IV\s*\n\s*Production/gi, 'Greycat Stanton IV Production');
@@ -1355,7 +1363,8 @@
             const segments = [];
             
             // Pattern: "Deliver 0/3 SCU of Stims to Shubin Mining Facility SMCa-6 on Calliope"
-            const deliverPattern = /Deliver\s+(0\/\d+|\d+)\s+SCU\s+(?:of\s+)?([\w\s\(\)]+?)\s+to\s+([\w\s\-\.\']+?)\s+(?:on|above)\s+/gi;
+            // Also handles "Deliver 0/6 SCU of Medical Supplies to ARC-L1 Wide Forest."
+            const deliverPattern = /Deliver\s+(0\/\d+|\d+)\s+SCU\s+(?:of\s+)?([\w\s\(\)]+?)\s+to\s+([\w\s\-\.\']+?)(?:\s+(?:on|above|at)\s+[\w\s\-\.\']+?)?(?:\.|$)/gi;
             
             let match;
             while ((match = deliverPattern.exec(text)) !== null) {
