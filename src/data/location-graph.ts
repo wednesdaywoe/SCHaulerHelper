@@ -306,6 +306,15 @@ export const LOCATION_GRAPH: Record<string, LocationNode> = {
 
 // Build lookup table: lowercase display name -> node id
 const NAME_TO_ID: Record<string, string> = {};
+
+// Map full planet names to abbreviations for Lagrange point matching
+const PLANET_ABBREVS: Record<string, string> = {
+  'hurston': 'hur',
+  'crusader': 'cru',
+  'arccorp': 'arc',
+  'microtech': 'mic',
+};
+
 Object.values(LOCATION_GRAPH).forEach(node => {
   // Add full name
   NAME_TO_ID[node.name.toLowerCase()] = node.id;
@@ -319,6 +328,21 @@ Object.values(LOCATION_GRAPH).forEach(node => {
     NAME_TO_ID[shortMatch[1].toLowerCase()] = node.id;
   }
 
+  // For lagrange points, also add full planet name versions
+  // e.g., "hur-l1" -> also match "hurston-l1"
+  const lagrangeMatch = node.id.match(/^(hur|cru|arc|mic)-l(\d+)$/i);
+  if (lagrangeMatch) {
+    const abbrev = lagrangeMatch[1].toLowerCase();
+    const num = lagrangeMatch[2];
+    // Find full planet name for this abbreviation
+    for (const [planet, abbr] of Object.entries(PLANET_ABBREVS)) {
+      if (abbr === abbrev) {
+        NAME_TO_ID[`${planet}-l${num}`] = node.id;
+        break;
+      }
+    }
+  }
+
   // For gateway stations, add variations
   if (node.type === 'gateway') {
     // "Nyx Gateway" -> also match "nyx gateway", already done via full name
@@ -329,11 +353,25 @@ Object.values(LOCATION_GRAPH).forEach(node => {
 });
 
 /**
+ * Normalize a location name for matching:
+ * - Replace newlines with spaces
+ * - Collapse multiple spaces
+ * - Trim and lowercase
+ */
+function normalizeLocationName(name: string): string {
+  return name
+    .replace(/[\r\n]+/g, ' ')  // Replace newlines with space
+    .replace(/\s+/g, ' ')       // Collapse multiple spaces
+    .trim()
+    .toLowerCase();
+}
+
+/**
  * Get node ID from display name
  */
 export function getLocationId(displayName: string): string | null {
   if (!displayName) return null;
-  const normalized = displayName.trim().toLowerCase();
+  const normalized = normalizeLocationName(displayName);
 
   // Try exact match first
   if (NAME_TO_ID[normalized]) {
@@ -345,6 +383,44 @@ export function getLocationId(displayName: string): string | null {
   for (const [name, id] of Object.entries(NAME_TO_ID)) {
     if (name.startsWith(normalized) || normalized.startsWith(name)) {
       return id;
+    }
+  }
+
+  // Try to extract Lagrange point pattern from anywhere in the string
+  // Matches patterns like "Hurston-L1", "MicroTech-L4", "HUR-L1", etc.
+  const lagrangePatterns = [
+    // Full planet name: "Hurston-L1", "MicroTech-L4"
+    /(hurston|crusader|arccorp|microtech)-l(\d+)/i,
+    // Abbreviated: "HUR-L1", "MIC-L4"
+    /(hur|cru|arc|mic)-l(\d+)/i,
+  ];
+
+  for (const pattern of lagrangePatterns) {
+    const match = normalized.match(pattern);
+    if (match) {
+      let prefix = match[1].toLowerCase();
+      const num = match[2];
+
+      // Convert full planet name to abbreviation
+      if (PLANET_ABBREVS[prefix]) {
+        prefix = PLANET_ABBREVS[prefix];
+      }
+
+      const lagrangeId = `${prefix}-l${num}`;
+      if (NAME_TO_ID[lagrangeId]) {
+        return NAME_TO_ID[lagrangeId];
+      }
+    }
+  }
+
+  // Try to match known city/station names within the string
+  // e.g., "August Dunlow Spaceport in Orison" -> look for "orison"
+  const knownLocations = ['orison', 'new babbage', 'area18', 'lorville', 'levski'];
+  for (const loc of knownLocations) {
+    if (normalized.includes(loc)) {
+      if (NAME_TO_ID[loc]) {
+        return NAME_TO_ID[loc];
+      }
     }
   }
 
