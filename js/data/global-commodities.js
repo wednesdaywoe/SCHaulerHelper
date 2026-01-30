@@ -62,6 +62,7 @@ window.GLOBAL_COMMODITIES = [
     "Medical Supplies",
     "Mercury",
     "Methane",
+    "Molina Mold Treatment",
     "Neon",
     "Nitrogen",
     "Omnapoxy",
