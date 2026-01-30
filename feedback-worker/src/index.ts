@@ -11,6 +11,21 @@ interface Env {
   FEEDBACK_EMAIL: string;
 }
 
+interface MissionCommodity {
+  commodity: string;
+  pickup: string;
+  destination: string;
+  quantity: number;
+  maxBoxSize?: number;
+}
+
+interface Mission {
+  missionNumber: number;
+  missionId: string;
+  payout: number;
+  commodities: MissionCommodity[];
+}
+
 interface AppContext {
   page: string;
   ship?: string;
@@ -18,13 +33,14 @@ interface AppContext {
   category?: string;
   theme?: string;
   missionCount?: number;
+  missions?: Mission[];
   processedImages?: number;
 }
 
 interface FeedbackPayload {
   type: 'bug' | 'suggestion' | 'other';
   description: string;
-  email?: string;
+  spectrumHandle?: string;
   appContext?: AppContext;
   userAgent: string;
   timestamp: string;
@@ -33,6 +49,7 @@ interface FeedbackPayload {
 const ALLOWED_ORIGINS = [
   'https://wednesdaywoe.github.io',
   'http://localhost:3000',
+  'http://localhost:5173',
 ];
 
 function getCorsHeaders(origin: string | null): Record<string, string> {
@@ -85,13 +102,36 @@ function buildEmailHtml(payload: FeedbackPayload): string {
       <table style="width: 100%; border-collapse: collapse;">
         ${rows.join('\n        ')}
       </table>`;
+
+    // Add mission details if present
+    if (ctx.missions && ctx.missions.length > 0) {
+      const missionRows = ctx.missions.map(m => {
+        const commodityList = m.commodities.map(c =>
+          `${escapeHtml(c.commodity)}: ${c.quantity} SCU (${escapeHtml(c.pickup)} → ${escapeHtml(c.destination)})`
+        ).join('<br/>');
+        return `
+          <tr style="border-bottom: 1px solid #334155;">
+            <td style="color: #64748b; padding: 8px; vertical-align: top;">Mission ${m.missionNumber}</td>
+            <td style="color: #e2e8f0; padding: 8px;">
+              <div style="color: #fbbf24; margin-bottom: 4px;">${m.payout.toLocaleString()} aUEC</div>
+              <div style="font-size: 12px;">${commodityList}</div>
+            </td>
+          </tr>`;
+      }).join('\n');
+
+      contextHtml += `
+        <h3 style="color: #94a3b8; margin-top: 16px;">Mission Details</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          ${missionRows}
+        </table>`;
+    }
   }
 
   let contactHtml = '';
-  if (payload.email) {
+  if (payload.spectrumHandle) {
     contactHtml = `
-      <h3 style="color: #94a3b8; margin-top: 16px;">Contact Email</h3>
-      <p><a href="mailto:${escapeHtml(payload.email)}" style="color: #60a5fa;">${escapeHtml(payload.email)}</a></p>`;
+      <h3 style="color: #94a3b8; margin-top: 16px;">Spectrum Handle</h3>
+      <p style="color: #60a5fa;">${escapeHtml(payload.spectrumHandle)}</p>`;
   }
 
   return `
@@ -180,7 +220,6 @@ export default {
           to: env.FEEDBACK_EMAIL,
           subject,
           html: buildEmailHtml({ ...payload, description }),
-          reply_to: payload.email || undefined,
         }),
       });
 

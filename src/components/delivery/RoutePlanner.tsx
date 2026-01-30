@@ -21,6 +21,36 @@ import { Button } from '@/components/ui/Button';
 import { calculateBoxBreakdown } from '@/utils/box-breakdown';
 import type { RouteStop, RouteViewMode } from '@/types';
 
+// Container icon component
+function ContainerIcon({ size }: { size: number }) {
+  return (
+    <img
+      src={`/icons/${size}.svg`}
+      alt={`${size} SCU`}
+      className="inline-block w-4 h-4"
+      style={{ filter: 'var(--icon-filter, none)' }}
+    />
+  );
+}
+
+// Box breakdown display with icons
+function BoxBreakdownDisplay({ breakdown }: { breakdown: Record<string, number> }) {
+  const entries = Object.entries(breakdown).filter(([, count]) => count > 0);
+  if (entries.length === 0) return null;
+
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap justify-end">
+      {entries.map(([size, count], i) => (
+        <span key={size} className="flex items-center gap-0.5">
+          {i > 0 && <span className="text-[var(--text-tertiary)] mx-0.5">+</span>}
+          <span>{count}x</span>
+          <ContainerIcon size={parseInt(size)} />
+        </span>
+      ))}
+    </div>
+  );
+}
+
 interface SortableRouteStopProps {
   stop: RouteStop;
   completed: boolean;
@@ -84,24 +114,22 @@ function SortableRouteStop({ stop, completed, onComplete }: SortableRouteStopPro
           }`}
         />
       </div>
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         {stop.items.map((item, i) => {
           const breakdown = calculateBoxBreakdown(
             item.quantity,
             item.maxBoxSize
           );
-          const boxStr = Object.entries(breakdown)
-            .map(([size, count]) => `${count}x${size}`)
-            .join(' + ');
           return (
             <div
               key={i}
-              className="flex justify-between text-xs text-[var(--text-secondary)]"
+              className="text-xs text-[var(--text-secondary)]"
             >
-              <span>{item.commodity}</span>
-              <span>
-                {item.quantity} SCU {boxStr && `(${boxStr})`}
-              </span>
+              <div className="flex justify-between items-center">
+                <span>{item.commodity}</span>
+                <span>{item.quantity} SCU</span>
+              </div>
+              <BoxBreakdownDisplay breakdown={breakdown} />
             </div>
           );
         })}
