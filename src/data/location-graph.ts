@@ -307,7 +307,25 @@ export const LOCATION_GRAPH: Record<string, LocationNode> = {
 // Build lookup table: lowercase display name -> node id
 const NAME_TO_ID: Record<string, string> = {};
 Object.values(LOCATION_GRAPH).forEach(node => {
+  // Add full name
   NAME_TO_ID[node.name.toLowerCase()] = node.id;
+  // Add node ID as alias (e.g., "arc-l1" -> "arc-l1")
+  NAME_TO_ID[node.id.toLowerCase()] = node.id;
+
+  // For lagrange points and stations with descriptive suffixes,
+  // add the short prefix as an alias (e.g., "ARC-L1 Wide Forest" -> "arc-l1")
+  const shortMatch = node.name.match(/^([A-Z]{2,4}-L\d+)/i);
+  if (shortMatch) {
+    NAME_TO_ID[shortMatch[1].toLowerCase()] = node.id;
+  }
+
+  // For gateway stations, add variations
+  if (node.type === 'gateway') {
+    // "Nyx Gateway" -> also match "nyx gateway", already done via full name
+    // "Pyro Gateway - Nyx" -> also match "pyro gateway nyx"
+    const noHyphens = node.name.toLowerCase().replace(/ - /g, ' ');
+    NAME_TO_ID[noHyphens] = node.id;
+  }
 });
 
 /**
@@ -316,7 +334,21 @@ Object.values(LOCATION_GRAPH).forEach(node => {
 export function getLocationId(displayName: string): string | null {
   if (!displayName) return null;
   const normalized = displayName.trim().toLowerCase();
-  return NAME_TO_ID[normalized] || null;
+
+  // Try exact match first
+  if (NAME_TO_ID[normalized]) {
+    return NAME_TO_ID[normalized];
+  }
+
+  // Try finding a node whose name starts with the input
+  // (handles cases like "ARC-L1" matching "ARC-L1 Wide Forest")
+  for (const [name, id] of Object.entries(NAME_TO_ID)) {
+    if (name.startsWith(normalized) || normalized.startsWith(name)) {
+      return id;
+    }
+  }
+
+  return null;
 }
 
 /**

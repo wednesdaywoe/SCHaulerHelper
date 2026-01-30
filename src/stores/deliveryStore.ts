@@ -255,7 +255,7 @@ export const useDeliveryStore = create<DeliveryState>()(
 
                   // Penalty is proportional to total journey length
                   // Higher weight to make this more significant than raw distance
-                  gatewayPenalty = totalJourney * 0.3;
+                  gatewayPenalty = totalJourney * 0.5;
                   break;
                 }
               }
