@@ -108,7 +108,6 @@ export const useDeliveryStore = create<DeliveryState>()(
           // Distance penalty multiplier (higher = stronger preference for nearby locations)
           const DISTANCE_PENALTY = 0.5;
           const LOOKAHEAD_PENALTY = 0.15; // Penalty for being far from remaining destinations
-          const GATEWAY_BONUS = 0.2; // Bonus for being closer to required gateway
 
           // --- Gateway-aware routing setup ---
           // Identify if there are interstellar destinations requiring gateway travel
@@ -186,41 +185,71 @@ export const useDeliveryStore = create<DeliveryState>()(
               }
 
               // --- Look-ahead penalty ---
-              // Penalize locations that are far from remaining destinations
+              // Penalize locations that are far from remaining same-system destinations
+              // (interstellar destinations are handled via gateway routing)
               let lookaheadPenalty = 0;
-              const otherDestinations = [...remainingDestinations].filter(d => d !== location);
-              if (otherDestinations.length > 0) {
-                let totalDistToRemaining = 0;
-                for (const dest of otherDestinations) {
-                  totalDistToRemaining += travelCost(location, dest);
-                }
-                const avgDistToRemaining = totalDistToRemaining / otherDestinations.length;
-                lookaheadPenalty = avgDistToRemaining * LOOKAHEAD_PENALTY;
-              }
-
-              // --- Gateway-aware bonus ---
-              // If there are interstellar destinations still pending, favor locations
-              // closer to the required gateway (so we exit the system efficiently)
-              let gatewayBonus = 0;
               const locationSystem = getSystem(location);
-              if (locationSystem && interstellarGateways.size > 0) {
-                // Check if any interstellar destinations are still pending
+              const sameSystemDestinations = [...remainingDestinations].filter(d => {
+                if (d === location) return false;
+                const dSys = getSystem(d);
+                return dSys === locationSystem;
+              });
+
+              // If there are interstellar destinations, include the gateway as a "destination"
+              // so we prefer routes that move toward the exit point
+              const gatewaysToInclude: string[] = [];
+              if (locationSystem === startSystem && interstellarGateways.size > 0) {
                 for (const [destSystem, gateway] of interstellarGateways) {
                   const hasInterstellarPending = [...remainingDestinations].some(d => {
                     const dSys = getSystem(d);
                     return dSys === destSystem;
                   });
-                  if (hasInterstellarPending && locationSystem === startSystem) {
-                    // Bonus for being closer to the gateway we'll need
-                    const distToGateway = travelCost(location, gateway);
-                    // Invert: closer = higher bonus (max ~50 points when at gateway)
-                    gatewayBonus = Math.max(0, (100 - distToGateway) * GATEWAY_BONUS);
-                    break; // Only consider first gateway for simplicity
+                  if (hasInterstellarPending) {
+                    gatewaysToInclude.push(gateway);
                   }
                 }
               }
 
-              data.score = deliveryScore + pickupScore + comboBonus - distancePenalty - lookaheadPenalty + gatewayBonus;
+              const lookaheadTargets = [...sameSystemDestinations, ...gatewaysToInclude];
+              if (lookaheadTargets.length > 0) {
+                let totalDistToRemaining = 0;
+                for (const dest of lookaheadTargets) {
+                  totalDistToRemaining += travelCost(location, dest);
+                }
+                const avgDistToRemaining = totalDistToRemaining / lookaheadTargets.length;
+                lookaheadPenalty = avgDistToRemaining * LOOKAHEAD_PENALTY;
+              }
+
+              // --- Gateway-aware routing ---
+              // When we have interstellar destinations, calculate the TOTAL remaining
+              // journey: from candidate → other same-system stops → gateway
+              // This naturally penalizes routes that backtrack
+              let gatewayPenalty = 0;
+              if (locationSystem === startSystem && gatewaysToInclude.length > 0) {
+                // For each gateway we need to reach, estimate the journey
+                for (const gateway of gatewaysToInclude) {
+                  // Penalty based on: distance from candidate to gateway
+                  // PLUS sum of how far same-system destinations are from the gateway
+                  // This favors routes that visit stops "on the way" to the gateway
+                  const distToGateway = travelCost(location, gateway);
+
+                  // How much do we deviate from the path to gateway?
+                  // Calculate: (dist from here to dest) + (dist from dest to gateway) - (dist from here to gateway)
+                  // Positive values mean the destination is NOT on the way
+                  let deviationPenalty = 0;
+                  for (const dest of sameSystemDestinations) {
+                    const distToDest = travelCost(location, dest);
+                    const destToGateway = travelCost(dest, gateway);
+                    const deviation = (distToDest + destToGateway) - distToGateway;
+                    deviationPenalty += Math.max(0, deviation);
+                  }
+
+                  gatewayPenalty = deviationPenalty * 0.1;
+                  break; // Only consider first gateway
+                }
+              }
+
+              data.score = deliveryScore + pickupScore + comboBonus - distancePenalty - lookaheadPenalty - gatewayPenalty;
             }
 
             // Pick best location
