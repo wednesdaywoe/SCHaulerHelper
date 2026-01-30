@@ -46,6 +46,8 @@ export const useDeliveryStore = create<DeliveryState>()(
 
       generateRoute: (missions) =>
         set((state) => {
+          console.log('[Route] generateRoute called with', missions.length, 'missions');
+
           // Build detailed pickup/delivery data with tracking IDs
           interface PickupAction {
             id: string; // Unique ID for tracking
@@ -97,6 +99,9 @@ export const useDeliveryStore = create<DeliveryState>()(
             });
           });
 
+          console.log('[Route] Pickups:', allPickups.map(p => `${p.location} → ${p.destination}`));
+          console.log('[Route] Deliveries:', allDeliveries.map(d => d.location));
+
           // Track state during route building
           const pendingPickups = new Set(allPickups.map(p => p.id));
           const pendingDeliveries = new Set(allDeliveries.map(d => d.id));
@@ -117,17 +122,21 @@ export const useDeliveryStore = create<DeliveryState>()(
 
           // Find destinations in other systems and their gateways
           const interstellarGateways = new Map<string, string>(); // destSystem -> gateway in startSystem
+          console.log('[Route] startSystem:', startSystem, '| allDestinations:', allDestinations);
           if (startSystem) {
             for (const dest of allDestinations) {
               const destSystem = getSystem(dest);
+              console.log('[Route] dest:', dest, '→ system:', destSystem);
               if (destSystem && destSystem !== startSystem && !interstellarGateways.has(destSystem)) {
                 const gateway = findGateway(startSystem, destSystem);
+                console.log('[Route] Found interstellar dest! Gateway:', gateway);
                 if (gateway) {
                   interstellarGateways.set(destSystem, gateway);
                 }
               }
             }
           }
+          console.log('[Route] Interstellar gateways:', [...interstellarGateways.entries()]);
 
           // Greedy algorithm: pick best next stop until done
           while (pendingPickups.size > 0 || pendingDeliveries.size > 0) {
