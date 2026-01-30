@@ -439,3 +439,33 @@ export function getPlanet(location: string): string | null {
   if (!id) return null;
   return getAncestorOfType(id, 'planet');
 }
+
+/**
+ * Find the gateway in sourceSystem that leads to destSystem
+ * Returns the gateway's display name, or null if not found
+ */
+export function findGateway(sourceSystem: string, destSystem: string): string | null {
+  // Normalize system names
+  const srcSys = sourceSystem.toLowerCase();
+  const dstSys = destSystem.toLowerCase();
+
+  // Look for gateway nodes in the source system that lead to destination
+  for (const node of Object.values(LOCATION_GRAPH)) {
+    if (node.type !== 'gateway') continue;
+
+    // Check if this gateway is in the source system
+    const nodeSystem = getAncestorOfType(node.id, 'system');
+    if (nodeSystem !== srcSys) continue;
+
+    // Check if gateway name/id indicates destination system
+    // Naming conventions: "Nyx Gateway", "pyro-gateway-stanton", "stanton-gateway-pyro"
+    const idLower = node.id.toLowerCase();
+    const nameLower = node.name.toLowerCase();
+
+    if (idLower.includes(dstSys) || nameLower.includes(dstSys)) {
+      return node.name;
+    }
+  }
+
+  return null;
+}

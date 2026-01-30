@@ -15,5 +15,6 @@ export {
   getLocationId,
   getSystem,
   getPlanet,
+  findGateway,
 } from './location-graph';
 export type { LocationNode, LocationType } from './location-graph';
