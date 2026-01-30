@@ -452,6 +452,7 @@ export const useDeliveryStore = create<DeliveryState>()(
                 missionId: i.missionId,
                 commodity: i.commodity,
                 quantity: i.quantity,
+                maxBoxSize: i.maxBoxSize,
               })),
             };
             // Preserve existing position if it exists

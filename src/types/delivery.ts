@@ -16,6 +16,7 @@ export interface CargoItem {
   missionId: string;
   commodity: string;
   quantity: number;
+  maxBoxSize?: number;
 }
 
 export interface CargoGroup {

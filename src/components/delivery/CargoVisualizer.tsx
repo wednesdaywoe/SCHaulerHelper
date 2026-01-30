@@ -99,7 +99,7 @@ function DraggableCargoCard({ location, group, onOpenColorPicker }: DraggableCar
       </div>
       <div className="space-y-1">
         {group.items.map((item, i) => {
-          const breakdown = calculateBoxBreakdown(item.quantity);
+          const breakdown = calculateBoxBreakdown(item.quantity, item.maxBoxSize);
           return (
             <div key={i} className="text-xs text-[var(--text-secondary)]">
               <div className="flex justify-between">
