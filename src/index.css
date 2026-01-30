@@ -22,6 +22,7 @@
     --text-primary: #e5e5e5;
     --text-secondary: #8b92a8;
     --text-highlight: #4dd4ac;
+    --icon-filter: brightness(0) saturate(100%) invert(90%) sepia(10%) saturate(200%) hue-rotate(120deg);
   }
 
   body[data-theme="lux"] {
@@ -39,6 +40,7 @@
     --text-primary: #FFFFFF;
     --text-secondary: #ADB5BD;
     --text-highlight: #00D9FF;
+    --icon-filter: brightness(0) saturate(100%) invert(70%) sepia(50%) saturate(500%) hue-rotate(40deg);
   }
 
   body[data-theme="pulse"] {
@@ -56,6 +58,7 @@
     --text-primary: #FFFFFF;
     --text-secondary: #ADB5BD;
     --text-highlight: #00D4FF;
+    --icon-filter: brightness(0) saturate(100%) invert(70%) sepia(20%) saturate(300%) hue-rotate(290deg);
   }
 
   body[data-theme="flow"] {
@@ -73,6 +76,7 @@
     --text-primary: #FFFFFF;
     --text-secondary: #ADB5BD;
     --text-highlight: #00BFFF;
+    --icon-filter: brightness(0) saturate(100%) invert(70%) sepia(50%) saturate(500%) hue-rotate(180deg);
   }
 
   body[data-theme="dark"] {
@@ -90,6 +94,7 @@
     --text-primary: #FFFFFF;
     --text-secondary: #ADB5BD;
     --text-highlight: #00D4FF;
+    --icon-filter: brightness(0) saturate(100%) invert(80%) sepia(30%) saturate(400%) hue-rotate(230deg);
   }
 
   body[data-theme="wednesday"] {
@@ -107,6 +112,7 @@
     --text-primary: #a0ff61;
     --text-secondary: #B8A5AB;
     --text-highlight: #88ff00;
+    --icon-filter: brightness(0) saturate(100%) invert(85%) sepia(40%) saturate(600%) hue-rotate(50deg);
   }
 
   body[data-theme="moonshine"] {
@@ -124,6 +130,7 @@
     --text-primary: #E8EDF2;
     --text-secondary: #8B95A5;
     --text-highlight: #7CB8E8;
+    --icon-filter: brightness(0) saturate(100%) invert(70%) sepia(20%) saturate(300%) hue-rotate(180deg);
   }
 
   body[data-theme="cassette"] {
@@ -141,6 +148,7 @@
     --text-primary: #F5F5F5;
     --text-secondary: #9E9E9E;
     --text-highlight: #FFC107;
+    --icon-filter: brightness(0) saturate(100%) invert(60%) sepia(80%) saturate(500%) hue-rotate(350deg);
   }
 
   body[data-theme="cetacean"] {
@@ -158,6 +166,7 @@
     --text-primary: #E5E5E5;
     --text-secondary: #A9A9A9;
     --text-highlight: #FFD700;
+    --icon-filter: brightness(0) saturate(100%) invert(75%) sepia(50%) saturate(500%) hue-rotate(10deg);
   }
 
   body[data-theme="cargo-explorer"] {
@@ -175,6 +184,7 @@
     --text-primary: #c8dbff;
     --text-secondary: #9CA3AF;
     --text-highlight: #fffd84;
+    --icon-filter: brightness(0) saturate(100%) invert(50%) sepia(80%) saturate(600%) hue-rotate(330deg);
   }
 }
 
