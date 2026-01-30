@@ -1,13 +1,27 @@
 // Location Graph - Hierarchical Universe Model for Distance-Aware Routing
 // Enables semantic distance calculations based on location relationships
+//
+// LAGRANGE POINT CORRIDORS (Stanton System):
+// The lagrange points form travel corridors across the system, NOT clusters around planets.
+//
+// Hurston-Terra Corridor (closest to Hurston → Terra Gateway):
+//   Hurston → HUR-L1 → HUR-L2 → CRU-L3 → HUR-L4 → ARC-L4 → MIC-L5 → Terra Gateway
+//
+// ArcCorp-Pyro Corridor (closest to ArcCorp → Pyro Gateway):
+//   ArcCorp → ARC-L1 → ARC-L2 → HUR-L5 → CRU-L4 → ARC-L5 → MIC-L3 → Pyro Gateway
+//
+// Crusader-Nyx Corridor (closest to Crusader → Nyx Gateway):
+//   Crusader → CRU-L1 → CRU-L2 → HUR-L3 → CRU-L5 → ARC-L3 → MIC-L4 → Nyx Gateway
 
-export type LocationType = 'system' | 'planet' | 'moon' | 'station' | 'city' | 'outpost' | 'lagrange';
+export type LocationType = 'system' | 'planet' | 'moon' | 'station' | 'city' | 'outpost' | 'lagrange' | 'corridor' | 'gateway';
 
 export interface LocationNode {
   id: string;
   name: string;
   type: LocationType;
   parent: string | null;
+  corridor?: string;        // For lagrange points: which corridor they're in
+  corridorPosition?: number; // Position in corridor (0 = closest to planet, higher = closer to gateway)
 }
 
 export const LOCATION_GRAPH: Record<string, LocationNode> = {
@@ -48,37 +62,46 @@ export const LOCATION_GRAPH: Record<string, LocationNode> = {
   'clio': { id: 'clio', name: 'Clio', type: 'moon', parent: 'microtech' },
   'euterpe': { id: 'euterpe', name: 'Euterpe', type: 'moon', parent: 'microtech' },
 
-  // --- Stanton Gateway Stations ---
-  'pyro-gateway-stanton': { id: 'pyro-gateway-stanton', name: 'Pyro Gateway - Stanton', type: 'station', parent: 'stanton' },
-  'nyx-gateway-stanton': { id: 'nyx-gateway-stanton', name: 'Nyx Gateway - Stanton', type: 'station', parent: 'stanton' },
+  // --- Stanton Corridors (virtual groupings for lagrange points) ---
+  'hurston-terra-corridor': { id: 'hurston-terra-corridor', name: 'Hurston-Terra Corridor', type: 'corridor', parent: 'stanton' },
+  'arccorp-pyro-corridor': { id: 'arccorp-pyro-corridor', name: 'ArcCorp-Pyro Corridor', type: 'corridor', parent: 'stanton' },
+  'crusader-nyx-corridor': { id: 'crusader-nyx-corridor', name: 'Crusader-Nyx Corridor', type: 'corridor', parent: 'stanton' },
 
-  // --- ArcCorp Lagrange Points ---
-  'arc-l1': { id: 'arc-l1', name: 'ARC-L1 Wide Forest', type: 'lagrange', parent: 'arccorp' },
-  'arc-l2': { id: 'arc-l2', name: 'ARC-L2', type: 'lagrange', parent: 'arccorp' },
-  'arc-l3': { id: 'arc-l3', name: 'ARC-L3 Modern Express', type: 'lagrange', parent: 'arccorp' },
-  'arc-l4': { id: 'arc-l4', name: 'ARC-L4 Feint Glen', type: 'lagrange', parent: 'arccorp' },
-  'arc-l5': { id: 'arc-l5', name: 'ARC-L5 Yellow Core', type: 'lagrange', parent: 'arccorp' },
+  // --- Stanton Gateway Stations (positioned at end of their corridors) ---
+  'terra-gateway': { id: 'terra-gateway', name: 'Terra Gateway', type: 'gateway', parent: 'stanton', corridor: 'hurston-terra-corridor', corridorPosition: 7 },
+  'pyro-gateway-stanton': { id: 'pyro-gateway-stanton', name: 'Pyro Gateway - Stanton', type: 'gateway', parent: 'stanton', corridor: 'arccorp-pyro-corridor', corridorPosition: 7 },
+  'nyx-gateway-stanton': { id: 'nyx-gateway-stanton', name: 'Nyx Gateway - Stanton', type: 'gateway', parent: 'stanton', corridor: 'crusader-nyx-corridor', corridorPosition: 7 },
 
-  // --- Crusader Lagrange Points ---
-  'cru-l1': { id: 'cru-l1', name: 'CRU-L1 Ambitious Dream', type: 'lagrange', parent: 'crusader' },
-  'cru-l2': { id: 'cru-l2', name: 'CRU-L2', type: 'lagrange', parent: 'crusader' },
-  'cru-l3': { id: 'cru-l3', name: 'CRU-L3', type: 'lagrange', parent: 'crusader' },
-  'cru-l4': { id: 'cru-l4', name: 'CRU-L4 Shallow Fields', type: 'lagrange', parent: 'crusader' },
-  'cru-l5': { id: 'cru-l5', name: 'CRU-L5 Beautiful Glen', type: 'lagrange', parent: 'crusader' },
+  // --- Hurston-Terra Corridor Lagrange Points ---
+  // Order: Hurston(0) → HUR-L1(1) → HUR-L2(2) → CRU-L3(3) → HUR-L4(4) → ARC-L4(5) → MIC-L5(6) → Terra Gateway(7)
+  'hur-l1': { id: 'hur-l1', name: 'HUR-L1 Green Glade', type: 'lagrange', parent: 'stanton', corridor: 'hurston-terra-corridor', corridorPosition: 1 },
+  'hur-l2': { id: 'hur-l2', name: 'HUR-L2 Faithful Dream', type: 'lagrange', parent: 'stanton', corridor: 'hurston-terra-corridor', corridorPosition: 2 },
+  'cru-l3': { id: 'cru-l3', name: 'CRU-L3', type: 'lagrange', parent: 'stanton', corridor: 'hurston-terra-corridor', corridorPosition: 3 },
+  'hur-l4': { id: 'hur-l4', name: 'HUR-L4 Melodic Fields', type: 'lagrange', parent: 'stanton', corridor: 'hurston-terra-corridor', corridorPosition: 4 },
+  'arc-l4': { id: 'arc-l4', name: 'ARC-L4 Feint Glen', type: 'lagrange', parent: 'stanton', corridor: 'hurston-terra-corridor', corridorPosition: 5 },
+  'mic-l5': { id: 'mic-l5', name: 'MIC-L5 Modern Icarus', type: 'lagrange', parent: 'stanton', corridor: 'hurston-terra-corridor', corridorPosition: 6 },
 
-  // --- Hurston Lagrange Points ---
-  'hur-l1': { id: 'hur-l1', name: 'HUR-L1 Green Glade', type: 'lagrange', parent: 'hurston' },
-  'hur-l2': { id: 'hur-l2', name: 'HUR-L2 Faithful Dream', type: 'lagrange', parent: 'hurston' },
-  'hur-l3': { id: 'hur-l3', name: 'HUR-L3 Thundering Express', type: 'lagrange', parent: 'hurston' },
-  'hur-l4': { id: 'hur-l4', name: 'HUR-L4 Melodic Fields', type: 'lagrange', parent: 'hurston' },
-  'hur-l5': { id: 'hur-l5', name: 'HUR-L5 High Course', type: 'lagrange', parent: 'hurston' },
+  // --- ArcCorp-Pyro Corridor Lagrange Points ---
+  // Order: ArcCorp(0) → ARC-L1(1) → ARC-L2(2) → HUR-L5(3) → CRU-L4(4) → ARC-L5(5) → MIC-L3(6) → Pyro Gateway(7)
+  'arc-l1': { id: 'arc-l1', name: 'ARC-L1 Wide Forest', type: 'lagrange', parent: 'stanton', corridor: 'arccorp-pyro-corridor', corridorPosition: 1 },
+  'arc-l2': { id: 'arc-l2', name: 'ARC-L2', type: 'lagrange', parent: 'stanton', corridor: 'arccorp-pyro-corridor', corridorPosition: 2 },
+  'hur-l5': { id: 'hur-l5', name: 'HUR-L5 High Course', type: 'lagrange', parent: 'stanton', corridor: 'arccorp-pyro-corridor', corridorPosition: 3 },
+  'cru-l4': { id: 'cru-l4', name: 'CRU-L4 Shallow Fields', type: 'lagrange', parent: 'stanton', corridor: 'arccorp-pyro-corridor', corridorPosition: 4 },
+  'arc-l5': { id: 'arc-l5', name: 'ARC-L5 Yellow Core', type: 'lagrange', parent: 'stanton', corridor: 'arccorp-pyro-corridor', corridorPosition: 5 },
+  'mic-l3': { id: 'mic-l3', name: 'MIC-L3 Endless Odyssey', type: 'lagrange', parent: 'stanton', corridor: 'arccorp-pyro-corridor', corridorPosition: 6 },
 
-  // --- MicroTech Lagrange Points ---
+  // --- Crusader-Nyx Corridor Lagrange Points ---
+  // Order: Crusader(0) → CRU-L1(1) → CRU-L2(2) → HUR-L3(3) → CRU-L5(4) → ARC-L3(5) → MIC-L4(6) → Nyx Gateway(7)
+  'cru-l1': { id: 'cru-l1', name: 'CRU-L1 Ambitious Dream', type: 'lagrange', parent: 'stanton', corridor: 'crusader-nyx-corridor', corridorPosition: 1 },
+  'cru-l2': { id: 'cru-l2', name: 'CRU-L2', type: 'lagrange', parent: 'stanton', corridor: 'crusader-nyx-corridor', corridorPosition: 2 },
+  'hur-l3': { id: 'hur-l3', name: 'HUR-L3 Thundering Express', type: 'lagrange', parent: 'stanton', corridor: 'crusader-nyx-corridor', corridorPosition: 3 },
+  'cru-l5': { id: 'cru-l5', name: 'CRU-L5 Beautiful Glen', type: 'lagrange', parent: 'stanton', corridor: 'crusader-nyx-corridor', corridorPosition: 4 },
+  'arc-l3': { id: 'arc-l3', name: 'ARC-L3 Modern Express', type: 'lagrange', parent: 'stanton', corridor: 'crusader-nyx-corridor', corridorPosition: 5 },
+  'mic-l4': { id: 'mic-l4', name: 'MIC-L4 Red Crossroads', type: 'lagrange', parent: 'stanton', corridor: 'crusader-nyx-corridor', corridorPosition: 6 },
+
+  // --- MicroTech Lagrange Points (local to MicroTech, not in corridors) ---
   'mic-l1': { id: 'mic-l1', name: 'MIC-L1 Shallow Frontier', type: 'lagrange', parent: 'microtech' },
   'mic-l2': { id: 'mic-l2', name: 'MIC-L2 Long Forest', type: 'lagrange', parent: 'microtech' },
-  'mic-l3': { id: 'mic-l3', name: 'MIC-L3 Endless Odyssey', type: 'lagrange', parent: 'microtech' },
-  'mic-l4': { id: 'mic-l4', name: 'MIC-L4 Red Crossroads', type: 'lagrange', parent: 'microtech' },
-  'mic-l5': { id: 'mic-l5', name: 'MIC-L5 Modern Icarus', type: 'lagrange', parent: 'microtech' },
 
   // --- ArcCorp Locations ---
   'area-18': { id: 'area-18', name: 'Area 18', type: 'city', parent: 'arccorp' },
@@ -328,10 +351,26 @@ function sharesAncestor(idA: string, idB: string, ancestorType: LocationType): b
   return !!(ancestorA && ancestorB && ancestorA === ancestorB);
 }
 
+// Corridor start planets (position 0 of each corridor)
+const CORRIDOR_STARTS: Record<string, string> = {
+  'hurston-terra-corridor': 'hurston',
+  'arccorp-pyro-corridor': 'arccorp',
+  'crusader-nyx-corridor': 'crusader',
+};
+
+// Corridor end systems (where the gateway leads)
+const CORRIDOR_DESTINATIONS: Record<string, string> = {
+  'hurston-terra-corridor': 'terra', // Not implemented yet
+  'arccorp-pyro-corridor': 'pyro',
+  'crusader-nyx-corridor': 'nyx',
+};
+
 /**
  * Travel cost tiers:
  * - 0: Same location
+ * - 10-70: Same corridor (10 per position step)
  * - 10: Same moon or same planet (local travel)
+ * - 50: Different corridors in same system
  * - 100: Same system, different planets (interplanetary)
  * - 1000: Different systems (interstellar)
  */
@@ -346,6 +385,47 @@ export function travelCost(locationA: string, locationB: string): number {
 
   // Same location
   if (idA === idB) return 0;
+
+  const nodeA = LOCATION_GRAPH[idA];
+  const nodeB = LOCATION_GRAPH[idB];
+
+  // Both in same corridor - cost based on position difference
+  if (nodeA.corridor && nodeB.corridor && nodeA.corridor === nodeB.corridor) {
+    const posA = nodeA.corridorPosition ?? 0;
+    const posB = nodeB.corridorPosition ?? 0;
+    return Math.abs(posA - posB) * 10;
+  }
+
+  // One is in a corridor, the other might be the corridor's start planet
+  if (nodeA.corridor || nodeB.corridor) {
+    const corridorNode = nodeA.corridor ? nodeA : nodeB;
+    const otherNode = nodeA.corridor ? nodeB : nodeA;
+    const corridor = corridorNode.corridor!;
+    const startPlanet = CORRIDOR_STARTS[corridor];
+
+    // If the other location is the start planet of this corridor
+    if (otherNode.id === startPlanet || getAncestorOfType(otherNode.id, 'planet') === startPlanet) {
+      const corridorPos = corridorNode.corridorPosition ?? 0;
+      return corridorPos * 10;
+    }
+
+    // If traveling to the gateway's destination system
+    const destSystem = CORRIDOR_DESTINATIONS[corridor];
+    if (destSystem && getAncestorOfType(otherNode.id, 'system') === destSystem) {
+      // Cost = distance to gateway (7 - position) + small jump cost
+      const corridorPos = corridorNode.corridorPosition ?? 0;
+      return (7 - corridorPos) * 10 + 50;
+    }
+
+    // Different corridors or planet not on this corridor
+    if (nodeA.corridor && nodeB.corridor && nodeA.corridor !== nodeB.corridor) {
+      // Cross-corridor travel: expensive
+      return 80;
+    }
+
+    // From corridor to unrelated planet
+    return 100;
+  }
 
   // Same moon (local travel)
   if (sharesAncestor(idA, idB, 'moon')) return 10;
