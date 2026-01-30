@@ -39,6 +39,9 @@ function preprocessText(text: string): string {
   text = text.replace(/Greycat Stanton IV\s*\n\s*Production/gi, 'Greycat Stanton IV Production');
   text = text.replace(/Rayari (\w+)\s*\n\s*Research/gi, 'Rayari $1 Research');
   text = text.replace(/NB Int\.?\s*\n\s*Spaceport/gi, 'NB Int. Spaceport');
+  // Fix lagrange station names that break across lines
+  text = text.replace(/Red\s*\n\s*microTech-L4\s+Crossroads/gi, 'MIC-L4 Red Crossroads');
+  text = text.replace(/microTech-L(\d)\s+([\w\s]+)/gi, 'MIC-L$1 $2');
 
   // Fix facility codes that break across lines
   text = text.replace(/SMO-\s*\n\s*(\d+)/gi, 'SMO-$1');

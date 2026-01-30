@@ -54,12 +54,38 @@ export const LOCATION_ALIASES: Record<string, string> = {
   'rayari kaltag': 'Rayari Kaltag',
   'rayari mcgrath': 'Rayari McGrath',
 
-  // Lagrange Points
-  'mic l1': 'MIC-L1', 'mic l2': 'MIC-L2', 'mic l3': 'MIC-L3', 'mic l4': 'MIC-L4', 'mic l5': 'MIC-L5',
-  'mt l1': 'MIC-L1', 'mt l2': 'MIC-L2', 'mt l3': 'MIC-L3', 'mt l4': 'MIC-L4', 'mt l5': 'MIC-L5',
-  'hur l1': 'HUR-L1', 'hur l2': 'HUR-L2', 'hur l3': 'HUR-L3', 'hur l4': 'HUR-L4', 'hur l5': 'HUR-L5',
-  'arc l1': 'ARC-L1', 'arc l2': 'ARC-L2', 'arc l3': 'ARC-L3', 'arc l4': 'ARC-L4', 'arc l5': 'ARC-L5',
-  'cru l1': 'CRU-L1', 'cru l2': 'CRU-L2', 'cru l3': 'CRU-L3', 'cru l4': 'CRU-L4', 'cru l5': 'CRU-L5',
+  // Lagrange Points - MicroTech
+  'mic l1': 'MIC-L1 Shallow Frontier', 'mic-l1': 'MIC-L1 Shallow Frontier',
+  'mic l2': 'MIC-L2 Long Forest', 'mic-l2': 'MIC-L2 Long Forest',
+  'mic l3': 'MIC-L3 Endless Odyssey', 'mic-l3': 'MIC-L3 Endless Odyssey',
+  'mic l4': 'MIC-L4 Red Crossroads', 'mic-l4': 'MIC-L4 Red Crossroads',
+  'mic l5': 'MIC-L5 Modern Icarus', 'mic-l5': 'MIC-L5 Modern Icarus',
+  'mt l1': 'MIC-L1 Shallow Frontier', 'mt l2': 'MIC-L2 Long Forest',
+  'mt l3': 'MIC-L3 Endless Odyssey', 'mt l4': 'MIC-L4 Red Crossroads', 'mt l5': 'MIC-L5 Modern Icarus',
+  'microtech-l4 crossroads': 'MIC-L4 Red Crossroads',
+  'red crossroads': 'MIC-L4 Red Crossroads',
+
+  // Lagrange Points - ArcCorp
+  'arc l1': 'ARC-L1 Wide Forest', 'arc-l1': 'ARC-L1 Wide Forest',
+  'arc l2': 'ARC-L2', 'arc-l2': 'ARC-L2',
+  'arc l3': 'ARC-L3 Modern Express', 'arc-l3': 'ARC-L3 Modern Express',
+  'arc l4': 'ARC-L4 Feint Glen', 'arc-l4': 'ARC-L4 Feint Glen',
+  'arc l5': 'ARC-L5 Yellow Core', 'arc-l5': 'ARC-L5 Yellow Core',
+  'wide forest': 'ARC-L1 Wide Forest',
+
+  // Lagrange Points - Hurston
+  'hur l1': 'HUR-L1 Green Glade', 'hur-l1': 'HUR-L1 Green Glade',
+  'hur l2': 'HUR-L2 Faithful Dream', 'hur-l2': 'HUR-L2 Faithful Dream',
+  'hur l3': 'HUR-L3 Thundering Express', 'hur-l3': 'HUR-L3 Thundering Express',
+  'hur l4': 'HUR-L4 Melodic Fields', 'hur-l4': 'HUR-L4 Melodic Fields',
+  'hur l5': 'HUR-L5 High Course', 'hur-l5': 'HUR-L5 High Course',
+
+  // Lagrange Points - Crusader
+  'cru l1': 'CRU-L1 Ambitious Dream', 'cru-l1': 'CRU-L1 Ambitious Dream',
+  'cru l2': 'CRU-L2', 'cru-l2': 'CRU-L2',
+  'cru l3': 'CRU-L3', 'cru-l3': 'CRU-L3',
+  'cru l4': 'CRU-L4 Shallow Fields', 'cru-l4': 'CRU-L4 Shallow Fields',
+  'cru l5': 'CRU-L5 Beautiful Glen', 'cru-l5': 'CRU-L5 Beautiful Glen',
 
   // Major Stations & Cities
   tressler: 'Port Tressler',
@@ -74,10 +100,16 @@ export const LOCATION_ALIASES: Record<string, string> = {
   'grim hex': 'Grim HEX',
   grimhex: 'Grim HEX',
   'new babbage': 'New Babbage',
+  'nb int': 'New Babbage',
+  'nb int spaceport': 'New Babbage',
+  'nb int. spaceport': 'New Babbage',
+  'nb international': 'New Babbage',
+  'nb international spaceport': 'New Babbage',
   lorville: 'Lorville',
-  area18: 'Area18',
-  'area 18': 'Area18',
+  area18: 'Area 18',
+  'area 18': 'Area 18',
   orison: 'Orison',
+  levski: 'Levski',
 
   // HDMS / HDPC
   'hdms anderson': 'HDMS-Anderson',
