@@ -8,7 +8,7 @@ import type {
   RouteViewMode,
   Mission,
 } from '@/types';
-import { travelCost } from '@/data/location-graph';
+import { travelCost, getSystem, findGateway } from '@/data/location-graph';
 
 let nextStopId = 0;
 
@@ -107,6 +107,27 @@ export const useDeliveryStore = create<DeliveryState>()(
 
           // Distance penalty multiplier (higher = stronger preference for nearby locations)
           const DISTANCE_PENALTY = 0.5;
+          const LOOKAHEAD_PENALTY = 0.15; // Penalty for being far from remaining destinations
+
+          // --- Gateway-aware routing setup ---
+          // Identify if there are interstellar destinations requiring gateway travel
+          const allDestinations = [...new Set(allDeliveries.map(d => d.location))];
+          const allPickupLocs = [...new Set(allPickups.map(p => p.location))];
+          const startSystem = allPickupLocs.length > 0 ? getSystem(allPickupLocs[0]) : null;
+
+          // Find destinations in other systems and their gateways
+          const interstellarGateways = new Map<string, string>(); // destSystem -> gateway in startSystem
+          if (startSystem) {
+            for (const dest of allDestinations) {
+              const destSystem = getSystem(dest);
+              if (destSystem && destSystem !== startSystem && !interstellarGateways.has(destSystem)) {
+                const gateway = findGateway(startSystem, destSystem);
+                if (gateway) {
+                  interstellarGateways.set(destSystem, gateway);
+                }
+              }
+            }
+          }
 
           // Greedy algorithm: pick best next stop until done
           while (pendingPickups.size > 0 || pendingDeliveries.size > 0) {
@@ -139,6 +160,13 @@ export const useDeliveryStore = create<DeliveryState>()(
 
             if (candidates.size === 0) break;
 
+            // Get all remaining destination locations for look-ahead
+            const remainingDestinations = new Set<string>();
+            for (const deliveryId of pendingDeliveries) {
+              const delivery = allDeliveries.find(d => d.id === deliveryId)!;
+              remainingDestinations.add(delivery.location);
+            }
+
             // Score each candidate location
             for (const [location, data] of candidates) {
               const pickupSCU = data.pickups.reduce((sum, p) => sum + p.scu, 0);
@@ -149,14 +177,90 @@ export const useDeliveryStore = create<DeliveryState>()(
               const pickupScore = pickupSCU * 2;
               const comboBonus = (deliverySCU > 0 && pickupSCU > 0) ? 200 : 0;
 
-              // Distance penalty
+              // Distance penalty from current location
               let distancePenalty = 0;
               if (currentLocation) {
                 const cost = travelCost(currentLocation, location);
                 distancePenalty = cost * DISTANCE_PENALTY;
               }
 
-              data.score = deliveryScore + pickupScore + comboBonus - distancePenalty;
+              // --- Look-ahead penalty ---
+              // Penalize locations that are far from remaining same-system destinations
+              // (interstellar destinations are handled via gateway routing)
+              let lookaheadPenalty = 0;
+              const locationSystem = getSystem(location);
+              const sameSystemDestinations = [...remainingDestinations].filter(d => {
+                if (d === location) return false;
+                const dSys = getSystem(d);
+                return dSys === locationSystem;
+              });
+
+              // If there are interstellar destinations, include the gateway as a "destination"
+              // so we prefer routes that move toward the exit point
+              const gatewaysToInclude: string[] = [];
+              if (locationSystem === startSystem && interstellarGateways.size > 0) {
+                for (const [destSystem, gateway] of interstellarGateways) {
+                  const hasInterstellarPending = [...remainingDestinations].some(d => {
+                    const dSys = getSystem(d);
+                    return dSys === destSystem;
+                  });
+                  if (hasInterstellarPending) {
+                    gatewaysToInclude.push(gateway);
+                  }
+                }
+              }
+
+              // Only use same-system destinations for lookahead
+              // (gateway routing is handled separately via total journey calculation)
+              if (sameSystemDestinations.length > 0) {
+                let totalDistToRemaining = 0;
+                for (const dest of sameSystemDestinations) {
+                  totalDistToRemaining += travelCost(location, dest);
+                }
+                const avgDistToRemaining = totalDistToRemaining / sameSystemDestinations.length;
+                lookaheadPenalty = avgDistToRemaining * LOOKAHEAD_PENALTY;
+              }
+
+              // --- Gateway-aware routing ---
+              // When we have interstellar destinations, compute the total remaining journey:
+              // candidate → all same-system stops (greedy) → gateway
+              // Compare this to the minimum possible and penalize inefficient paths
+              let gatewayPenalty = 0;
+              if (locationSystem === startSystem && gatewaysToInclude.length > 0 && sameSystemDestinations.length > 0) {
+                for (const gateway of gatewaysToInclude) {
+                  // Calculate total journey: visit all same-system destinations then gateway
+                  // Use greedy nearest-neighbor from this candidate
+                  let totalJourney = 0;
+                  let currentPos = location;
+                  const remaining = [...sameSystemDestinations];
+
+                  while (remaining.length > 0) {
+                    // Find nearest unvisited destination
+                    let nearestIdx = 0;
+                    let nearestDist = travelCost(currentPos, remaining[0]);
+                    for (let i = 1; i < remaining.length; i++) {
+                      const d = travelCost(currentPos, remaining[i]);
+                      if (d < nearestDist) {
+                        nearestDist = d;
+                        nearestIdx = i;
+                      }
+                    }
+                    totalJourney += nearestDist;
+                    currentPos = remaining[nearestIdx];
+                    remaining.splice(nearestIdx, 1);
+                  }
+
+                  // Add distance from last destination to gateway
+                  totalJourney += travelCost(currentPos, gateway);
+
+                  // Penalty is proportional to total journey length
+                  // Higher weight to make this more significant than raw distance
+                  gatewayPenalty = totalJourney * 0.5;
+                  break;
+                }
+              }
+
+              data.score = deliveryScore + pickupScore + comboBonus - distancePenalty - lookaheadPenalty - gatewayPenalty;
             }
 
             // Pick best location
@@ -208,6 +312,77 @@ export const useDeliveryStore = create<DeliveryState>()(
             }
 
             currentLocation = bestLocation;
+          }
+
+          // --- 2-opt improvement ---
+          // Try swapping pairs of delivery stops to reduce total route distance
+          // Only swap deliveries (not pickups) to maintain pickup-before-delivery constraint
+          const deliveryStopIndices = stops
+            .map((s, i) => ({ stop: s, index: i }))
+            .filter(({ stop }) => stop.type === 'delivery')
+            .map(({ index }) => index);
+
+          if (deliveryStopIndices.length >= 2) {
+            let improved = true;
+            let iterations = 0;
+            const MAX_ITERATIONS = 50; // Prevent infinite loops
+
+            while (improved && iterations < MAX_ITERATIONS) {
+              improved = false;
+              iterations++;
+
+              for (let i = 0; i < deliveryStopIndices.length - 1; i++) {
+                for (let j = i + 1; j < deliveryStopIndices.length; j++) {
+                  const idxA = deliveryStopIndices[i];
+                  const idxB = deliveryStopIndices[j];
+
+                  // Calculate current route cost around these stops
+                  const prevA = idxA > 0 ? stops[idxA - 1].location : '';
+                  const locA = stops[idxA].location;
+                  const nextA = idxA < stops.length - 1 ? stops[idxA + 1].location : '';
+                  const prevB = idxB > 0 ? stops[idxB - 1].location : '';
+                  const locB = stops[idxB].location;
+                  const nextB = idxB < stops.length - 1 ? stops[idxB + 1].location : '';
+
+                  // Current cost (edges touching A and B)
+                  let currentCost = 0;
+                  if (prevA) currentCost += travelCost(prevA, locA);
+                  if (nextA && idxA + 1 !== idxB) currentCost += travelCost(locA, nextA);
+                  if (prevB && idxB - 1 !== idxA) currentCost += travelCost(prevB, locB);
+                  if (nextB) currentCost += travelCost(locB, nextB);
+                  // Handle adjacent case
+                  if (idxA + 1 === idxB) {
+                    currentCost = 0;
+                    if (prevA) currentCost += travelCost(prevA, locA);
+                    currentCost += travelCost(locA, locB);
+                    if (nextB) currentCost += travelCost(locB, nextB);
+                  }
+
+                  // Cost after swap
+                  let swapCost = 0;
+                  if (idxA + 1 === idxB) {
+                    // Adjacent: A-B becomes B-A
+                    if (prevA) swapCost += travelCost(prevA, locB);
+                    swapCost += travelCost(locB, locA);
+                    if (nextB) swapCost += travelCost(locA, nextB);
+                  } else {
+                    // Non-adjacent swap
+                    if (prevA) swapCost += travelCost(prevA, locB);
+                    if (nextA) swapCost += travelCost(locB, nextA);
+                    if (prevB) swapCost += travelCost(prevB, locA);
+                    if (nextB) swapCost += travelCost(locA, nextB);
+                  }
+
+                  // If swap improves route, do it
+                  if (swapCost < currentCost) {
+                    const temp = stops[idxA];
+                    stops[idxA] = stops[idxB];
+                    stops[idxB] = temp;
+                    improved = true;
+                  }
+                }
+              }
+            }
           }
 
           // Build delivery-only map for cargo groups (unchanged logic)

@@ -23,6 +23,18 @@ function useAppContext() {
     category: selectedCategory || 'All',
     theme,
     missionCount: missions.length,
+    missions: missions.map((mission, index) => ({
+      missionNumber: index + 1,
+      missionId: mission.id,
+      payout: mission.payout,
+      commodities: mission.commodities.map((c) => ({
+        commodity: c.commodity,
+        pickup: c.pickup,
+        destination: c.destination,
+        quantity: c.quantity,
+        maxBoxSize: c.maxBoxSize,
+      })),
+    })),
   };
 }
 
@@ -33,7 +45,7 @@ export function FeedbackModal() {
 
   const [type, setType] = useState<FeedbackType>('bug');
   const [description, setDescription] = useState('');
-  const [email, setEmail] = useState('');
+  const [spectrumHandle, setSpectrumHandle] = useState('');
   const [status, setStatus] = useState<SubmitStatus>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -48,7 +60,7 @@ export function FeedbackModal() {
         body: JSON.stringify({
           type,
           description,
-          email: email || undefined,
+          spectrumHandle: spectrumHandle || undefined,
           appContext,
           userAgent: navigator.userAgent,
           source: 'hauler-helper-react',
@@ -74,7 +86,7 @@ export function FeedbackModal() {
   const handleClose = () => {
     setType('bug');
     setDescription('');
-    setEmail('');
+    setSpectrumHandle('');
     setStatus('idle');
     setErrorMsg('');
     closeModal();
@@ -109,13 +121,13 @@ export function FeedbackModal() {
 
           <div className="flex flex-col gap-1">
             <label className="text-xs text-[var(--text-secondary)] font-medium">
-              Email (optional)
+              Spectrum handle (optional)
             </label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
+              type="text"
+              value={spectrumHandle}
+              onChange={(e) => setSpectrumHandle(e.target.value)}
+              placeholder="YourHandle"
               className="bg-[var(--bg-tertiary)] text-[var(--text-primary)] border border-[var(--border-color)] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
             />
           </div>
