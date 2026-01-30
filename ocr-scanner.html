@@ -1326,9 +1326,11 @@
          */
         function preprocessText(text) {
             console.log('  📝 Preprocessing text...');
+            console.log('  📝 Input text (first 200 chars):', text.substring(0, 200));
 
             // Remove leading < or similar bullet characters from lines (UI artifact)
             text = text.replace(/^[<>\[\]•\-]\s*/gm, '');
+            console.log('  📝 After bullet removal (first 200 chars):', text.substring(0, 200));
 
             // Normalize lagrange point descriptions to simple format
             // "Wide Forest Station at ArcCorp's L1 Lagrange point" -> "ARC-L1 Wide Forest"
@@ -1339,6 +1341,7 @@
             text = text.replace(/Evergreen\s+Harbor\s+Station\s+at\s+Crusader.s\s+L1\s+Lagrange\s+point/gi, 'CRU-L1 Evergreen Harbor');
             // Generic single-word station pattern as fallback
             text = text.replace(/(\w+)\s+Station\s+at\s+(\w+).s\s+L(\d)\s+Lagrange\s+point/gi, '$2-L$3 $1');
+            console.log('  📝 After lagrange normalization (first 300 chars):', text.substring(0, 300));
 
             // Fix location names that break across lines
             text = text.replace(/Sakura Sun\s*\n\s*Goldenrod/gi, 'Sakura Sun Goldenrod');
@@ -1365,8 +1368,9 @@
          */
         function extractSegments(text) {
             console.log('  🚚 Extracting delivery segments...');
+            console.log('  🚚 Full preprocessed text for regex:', text);
             const segments = [];
-            
+
             // Pattern: "Deliver 0/3 SCU of Stims to Shubin Mining Facility SMCa-6 on Calliope"
             // Also handles "Deliver 0/6 SCU of Medical Supplies to ARC-L1 Wide Forest."
             const deliverPattern = /Deliver\s+(0\/\d+|\d+)\s+SCU\s+(?:of\s+)?([\w\s\(\)]+?)\s+to\s+([\w\s\-\.\']+?)(?:\s+(?:on|above|at)\s+[\w\s\-\.\']+?)?(?:\.|$)/gi;
@@ -1490,14 +1494,16 @@
 
         function renderResults() {
             resultsContainer.innerHTML = '';
-            
+            console.log(`📊 renderResults called with ${processedResults.length} results, parseMode=${parseMode.checked}`);
+
             processedResults.forEach((result, index) => {
+                console.log(`  Result ${index + 1}: ${result.filename}, text length: ${result.text?.length || 0}`);
                 // Ensure parsedData exists (for backwards compatibility with old saved sessions)
                 if (!result.parsedData && result.text && parseMode.checked) {
                     result.parsedData = parseStarCitizenMission(result.text);
                     console.log(`📝 Re-parsed mission ${index + 1} (missing parsedData)`);
                 }
-                
+
                 displayResult(result.filename, result.text, result.region);
             });
             
