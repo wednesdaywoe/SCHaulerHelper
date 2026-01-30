@@ -1,0 +1,533 @@
+/**
+ * Hauler Helper - Theme Definitions
+ * All color themes and marker palettes
+ */
+
+/* CSS Variables - Default Theme */
+:root {
+    --bg-primary: #0a0e1a;
+    --bg-secondary: #141b2d;
+    --bg-tertiary: #1a2332;
+    --bg-gradient-end: #121625;
+    --color-primary: #4dd4ac;
+    --color-accent: #7ee7c4;
+    --color-success: #4ade80;
+    --color-warning: #fbbf24;
+    --color-danger: #ef4444;
+    --border-color: #2d3d54;
+    --text-primary: #e5e5e5;
+    --text-secondary: #8b92a8;
+}
+
+/* ========================================
+   THEME DEFINITIONS
+   ======================================== */
+
+/* Theme: Stardust (default - teal/cyan) */
+body[data-theme="stardust"] {
+    --color-primary: #4dd4ac;
+    --color-accent: #7ee7c4;
+}
+
+/* Theme: Lux (lime green) - Comprehensive palette */
+body[data-theme="lux"] {
+    /* Backgrounds */
+    --bg-primary: #0e160f;      /* Deep Forest - Main page background (dark green tint) */
+    --bg-secondary: #1a2318;    /* Dark Olive - Panels (medium green) */
+    --bg-tertiary: #283525;     /* Forest Shadow - Dropdowns/Inputs (lighter green) */
+    --bg-gradient-end: #121625; /* standard blue */
+    
+    /* Primary brand colors */
+    --color-primary: #B4F500;   /* Electric Lime - Headers, capacity fills */
+    --color-accent: #9DFF00;    /* Vibrant Chartreuse - Hover states */
+    
+    /* Functional colors */
+    --color-success: #32CD32;   /* Fresh Lime - Add buttons */
+    --color-warning: #FFD600;   /* Golden Yellow - Warnings */
+    --color-danger: #FF4757;    /* Sunset Coral - Danger states */
+    --color-info: #00D9FF;      /* Electric Blue - High-contrast elements */
+    
+    /* Structural */
+    --border-color: #7FE800;    /* Neon Green - Borders, panel outlines */
+    
+    /* Text */
+    --text-primary: #FFFFFF;    /* Pure White - Main readable text */
+    --text-secondary: #ADB5BD;  /* Cool Gray - Dimmed text, labels, hints */
+    --text-highlight: #00D9FF;  /* Electric Blue - important values */
+}
+
+/* Lux theme - Component-specific styling */
+body[data-theme="lux"] .mission-payout select {
+    color: var(--color-info);
+    font-weight: 700;
+}
+
+body[data-theme="lux"] .stat-value {
+    color: var(--color-info);
+}
+
+body[data-theme="lux"] .location-name {
+    color: var(--color-accent);
+}
+
+body[data-theme="lux"] .mission-title {
+    color: var(--text-highlight);
+}
+
+/* Theme: Pulse (hot magenta) - Comprehensive palette */
+body[data-theme="pulse"] {
+    /* Backgrounds */
+    --bg-primary: #1a1111;
+    --bg-secondary: #2a1a24;
+    --bg-tertiary: #3d2535;
+    --bg-gradient-end: #20000b; /* standard blue */
+    
+    /* Primary brand colors */
+    --color-primary: #d10046;      /* Hot Magenta - headers, main accents */
+    --color-accent: #ff1b67;       /* Neon Fuchsia - hover states, highlights */
+    
+    /* Functional colors */
+    --color-success: #00FFA3;      /* Neon Mint - success states, add buttons */
+    --color-warning: #FF8800;      /* Bright Orange - warnings */
+    --color-danger: #e63973;       /* Vibrant Red - danger states */
+    --color-info: #00D4FF;         /* Bright Cyan - info, special highlights */
+    
+    /* Structural */
+    --border-color: #a00050;       /* Magenta-tinted mauve - borders */
+    
+    /* Text */
+    --text-primary: #FFFFFF;       /* Pure White - main text */
+    --text-secondary: #ADB5BD;     /* Cool Gray - secondary text */
+    --text-highlight: #00D4FF;     /* Cyan - important values (payouts, numbers) */
+    
+    /* Additional accent colors */
+    --accent-purple: #8B5CF6;      /* Premium purple */
+    --accent-yellow: #FFC837;      /* Golden yellow */
+    --accent-coral: #FF6B6B;       /* Coral red */
+    --accent-pink-light: #FFB3D9;  /* Light pink */
+}
+
+/* Pulse theme - Component-specific styling */
+body[data-theme="pulse"] .mission-payout select {
+    color: var(--color-info);
+    font-weight: 700;
+}
+
+body[data-theme="pulse"] .stat-value {
+    color: var(--color-info);
+}
+
+body[data-theme="pulse"] .location-name {
+    color: var(--color-accent);
+}
+
+body[data-theme="pulse"] .mission-title {
+    color: var(--text-highlight);
+}
+
+/* Theme: Flow (blue) - Comprehensive palette */
+body[data-theme="flow"] {
+    /* Backgrounds */
+    --bg-primary: #0a0e1a;      /* Deep Ocean - Main page background (dark blue tint) */
+    --bg-secondary: #141b2d;    /* Midnight Blue - Panels (medium blue) */
+    --bg-tertiary: #1a2332;     /* Slate Blue - Dropdowns/Inputs (lighter blue) */
+    --bg-gradient-end: #121625; /* standard blue */
+
+    /* Primary brand colors */
+    --color-primary: #1E90FF;   /* Sky Blue - Headers, capacity fills */
+    --color-accent: #00D4FF;    /* Electric Aqua - Hover states */
+    
+    /* Functional colors */
+    --color-success: #00FFA3;   /* Neon Mint - Add buttons */
+    --color-warning: #FFD600;   /* Golden Yellow - Warnings */
+    --color-danger: #FF4757;    /* Sunset Coral - Danger states */
+    --color-info: #00BFFF;      /* Bright Cyan - High-contrast elements */
+    
+    /* Structural */
+    --border-color: #2d5a80;    /* Deep Sky - Borders, panel outlines */
+    
+    /* Text */
+    --text-primary: #FFFFFF;    /* Pure White - Main readable text */
+    --text-secondary: #ADB5BD;  /* Cool Gray - Dimmed text, labels, hints */
+    --text-highlight: #00BFFF;  /* Bright Cyan - important values */
+}
+
+/* Flow theme - Component-specific styling */
+body[data-theme="flow"] .mission-payout select {
+    color: var(--color-info);
+    font-weight: 700;
+}
+
+body[data-theme="flow"] .stat-value {
+    color: var(--color-info);
+}
+
+body[data-theme="flow"] .location-name {
+    color: var(--color-accent);
+}
+
+body[data-theme="flow"] .mission-title {
+    color: var(--text-highlight);
+}
+
+/* Theme: Dark (purple) - Comprehensive palette */
+body[data-theme="dark"] {
+    /* Backgrounds */
+    --bg-primary: #1e0c27;      /* Deep Void - Main page background (dark magenta tint) */
+    --bg-secondary: #3b1957;    /* Dark Plum - Panels (medium magenta) */
+    --bg-tertiary: #3d164e;     /* Mystic Purple - Dropdowns/Inputs (lighter magenta) */
+    --bg-gradient-end: #121625; /* standard blue */
+    
+    /* Primary brand colors */
+    --color-primary: #f0daff;   /* Electric Purple - Headers, capacity fills */
+    --color-accent: #cf9bff;    /* Bright Violet - Hover states */
+    
+    /* Functional colors */
+    --color-success: #00FFA3;   /* Neon Mint - Add buttons */
+    --color-warning: #FF8800;   /* Bright Orange - Warnings */
+    --color-danger: #E63946;    /* Vibrant Red - Danger states */
+    --color-info: #00D4FF;      /* Electric Cyan - High-contrast elements */
+    
+    /* Structural */
+    --border-color: #ca4af8;    /* Royal Violet - Borders, panel outlines */
+    
+    /* Text */
+    --text-primary: #FFFFFF;    /* Pure White - Main readable text */
+    --text-secondary: #ADB5BD;  /* Cool Gray - Dimmed text, labels, hints */
+    --text-highlight: #00D4FF;  /* Cyan - important values */
+}
+
+/* Dark theme - Component-specific styling */
+body[data-theme="dark"] .mission-payout select {
+    color: var(--color-info);
+    font-weight: 700;
+}
+
+body[data-theme="dark"] .stat-value {
+    color: var(--color-info);
+}
+
+body[data-theme="dark"] .location-name {
+    color: var(--color-accent);
+}
+
+body[data-theme="dark"] .mission-title {
+    color: var(--text-highlight);
+}
+
+/* Theme: Wednesday (gothic wine/jade) - Comprehensive palette */
+body[data-theme="wednesday"] {
+    /* Backgrounds - Deep burgundy-tinted */
+    --bg-primary: #1f001a;      /* Midnight Burgundy - Main page background (deep wine-black) */
+    --bg-secondary: #18091b;    /* Velvet Wine - Panels (medium burgundy) */
+    --bg-tertiary: #221531;     /* Plum Shadow - Dropdowns/Inputs (plum-purple) */
+    --bg-gradient-end: #121625; /* standard blue */
+    
+    /* Primary brand colors - Rich wine and purple */ 
+    --color-primary: #ff2793;   /* Burgundy Wine - Headers, capacity fills */
+    --color-accent: #3f6a7b;    /* Royal Purple - Hover states */
+    
+    /* Functional colors - Elegant jade and metallics */
+    --color-success: #2D7C7B;   /* Mystic Jade - Add buttons */
+    --color-warning: #a0ff61;   /* Antique Gold - Warnings */
+    --color-danger: #a0ff61;    /* Crimson Blood - Danger states */
+    --color-info: #a0ff61;      /* Jade Teal - High-contrast elements */
+    
+    /* Structural */
+    --border-color: #5B2C6F;    /* Deep Violet - Borders, panel outlines */
+    
+    /* Text */
+    --text-primary: #a0ff61;    /* Rose White - Main readable text (warm soft white) */
+    --text-secondary: #B8A5AB;  /* Dusty Mauve - Dimmed text */
+    --text-highlight: #88ff00;  /* Jade Teal - important values */
+    
+    /* Special accents */
+    --accent-amethyst: #9966CC; /* Amethyst - Special highlights */
+    --accent-rose-gold: #B76E79; /* Rose Gold - Elegant accents */
+    --accent-emerald: #a0ff61;   /* Emerald Teal - Additional depth */
+}
+
+/* Wednesday theme - Component-specific styling */
+body[data-theme="wednesday"] .mission-payout select {
+    color: var(--color-info);
+    font-weight: 700;
+}
+
+body[data-theme="wednesday"] .stat-value {
+    color: var(--color-info);
+}
+
+body[data-theme="wednesday"] .location-name {
+    color: var(--color-accent);
+}
+
+body[data-theme="wednesday"] .mission-title {
+    color: var(--text-highlight);
+}
+
+/* Theme: Moonshine (silver/blue) - Comprehensive palette */
+body[data-theme="moonshine"] {
+    /* Backgrounds */
+    --bg-primary: #0f1419;      /* Midnight Steel - Main page background (dark blue-gray) */
+    --bg-secondary: #1a1f2e;    /* Deep Slate - Panels (medium blue-gray) */
+    --bg-tertiary: #2a3342;     /* Storm Gray - Dropdowns/Inputs (lighter slate-blue) */
+    --bg-gradient-end: #121625; /* standard blue */
+    
+    /* Primary brand colors */
+    --color-primary: #8BA5C1;   /* Moonlight Silver - Headers, capacity fills */
+    --color-accent: #B8D4E8;    /* Pale Sky - Hover states */
+    
+    /* Functional colors */
+    --color-success: #5FBAA7;   /* Soft Teal - Add buttons */
+    --color-warning: #D4AF6A;   /* Pale Gold - Warnings */
+    --color-danger: #D97777;    /* Dusty Rose - Danger states */
+    --color-info: #7CB8E8;      /* Ice Blue - High-contrast elements */
+    
+    /* Structural */
+    --border-color: #3d4a5c;    /* Steel Blue - Borders, panel outlines */
+    
+    /* Text */
+    --text-primary: #E8EDF2;    /* Silver White - Main readable text (softer than pure white) */
+    --text-secondary: #8B95A5;  /* Cool Silver - Dimmed text, labels, hints */
+    --text-highlight: #7CB8E8;  /* Ice Blue - important values */
+}
+
+/* Moonshine theme - Component-specific styling */
+body[data-theme="moonshine"] .mission-payout select {
+    color: var(--color-info);
+    font-weight: 700;
+}
+
+body[data-theme="moonshine"] .stat-value {
+    color: var(--color-info);
+}
+
+body[data-theme="moonshine"] .location-name {
+    color: var(--color-accent);
+}
+
+body[data-theme="moonshine"] .mission-title {
+    color: var(--text-highlight);
+}
+
+/* Theme: cassette (industrial orange) - Comprehensive palette */
+body[data-theme="cassette"] {
+    /* Backgrounds */
+    --bg-primary: #1a1612;      /* Industrial Black - Main page background (dark warm-gray) */
+    --bg-secondary: #2a2520;    /* Charcoal Steel - Panels (medium warm-gray) */
+    --bg-tertiary: #3d3832;     /* Concrete Gray - Dropdowns/Inputs (lighter warm-gray) */
+    --bg-gradient-end: #121625; /* standard blue */
+    
+    /* Primary brand colors */
+    --color-primary: #FF6600;   /* Construction Orange - Headers, capacity fills */
+    --color-accent: #FF8C42;    /* Safety Barrier - Hover states */
+    
+    /* Functional colors */
+    --color-success: #4CAF50;   /* Industrial Green - Add buttons */
+    --color-warning: #FFC107;   /* Caution Yellow - Warnings */
+    --color-danger: #D32F2F;    /* Danger Red - Danger states */
+    --color-info: #2196F3;      /* Blueprint Blue - High-contrast elements */
+    
+    /* Structural */
+    --border-color: #5a5248;    /* Weathered Steel - Borders, panel outlines */
+    
+    /* Text */
+    --text-primary: #F5F5F5;    /* Industrial White - Main readable text */
+    --text-secondary: #9E9E9E;  /* Concrete - Dimmed text, labels, hints */
+    --text-highlight: #FFC107;  /* Caution Yellow - important values */
+}
+
+/* cassette theme - Component-specific styling */
+body[data-theme="cassette"] .mission-payout select {
+    color: var(--color-warning);
+    font-weight: 700;
+}
+
+body[data-theme="cassette"] .stat-value {
+    color: var(--color-warning);
+}
+
+body[data-theme="cassette"] .location-name {
+    color: var(--color-accent);
+}
+
+body[data-theme="cassette"] .mission-title {
+    color: var(--text-highlight);
+}
+
+/* Theme: Cetacean (executive gold/grey) - Concierge palette */
+body[data-theme="cetacean"] {
+    /* Backgrounds - Deep executive blacks and greys */
+    --bg-primary: #0a0a0a;      /* Deep Black - Main page background */
+    --bg-secondary: #1a1a1a;    /* Charcoal - Panels */
+    --bg-tertiary: #2a2a2a;     /* Dark Grey - Dropdowns/Inputs */
+    --bg-gradient-end: #0d0d0d; /* Black gradient end */
+    
+    /* Primary brand colors - Executive gold */
+    --color-primary: #D4AF37;   /* Concierge Gold - Headers, capacity fills */
+    --color-accent: #FFD700;    /* Bright Gold - Hover states, highlights */
+    
+    /* Functional colors - Sophisticated palette */
+    --color-success: #B8860B;   /* Dark Goldenrod - Add buttons */
+    --color-warning: #DAA520;   /* Goldenrod - Warnings */
+    --color-danger: #CD853F;    /* Peru - Danger states */
+    --color-info: #C0C0C0;      /* Silver - High-contrast elements */
+    
+    /* Structural */
+    --border-color: #3a3a3a;    /* Medium Grey - Borders */
+    
+    /* Text */
+    --text-primary: #E5E5E5;    /* Light Grey - Main readable text */
+    --text-secondary: #A9A9A9;  /* Dark Grey - Dimmed text */
+    --text-highlight: #FFD700;  /* Gold - important values */
+    
+    /* Special accents */
+    --accent-platinum: #E5E4E2; /* Platinum - Special highlights */
+    --accent-bronze: #CD7F32;   /* Bronze - Additional depth */
+}
+
+/* Cetacean theme - Component-specific styling */
+body[data-theme="cetacean"] .mission-payout select {
+    color: var(--color-primary);
+    font-weight: 700;
+}
+
+body[data-theme="cetacean"] .stat-value {
+    color: var(--color-primary);
+}
+
+body[data-theme="cetacean"] .location-name {
+    color: var(--color-accent);
+}
+
+body[data-theme="cetacean"] .mission-title {
+    color: var(--color-info);
+}
+
+body[data-theme="cargo-explorer"] {
+    /* Backgrounds */
+    --bg-primary: #000000;      /* Blood Iron - Main page background (dark red-black) */
+    --bg-secondary: #110000;    /* Dark Crimson - Panels (medium dark red) */
+    --bg-tertiary: #240000;     /* Wine Shadow - Dropdowns/Inputs (lighter red-gray) */
+    --bg-gradient-end: #121625; /* standard blue */
+    
+    /* Primary brand colors */
+    --color-primary: #ff0000;   /* Angry Crimson - Headers, capacity fills */
+    --color-accent: #B91C1C;    /* Blood Red - Hover states */
+    
+    /* Functional colors */
+    --color-success: #fffd84;   /* Pirate Gold - Add buttons */
+    --color-warning: #FF6B35;   /* Flame Orange - Warnings */
+    --color-danger: #a5a5a5;    /* Dark Blood - Danger states */
+    --color-info: #60A5FA;      /* Steel Blue - High-contrast elements */
+    
+    /* Structural */
+    --border-color: #a70000;    /* Cold Iron - Borders, panel outlines */
+    
+    /* Text */
+    --text-primary: #c8dbff;    /* Steel White - Main readable text */
+    --text-secondary: #9CA3AF;  /* Weathered Steel - Dimmed text, labels, hints */
+    --text-highlight: #fffd84;  /* Pirate Gold - important values */
+}
+
+/* Cargo Explorer theme - Component-specific styling */
+body[data-theme="cargo-explorer"] .mission-payout select {
+    color: var(--color-success);
+    font-weight: 700;
+}
+
+body[data-theme="cassette-explorer"] .stat-value {
+    color: var(--color-success);
+}
+
+body[data-theme="cassette-explorer"] .location-name {
+    color: var(--color-accent);
+}
+
+body[data-theme="cassette-explorer"] .mission-title {
+    color: var(--text-highlight);
+}
+
+/* ========================================
+   THEME MARKER COLOR PALETTES
+   ======================================== */
+
+/* Default color palette for delivery markers */
+.theme-colors {
+    --marker-1: #4dd4ac;
+    --marker-2: #ec4899;
+    --marker-3: #fbbf24;
+    --marker-4: #8b5cf6;
+    --marker-5: #3b82f6;
+    --marker-6: #f97316;
+    --marker-7: #84cc16;
+    --marker-8: #06b6d4;
+}
+
+body[data-theme="lux"] .theme-colors {
+    --marker-1: #B4F500;    /* Electric Lime */
+    --marker-2: #9DFF00;    /* Vibrant Chartreuse */
+    --marker-3: #32CD32;    /* Fresh Lime */
+    --marker-4: #00D9FF;    /* Electric Blue */
+    --marker-5: #FFD600;    /* Golden Yellow */
+    --marker-6: #FF4757;    /* Sunset Coral */
+    --marker-7: #7FE800;    /* Neon Green */
+    --marker-8: #d9f99d;    /* Pale Lime */
+}
+
+body[data-theme="pulse"] .theme-colors {
+    --marker-1: #FF006E;    /* Hot Magenta */
+    --marker-2: #00D4FF;    /* Bright Cyan */
+    --marker-3: #00FFA3;    /* Neon Mint */
+    --marker-4: #FFC837;    /* Golden Yellow */
+    --marker-5: #8B5CF6;    /* Purple */
+    --marker-6: #FF8800;    /* Orange */
+    --marker-7: #E63946;    /* Vibrant Red */
+    --marker-8: #FFB3D9;    /* Light Pink */
+}
+
+body[data-theme="flow"] .theme-colors {
+    --marker-1: #1E90FF;    /* Sky Blue */
+    --marker-2: #00D4FF;    /* Electric Aqua */
+    --marker-3: #00BFFF;    /* Bright Cyan */
+    --marker-4: #00FFA3;    /* Neon Mint */
+    --marker-5: #FFD600;    /* Golden Yellow */
+    --marker-6: #FF4757;    /* Sunset Coral */
+    --marker-7: #93c5fd;    /* Light Blue */
+    --marker-8: #60a5fa;    /* Soft Sky */
+}
+
+body[data-theme="dark"] .theme-colors {
+    --marker-1: #8B3FBF;
+    --marker-2: #A855F7;
+    --marker-3: #00D4FF;
+    --marker-4: #00FFA3;
+    --marker-5: #FF8800;
+    --marker-6: #E63946;
+    --marker-7: #c084fc;
+    --marker-8: #e9d5ff;
+}
+
+body[data-theme="moonshine"] .theme-colors {
+    --marker-1: #8BA5C1;
+    --marker-2: #B8D4E8;
+    --marker-3: #7CB8E8;
+    --marker-4: #5FBAA7;
+    --marker-5: #D4AF6A;
+    --marker-6: #D97777;
+    --marker-7: #cbd5e1;
+    --marker-8: #94a3b8;
+}
+
+body[data-theme="cassette"] .theme-colors {
+    --marker-1: #FF6600;    /* Construction Orange */
+    --marker-2: #FF8C42;    /* Safety Barrier */
+    --marker-3: #FFC107;    /* Caution Yellow */
+    --marker-4: #4CAF50;    /* Industrial Green */
+    --marker-5: #2196F3;    /* Blueprint Blue */
+    --marker-6: #D32F2F;    /* Danger Red */
+    --marker-7: #fb923c;    /* Light Orange */
+    --marker-8: #fdba74;    /* Pale Orange */
+}
+
+
