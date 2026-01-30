@@ -25,7 +25,7 @@ import type { RouteStop, RouteViewMode } from '@/types';
 function ContainerIcon({ size }: { size: number }) {
   return (
     <img
-      src={`/icons/${size}.svg`}
+      src={`${import.meta.env.BASE_URL}icons/${size}.svg`}
       alt={`${size} SCU`}
       className="inline-block w-4 h-4"
       style={{ filter: 'var(--icon-filter, none)' }}
