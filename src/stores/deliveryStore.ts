@@ -261,6 +261,16 @@ export const useDeliveryStore = create<DeliveryState>()(
               }
 
               data.score = deliveryScore + pickupScore + comboBonus - distancePenalty - lookaheadPenalty - gatewayPenalty;
+
+              // Debug logging for route scoring
+              if (data.deliveries.length > 0) {
+                console.log(`[Route] Candidate: ${location}`);
+                console.log(`  deliveryScore: ${deliveryScore}, pickupScore: ${pickupScore}, comboBonus: ${comboBonus}`);
+                console.log(`  distancePenalty: ${distancePenalty} (from ${currentLocation})`);
+                console.log(`  lookaheadPenalty: ${lookaheadPenalty}, sameSystemDests: [${sameSystemDestinations.join(', ')}]`);
+                console.log(`  gatewayPenalty: ${gatewayPenalty}, gateways: [${gatewaysToInclude.join(', ')}]`);
+                console.log(`  TOTAL SCORE: ${data.score}`);
+              }
             }
 
             // Pick best location
