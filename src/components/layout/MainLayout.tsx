@@ -22,7 +22,7 @@ export function MainLayout() {
       {!wipDismissed && (
         <div className="bg-[var(--color-warning)]/15 border-b border-[var(--color-warning)]/30 px-4 py-2 text-center text-sm text-[var(--color-warning)] flex items-center justify-center gap-3">
           <span>
-            Work in progress — React migration preview
+            Work in progress - Please report bugs using the Feedback button at the bottom
             <span className="hidden sm:inline">
               {' '}(built {new Date(__BUILD_TIME__).toLocaleDateString()})
             </span>
