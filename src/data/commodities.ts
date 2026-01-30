@@ -59,6 +59,7 @@ export const COMMODITIES: string[] = [
   'Medical Supplies',
   'Mercury',
   'Methane',
+  'Molina Mold Treatment',
   'Neon',
   'Nitrogen',
   'Omnapoxy',
