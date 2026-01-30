@@ -210,42 +210,53 @@ export const useDeliveryStore = create<DeliveryState>()(
                 }
               }
 
-              const lookaheadTargets = [...sameSystemDestinations, ...gatewaysToInclude];
-              if (lookaheadTargets.length > 0) {
+              // Only use same-system destinations for lookahead
+              // (gateway routing is handled separately via total journey calculation)
+              if (sameSystemDestinations.length > 0) {
                 let totalDistToRemaining = 0;
-                for (const dest of lookaheadTargets) {
+                for (const dest of sameSystemDestinations) {
                   totalDistToRemaining += travelCost(location, dest);
                 }
-                const avgDistToRemaining = totalDistToRemaining / lookaheadTargets.length;
+                const avgDistToRemaining = totalDistToRemaining / sameSystemDestinations.length;
                 lookaheadPenalty = avgDistToRemaining * LOOKAHEAD_PENALTY;
               }
 
               // --- Gateway-aware routing ---
-              // When we have interstellar destinations, calculate the TOTAL remaining
-              // journey: from candidate → other same-system stops → gateway
-              // This naturally penalizes routes that backtrack
+              // When we have interstellar destinations, compute the total remaining journey:
+              // candidate → all same-system stops (greedy) → gateway
+              // Compare this to the minimum possible and penalize inefficient paths
               let gatewayPenalty = 0;
-              if (locationSystem === startSystem && gatewaysToInclude.length > 0) {
-                // For each gateway we need to reach, estimate the journey
+              if (locationSystem === startSystem && gatewaysToInclude.length > 0 && sameSystemDestinations.length > 0) {
                 for (const gateway of gatewaysToInclude) {
-                  // Penalty based on: distance from candidate to gateway
-                  // PLUS sum of how far same-system destinations are from the gateway
-                  // This favors routes that visit stops "on the way" to the gateway
-                  const distToGateway = travelCost(location, gateway);
+                  // Calculate total journey: visit all same-system destinations then gateway
+                  // Use greedy nearest-neighbor from this candidate
+                  let totalJourney = 0;
+                  let currentPos = location;
+                  const remaining = [...sameSystemDestinations];
 
-                  // How much do we deviate from the path to gateway?
-                  // Calculate: (dist from here to dest) + (dist from dest to gateway) - (dist from here to gateway)
-                  // Positive values mean the destination is NOT on the way
-                  let deviationPenalty = 0;
-                  for (const dest of sameSystemDestinations) {
-                    const distToDest = travelCost(location, dest);
-                    const destToGateway = travelCost(dest, gateway);
-                    const deviation = (distToDest + destToGateway) - distToGateway;
-                    deviationPenalty += Math.max(0, deviation);
+                  while (remaining.length > 0) {
+                    // Find nearest unvisited destination
+                    let nearestIdx = 0;
+                    let nearestDist = travelCost(currentPos, remaining[0]);
+                    for (let i = 1; i < remaining.length; i++) {
+                      const d = travelCost(currentPos, remaining[i]);
+                      if (d < nearestDist) {
+                        nearestDist = d;
+                        nearestIdx = i;
+                      }
+                    }
+                    totalJourney += nearestDist;
+                    currentPos = remaining[nearestIdx];
+                    remaining.splice(nearestIdx, 1);
                   }
 
-                  gatewayPenalty = deviationPenalty * 0.1;
-                  break; // Only consider first gateway
+                  // Add distance from last destination to gateway
+                  totalJourney += travelCost(currentPos, gateway);
+
+                  // Penalty is proportional to total journey length
+                  // Higher weight to make this more significant than raw distance
+                  gatewayPenalty = totalJourney * 0.3;
+                  break;
                 }
               }
 
