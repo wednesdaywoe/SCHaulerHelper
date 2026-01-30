@@ -3,10 +3,18 @@ import type { Ship } from '@/types';
 export const SHIPS: Ship[] = [
   // AEGIS DYNAMICS
   { id: 'aegis_avenger_titan', name: 'Aegis Avenger Titan', manufacturer: 'Aegis Dynamics', capacity: 8 },
+  { id: 'aegis_hammerhead', name: 'Aegis Hammerhead', manufacturer: 'Aegis Dynamics', capacity: 40 },
+  { id: 'idris_m', name: 'Aegis Idris M', manufacturer: 'Aegis Dynamics', capacity: 1326 },
+  { id: 'idris_p', name: 'Aegis Idris P', manufacturer: 'Aegis Dynamics', capacity: 1374 },
   { id: 'aegis_reclaimer', name: 'Aegis Reclaimer', manufacturer: 'Aegis Dynamics', capacity: 420 },
+  { id: 'aegis_retaliator', name: 'Aegis Retaliator (w/cargo modules) ', manufacturer: 'Aegis Dynamics', capacity: 74 },
 
   // ANVIL AEROSPACE
   { id: 'anvil_carrack', name: 'Anvil Carrack', manufacturer: 'Anvil Aerospace', capacity: 456, grids: 9 },
+  { id: 'anvil_carrack_expedition', name: 'Anvil Carrack Expedition', manufacturer: 'Anvil Aerospace', capacity: 456, grids: 9 },
+  { id: 'anvil_c8_pisces', name: 'Anvil C8 Pisces', manufacturer: 'Anvil Aerospace', capacity: 4 },
+  { id: 'anvil_c8x_pisces', name: 'Anvil C8X Pisces', manufacturer: 'Anvil Aerospace', capacity: 4 },
+  { id: 'anvil_paladin', name: 'Anvil Paladin', manufacturer: 'Anvil Aerospace', capacity: 456, grids: 4 },
   { id: 'anvil_valkyrie', name: 'Anvil Valkyrie', manufacturer: 'Anvil Aerospace', capacity: 90 },
 
   // ARGO ASTRONAUTICS
@@ -28,14 +36,23 @@ export const SHIPS: Ship[] = [
   { id: 'drake_clipper', name: 'Drake Clipper', manufacturer: 'Drake Interplanetary', capacity: 12 },
   { id: 'drake_corsair', name: 'Drake Corsair', manufacturer: 'Drake Interplanetary', capacity: 72 },
   { id: 'drake_cutlass_black', name: 'Drake Cutlass Black', manufacturer: 'Drake Interplanetary', capacity: 46 },
+  { id: 'drake_cutlass_red', name: 'Drake Cutlass Red', manufacturer: 'Drake Interplanetary', capacity: 12 },
   { id: 'drake_cutter_rambler', name: 'Drake Cutter Rambler', manufacturer: 'Drake Interplanetary', capacity: 2 },
   { id: 'drake_cutter_scout', name: 'Drake Cutter Scout', manufacturer: 'Drake Interplanetary', capacity: 4 },
+  { id: 'drake_golem_ox', name: 'Drake Golem OX', manufacturer: 'Drake Interplanetary', capacity: 64 },
   { id: 'drake_vulture', name: 'Drake Vulture', manufacturer: 'Drake Interplanetary', capacity: 12 },
+
+  //ESPERIA
+  { id: 'esperia_prowler', name: 'Esperia Prowler', manufacturer: 'Esperia', capacity: 32 },
 
   // GATAC MANUFACTURE
   { id: 'gatac_syulen', name: 'Gatac Syulen', manufacturer: 'Gatac Manufacture', capacity: 6 },
 
+  // GREY'S MARKET
+  { id: 'greys_shiv', name: "Grey's Market Shitbucket", manufacturer: "Grey's Market", capacity: 32 },
+
   // MISC
+  { id: 'misc_fortune', name: 'MISC Fortune', manufacturer: 'MISC', capacity: 16 },
   { id: 'misc_freelancer', name: 'MISC Freelancer', manufacturer: 'MISC', capacity: 66 },
   { id: 'misc_freelancer_dur', name: 'MISC Freelancer DUR', manufacturer: 'MISC', capacity: 36 },
   { id: 'misc_freelancer_max', name: 'MISC Freelancer MAX', manufacturer: 'MISC', capacity: 122 },
@@ -60,11 +77,14 @@ export const SHIPS: Ship[] = [
   { id: 'origin_890_jump', name: 'Origin 890 Jump', manufacturer: 'Origin Jumpworks', capacity: 388 },
 
   // RSI (Roberts Space Industries)
+  { id: 'rsi_apollo', name: 'RSI Apollo', manufacturer: 'Roberts Space Industries', capacity: 32 },
   { id: 'rsi_constellation_andromeda', name: 'RSI Constellation Andromeda', manufacturer: 'Roberts Space Industries', capacity: 96 },
   { id: 'rsi_constellation_aquila', name: 'RSI Constellation Aquila', manufacturer: 'Roberts Space Industries', capacity: 96 },
   { id: 'rsi_constellation_phoenix', name: 'RSI Constellation Phoenix', manufacturer: 'Roberts Space Industries', capacity: 84 },
   { id: 'rsi_constellation_taurus', name: 'RSI Constellation Taurus', manufacturer: 'Roberts Space Industries', capacity: 174 },
+  { id: 'rsi_hermes', name: 'RSI Hermes', manufacturer: 'Roberts Space Industries', capacity: 288 },
   { id: 'rsi_polaris', name: 'RSI Polaris', manufacturer: 'Roberts Space Industries', capacity: 576 },
+  { id: 'rsi_salvation', name: 'RSI Salvation', manufacturer: 'Roberts Space Industries', capacity: 6 },
   { id: 'rsi_zeus_cl', name: 'RSI Zeus CL', manufacturer: 'Roberts Space Industries', capacity: 128 },
   { id: 'rsi_zeus_es', name: 'RSI Zeus ES', manufacturer: 'Roberts Space Industries', capacity: 32 },
 ];
