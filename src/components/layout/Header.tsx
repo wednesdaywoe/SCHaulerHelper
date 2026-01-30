@@ -70,27 +70,16 @@ export function Header() {
           <option value="interstellar">Interstellar</option>
         </Select>
 
-        {/* Theme selector */}
-        <Select
-          label="Theme"
-          value={theme}
-          onChange={(e) => setTheme(e.target.value as typeof theme)}
-        >
-          {THEMES.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </Select>
+        {/* Mission Scanner button */}
+        <Button variant="primary" size="sm" onClick={openOCRModal} className="self-end">
+          Mission Scanner
+        </Button>
 
         {/* Spacer — hidden on small screens so buttons wrap naturally */}
         <div className="hidden min-[900px]:block flex-1" />
 
         {/* Action buttons */}
         <div className="flex flex-wrap gap-2 w-full min-[900px]:w-auto">
-          <Button variant="primary" size="sm" onClick={openOCRModal}>
-            OCR Scanner
-          </Button>
           <Button variant="secondary" size="sm" onClick={openExportModal}>
             Export
           </Button>
@@ -101,6 +90,20 @@ export function Header() {
             Reset All
           </Button>
         </div>
+
+        {/* Theme selector - last on the right */}
+        <Select
+          label="Theme"
+          value={theme}
+          onChange={(e) => setTheme(e.target.value as typeof theme)}
+          className="min-[900px]:ml-2"
+        >
+          {THEMES.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </Select>
       </div>
     </header>
   );
