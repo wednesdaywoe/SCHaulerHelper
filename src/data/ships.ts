@@ -83,6 +83,7 @@ export const SHIPS: Ship[] = [
   { id: 'rsi_constellation_phoenix', name: 'RSI Constellation Phoenix', manufacturer: 'Roberts Space Industries', capacity: 84 },
   { id: 'rsi_constellation_taurus', name: 'RSI Constellation Taurus', manufacturer: 'Roberts Space Industries', capacity: 174 },
   { id: 'rsi_hermes', name: 'RSI Hermes', manufacturer: 'Roberts Space Industries', capacity: 288 },
+  { id: 'rsi_perseus', name: 'RSI Perseus', manufacturer: 'Roberts Space Industries', capacity: 96 },
   { id: 'rsi_polaris', name: 'RSI Polaris', manufacturer: 'Roberts Space Industries', capacity: 576 },
   { id: 'rsi_salvation', name: 'RSI Salvation', manufacturer: 'Roberts Space Industries', capacity: 6 },
   { id: 'rsi_zeus_cl', name: 'RSI Zeus CL', manufacturer: 'Roberts Space Industries', capacity: 128 },
