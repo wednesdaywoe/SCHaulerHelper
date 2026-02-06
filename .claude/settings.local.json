@@ -9,7 +9,10 @@
       "Bash(cmd /c \"dir c:\\\\Projects\\\\SCHaulerHelper\\\\js\\\\ /b\")",
       "Bash(npm run deploy:*)",
       "Bash(node_modules/.bin/wrangler deploy)",
-      "Bash(npx wrangler:*)"
+      "Bash(npx wrangler:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)",
+      "Bash(git stash pop:*)"
     ]
   }
 }
