@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useClipboardOCR } from '@/hooks/useClipboardOCR';
 import { Header } from './Header';
 import { StatsPanel } from './StatsPanel';
 import { MissionPanel } from '@/components/missions/MissionPanel';
@@ -13,6 +14,7 @@ import { Button } from '@/components/ui/Button';
 declare const __BUILD_TIME__: string;
 
 export function MainLayout() {
+  useClipboardOCR();
   const openFeedbackModal = useUIStore((s) => s.openFeedbackModal);
   const [wipDismissed, setWipDismissed] = useState(false);
 

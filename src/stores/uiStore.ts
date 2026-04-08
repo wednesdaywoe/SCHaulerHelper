@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { ThemeId, DeliveryTab } from '@/types';
+import type { ThemeId, DeliveryTab, OCRResult, OCRProcessingOptions } from '@/types';
 
 interface ColorPickerState {
   isOpen: boolean;
@@ -15,6 +15,16 @@ interface UIState {
   // Delivery tabs
   activeDeliveryTab: DeliveryTab;
   setActiveDeliveryTab: (tab: DeliveryTab) => void;
+
+  // OCR options (persisted so clipboard paste respects user's monitor setup)
+  ocrOptions: OCRProcessingOptions;
+  setOCROptions: (options: OCRProcessingOptions) => void;
+
+  // Clipboard OCR state (not persisted — ephemeral per session)
+  pendingOCRResult: OCRResult | null;
+  setPendingOCRResult: (result: OCRResult | null) => void;
+  ocrProcessing: boolean;
+  setOCRProcessing: (processing: boolean) => void;
 
   // Modals
   ocrModalOpen: boolean;
@@ -48,6 +58,22 @@ export const useUIStore = create<UIState>()(
       activeDeliveryTab: 'route',
       setActiveDeliveryTab: (tab) => set({ activeDeliveryTab: tab }),
 
+      // OCR options
+      ocrOptions: {
+        autoCrop: true,
+        enhanceImage: true,
+        displayRatio: '16:9',
+        cropRegion: 'auto',
+        ocrMode: 6,
+      },
+      setOCROptions: (options) => set({ ocrOptions: options }),
+
+      // Clipboard OCR state
+      pendingOCRResult: null,
+      setPendingOCRResult: (result) => set({ pendingOCRResult: result }),
+      ocrProcessing: false,
+      setOCRProcessing: (processing) => set({ ocrProcessing: processing }),
+
       // OCR Modal
       ocrModalOpen: false,
       openOCRModal: () => set({ ocrModalOpen: true }),
@@ -75,6 +101,7 @@ export const useUIStore = create<UIState>()(
       partialize: (state) => ({
         theme: state.theme,
         activeDeliveryTab: state.activeDeliveryTab,
+        ocrOptions: state.ocrOptions,
       }),
       onRehydrateStorage: () => {
         return (rehydrated?: UIState) => {
