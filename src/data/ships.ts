@@ -57,6 +57,7 @@ export const SHIPS: Ship[] = [
   { id: 'misc_freelancer_dur', name: 'MISC Freelancer DUR', manufacturer: 'MISC', capacity: 36 },
   { id: 'misc_freelancer_max', name: 'MISC Freelancer MAX', manufacturer: 'MISC', capacity: 122 },
   { id: 'misc_hull_a', name: 'MISC Hull A', manufacturer: 'MISC', capacity: 64 },
+  { id: 'misc_hull_b', name: 'MISC Hull B', manufacturer: 'MISC', capacity: 512 },
   { id: 'misc_hull_c', name: 'MISC Hull C', manufacturer: 'MISC', capacity: 4608 },
   { id: 'misc_odyssey', name: 'MISC Odyssey please CIG <3 xoxoxo', manufacturer: 'MISC', capacity: 252 },
   { id: 'misc_reliant_kore', name: 'MISC Reliant Kore', manufacturer: 'MISC', capacity: 6 },
