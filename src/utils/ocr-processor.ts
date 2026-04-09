@@ -42,28 +42,36 @@ export async function preprocessImage(
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d')!;
 
+      // Crop region: [leftPct, topPct, rightPct, bottomPct]
+      // Defines the rectangle to KEEP as percentages of the full image
       let sx = 0;
+      let sy = 0;
       let sw = img.width;
+      let sh = img.height;
 
       if (options.autoCrop) {
-        const ratios: Record<string, number> = {
-          '16:9': 0.50,
-          '16:10': 0.52,
-          '21:9': 0.40,
-          '32:9': 0.30,
-          '4:3': 0.55,
+        // SC contract UI layout: left sidebar ~32%, top bar ~8%, bottom nav ~12%
+        // Crop to the contract content area (details + objectives panel)
+        const regions: Record<string, [number, number, number, number]> = {
+          '16:9':  [0.32, 0.08, 1.0, 0.88],
+          '16:10': [0.30, 0.08, 1.0, 0.88],
+          '21:9':  [0.24, 0.08, 1.0, 0.88],
+          '32:9':  [0.18, 0.08, 1.0, 0.88],
+          '4:3':   [0.36, 0.08, 1.0, 0.88],
         };
-        const cropPct = ratios[options.displayRatio] ?? 0.50;
-        sw = Math.round(img.width * cropPct);
-        sx = img.width - sw;
+        const [left, top, right, bottom] = regions[options.displayRatio] ?? [0.32, 0.08, 1.0, 0.88];
+        sx = Math.round(img.width * left);
+        sy = Math.round(img.height * top);
+        sw = Math.round(img.width * right) - sx;
+        sh = Math.round(img.height * bottom) - sy;
       }
 
       canvas.width = sw;
-      canvas.height = img.height;
-      ctx.drawImage(img, sx, 0, sw, img.height, 0, 0, sw, img.height);
+      canvas.height = sh;
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
 
       if (options.enhanceImage) {
-        const imageData = ctx.getImageData(0, 0, sw, img.height);
+        const imageData = ctx.getImageData(0, 0, sw, sh);
         const data = imageData.data;
         const contrast = 1.3;
         const brightness = 10;
