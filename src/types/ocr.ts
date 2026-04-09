@@ -15,6 +15,7 @@ export interface OCRResult {
   text: string;
   confidence: number;
   parsedData: ParsedMission | null;
+  preprocessedImageUrl?: string;
 }
 
 export interface OCRProcessingOptions {

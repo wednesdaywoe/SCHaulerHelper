@@ -375,9 +375,23 @@ function ResultCard({
       )}
 
       {showRaw && (
-        <pre className="text-xs text-[var(--text-secondary)] bg-[var(--bg-tertiary)] p-2 rounded overflow-x-auto max-h-40">
-          {result.text}
-        </pre>
+        <>
+          <pre className="text-xs text-[var(--text-secondary)] bg-[var(--bg-tertiary)] p-2 rounded overflow-x-auto max-h-40">
+            {result.text}
+          </pre>
+          {result.preprocessedImageUrl && (
+            <details className="text-xs text-[var(--text-secondary)]">
+              <summary className="cursor-pointer hover:text-[var(--text-primary)]">
+                Preprocessed image (what OCR sees)
+              </summary>
+              <img
+                src={result.preprocessedImageUrl}
+                alt="Preprocessed"
+                className="mt-1 max-h-48 rounded border border-[var(--border-color)]"
+              />
+            </details>
+          )}
+        </>
       )}
     </div>
   );

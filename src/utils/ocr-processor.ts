@@ -9,6 +9,10 @@ export async function processImageFile(
   const worker = await Tesseract.createWorker('eng');
 
   try {
+    await worker.setParameters({
+      tessedit_pageseg_mode: String(options.ocrMode) as Tesseract.PSM,
+    });
+
     const imageData = await preprocessImage(file, options);
     const {
       data: { text, confidence },
@@ -21,6 +25,7 @@ export async function processImageFile(
       text,
       confidence,
       parsedData,
+      preprocessedImageUrl: imageData,
     };
   } finally {
     await worker.terminate();
@@ -31,7 +36,7 @@ export async function preprocessImage(
   file: File,
   options: OCRProcessingOptions
 ): Promise<string> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
@@ -42,13 +47,13 @@ export async function preprocessImage(
 
       if (options.autoCrop) {
         const ratios: Record<string, number> = {
-          '16:9': 0.385,
-          '16:10': 0.40,
-          '21:9': 0.30,
-          '32:9': 0.25,
-          '4:3': 0.45,
+          '16:9': 0.50,
+          '16:10': 0.52,
+          '21:9': 0.40,
+          '32:9': 0.30,
+          '4:3': 0.55,
         };
-        const cropPct = ratios[options.displayRatio] ?? 0.385;
+        const cropPct = ratios[options.displayRatio] ?? 0.50;
         sw = Math.round(img.width * cropPct);
         sx = img.width - sw;
       }
@@ -70,7 +75,12 @@ export async function preprocessImage(
         ctx.putImageData(imageData, 0, 0);
       }
 
+      URL.revokeObjectURL(img.src);
       resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(img.src);
+      reject(new Error('Failed to load image for preprocessing'));
     };
     img.src = URL.createObjectURL(file);
   });

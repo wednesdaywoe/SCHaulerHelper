@@ -23,7 +23,12 @@ function extractPayout(text: string): number | null {
 function preprocessText(text: string): string {
   // Remove leading < or similar bullet characters from lines (UI artifact)
   // Includes : and ¢ which OCR sometimes produces for bullet markers
-  text = text.replace(/^[<>[\]•:¢-]\s*/gm, '');
+  text = text.replace(/^[<>[\]•:¢|©-]\s*/gm, '');
+  // OCR sometimes reads bullet markers as 0 or O before keywords
+  text = text.replace(/^[0O]\s+(?=Collect|Deliver)/gm, '');
+
+  // Remove stray | pipe characters (OCR artifact at line/column boundaries)
+  text = text.replace(/\|/g, '');
 
   // Normalize lagrange point descriptions to simple format
   // "Wide Forest Station at ArcCorp's L1 Lagrange point" -> "ARC-L1 Wide Forest"
