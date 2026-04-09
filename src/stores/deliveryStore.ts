@@ -157,9 +157,23 @@ export const useDeliveryStore = create<DeliveryState>()(
             }
 
             // Add deliverable locations (only if cargo has been picked up)
+            // For multi-pickup missions (multiple pickups → same destination in same mission),
+            // only allow delivery once ALL sibling pickups are on board
             for (const deliveryId of pendingDeliveries) {
               const delivery = allDeliveries.find(d => d.id === deliveryId)!;
               if (!pickedUpCargo.has(delivery.pickupId)) continue; // Can't deliver yet
+
+              // Check if all sibling deliveries to same location in same mission are ready
+              const missionId = delivery.pickupId.replace(/_\d+$/, '');
+              const siblingDeliveries = allDeliveries.filter(d =>
+                d.location === delivery.location &&
+                d.pickupId.startsWith(missionId + '_') &&
+                pendingDeliveries.has(d.id)
+              );
+              const allSiblingsReady = siblingDeliveries.every(d =>
+                pickedUpCargo.has(d.pickupId)
+              );
+              if (!allSiblingsReady) continue;
 
               if (!candidates.has(delivery.location)) {
                 candidates.set(delivery.location, { pickups: [], deliveries: [], score: 0 });

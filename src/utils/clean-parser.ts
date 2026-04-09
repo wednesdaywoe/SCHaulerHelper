@@ -27,8 +27,8 @@ function preprocessText(text: string): string {
   // OCR sometimes reads bullet markers as 0 or O before keywords
   text = text.replace(/^[0O]\s+(?=Collect|Deliver)/gm, '');
 
-  // Remove stray | pipe characters (OCR artifact at line/column boundaries)
-  text = text.replace(/\|/g, '');
+  // Remove stray OCR artifacts: | [ ] are column/box boundary noise
+  text = text.replace(/[|\[\]]/g, '');
 
   // Normalize lagrange point descriptions to simple format
   // "Wide Forest Station at ArcCorp's L1 Lagrange point" -> "ARC-L1 Wide Forest"
@@ -48,6 +48,13 @@ function preprocessText(text: string): string {
   // Fix lagrange station names that break across lines
   text = text.replace(/Red\s*\n\s*microTech-L4\s+Crossroads/gi, 'MIC-L4 Red Crossroads');
   text = text.replace(/microTech-L(\d)\s+([\w\s]+)/gi, 'MIC-L$1 $2');
+
+  // Fix "Station" or "Station." on its own line after a location name
+  // e.g. "CRU-L1 Ambitious Dream\nStation." -> "CRU-L1 Ambitious Dream Station."
+  text = text.replace(/(\w)\s*\n\s*Station\b/gi, '$1 Station');
+
+  // Fix "Seraphim Station" broken across lines or with noise after it
+  text = text.replace(/Seraphim\s*\n\s*Station/gi, 'Seraphim Station');
 
   // Fix "Covalex Distribution Center" breaking across lines
   text = text.replace(/Covalex\s*\n\s*Distribution/gi, 'Covalex Distribution');
@@ -87,10 +94,12 @@ function extractSegments(text: string): ParsedSegment[] {
     const quantity = parseQuantity(quantityStr);
     const commodity = cleanCommodity(commodityRaw);
     const delivery = cleanLocation(deliveryRaw);
-    const pickup = findPickupLocation(text, commodity, deliverPos);
+    const pickups = findPickupLocations(text, commodity, deliverPos);
 
-    if (pickup && delivery && commodity && quantity > 0) {
-      segments.push({ commodity, pickup, delivery, quantity });
+    if (pickups.length > 0 && delivery && commodity && quantity > 0) {
+      for (const pickup of pickups) {
+        segments.push({ commodity, pickup, delivery, quantity });
+      }
     }
   }
 
@@ -112,28 +121,41 @@ function cleanCommodity(commodity: string): string {
 }
 
 function cleanLocation(location: string): string {
-  return applyLocationAlias(location.trim());
+  // Strip trailing "Station" — OCR picks it up but canonical names don't include it
+  let cleaned = location.trim().replace(/\s+Station\s*$/i, '');
+  return applyLocationAlias(cleaned);
 }
 
-function findPickupLocation(
+function findPickupLocations(
   text: string,
   commodity: string,
   deliverPos: number
-): string | null {
-  const searchStart = Math.max(0, deliverPos - 1000);
-  const textBefore = text.substring(searchStart, deliverPos);
-
+): string[] {
   const commodityPattern = commodity.replace(/\s+/g, '\\s+');
   const collectPattern = new RegExp(
     `Collect\\s+${commodityPattern}\\s+(?:\\([^)]+\\)\\s+)?from\\s+([\\w\\s\\-.']+?)(?:\\.|\\n)`,
     'gi'
   );
 
-  const matches = Array.from(textBefore.matchAll(collectPattern));
-  if (matches.length > 0) {
-    const lastMatch = matches[matches.length - 1];
-    return cleanLocation(lastMatch[1].trim());
+  // Search forward — in SC contract UI, Collect lines follow their Deliver line.
+  // Limit to text before the next Deliver line (or 1000 chars).
+  const textAfter = text.substring(deliverPos);
+  const nextDeliver = textAfter.substring(1).search(/Deliver\s+/i);
+  const searchEnd = nextDeliver >= 0 ? nextDeliver + 1 : Math.min(textAfter.length, 1000);
+  const searchRegion = textAfter.substring(0, searchEnd);
+
+  const forwardMatches = Array.from(searchRegion.matchAll(collectPattern));
+  if (forwardMatches.length > 0) {
+    return forwardMatches.map((m) => cleanLocation(m[1].trim()));
   }
 
-  return null;
+  // Fall back to searching backwards
+  const searchStart = Math.max(0, deliverPos - 1000);
+  const textBefore = text.substring(searchStart, deliverPos);
+  const backwardMatches = Array.from(textBefore.matchAll(collectPattern));
+  if (backwardMatches.length > 0) {
+    return [cleanLocation(backwardMatches[backwardMatches.length - 1][1].trim())];
+  }
+
+  return [];
 }

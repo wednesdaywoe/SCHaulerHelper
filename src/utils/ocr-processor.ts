@@ -42,28 +42,50 @@ export async function preprocessImage(
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d')!;
 
-      // Crop region: [leftPct, topPct, rightPct, bottomPct]
-      // Defines the rectangle to KEEP as percentages of the full image
       let sx = 0;
       let sy = 0;
       let sw = img.width;
       let sh = img.height;
 
       if (options.autoCrop) {
-        // SC contract UI layout: left sidebar ~32%, top bar ~8%, bottom nav ~12%
-        // Crop to the contract content area (details + objectives panel)
+        // Expected aspect ratios for single-monitor displays
+        const expectedRatios: Record<string, number> = {
+          '16:9': 16 / 9,
+          '16:10': 16 / 10,
+          '21:9': 21 / 9,
+          '32:9': 32 / 9,
+          '4:3': 4 / 3,
+        };
+        const expectedRatio = expectedRatios[options.displayRatio] ?? 16 / 9;
+        const actualRatio = img.width / img.height;
+
+        // If the image is significantly wider than expected, it's a multi-monitor
+        // capture. Extract the rightmost monitor-sized portion first.
+        if (actualRatio > expectedRatio * 1.3) {
+          const monitorWidth = Math.round(img.height * expectedRatio);
+          sx = img.width - monitorWidth;
+          sw = monitorWidth;
+        }
+
+        // Now apply UI crop within the (possibly isolated) monitor region
+        // SC contract UI: left sidebar + details ~60%, top bar ~8%, bottom nav ~12%
+        // Crop to just the PRIMARY OBJECTIVES column + reward header
         const regions: Record<string, [number, number, number, number]> = {
-          '16:9':  [0.32, 0.08, 1.0, 0.88],
-          '16:10': [0.30, 0.08, 1.0, 0.88],
-          '21:9':  [0.24, 0.08, 1.0, 0.88],
-          '32:9':  [0.18, 0.08, 1.0, 0.88],
-          '4:3':   [0.36, 0.08, 1.0, 0.88],
+          '16:9':  [0.60, 0.08, 1.0, 0.88],
+          '16:10': [0.58, 0.08, 1.0, 0.88],
+          '21:9':  [0.52, 0.08, 1.0, 0.88],
+          '32:9':  [0.45, 0.08, 1.0, 0.88],
+          '4:3':   [0.62, 0.08, 1.0, 0.88],
         };
         const [left, top, right, bottom] = regions[options.displayRatio] ?? [0.32, 0.08, 1.0, 0.88];
-        sx = Math.round(img.width * left);
-        sy = Math.round(img.height * top);
-        sw = Math.round(img.width * right) - sx;
-        sh = Math.round(img.height * bottom) - sy;
+        const cropX = sx + Math.round(sw * left);
+        const cropY = Math.round(img.height * top);
+        const cropW = Math.round(sw * right) - Math.round(sw * left);
+        const cropH = Math.round(img.height * bottom) - cropY;
+        sx = cropX;
+        sy = cropY;
+        sw = cropW;
+        sh = cropH;
       }
 
       canvas.width = sw;

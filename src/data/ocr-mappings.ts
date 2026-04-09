@@ -58,7 +58,10 @@ export const LOCATION_ALIASES: Record<string, string> = {
 
   // Lagrange Points - MicroTech
   'mic l1': 'MIC-L1 Shallow Frontier', 'mic-l1': 'MIC-L1 Shallow Frontier',
+  'mic-l1 shallow': 'MIC-L1 Shallow Frontier', 'mic-l1 shallow f': 'MIC-L1 Shallow Frontier',
   'mic l2': 'MIC-L2 Long Forest', 'mic-l2': 'MIC-L2 Long Forest',
+  'mic-l2 long forest': 'MIC-L2 Long Forest', 'mic-l2 long forest station': 'MIC-L2 Long Forest',
+  'mic-l2 long rest station': 'MIC-L2 Long Forest', 'mic-l2 long rest': 'MIC-L2 Long Forest',
   'mic l3': 'MIC-L3 Endless Odyssey', 'mic-l3': 'MIC-L3 Endless Odyssey',
   'mic l4': 'MIC-L4 Red Crossroads', 'mic-l4': 'MIC-L4 Red Crossroads',
   'mic l5': 'MIC-L5 Modern Icarus', 'mic-l5': 'MIC-L5 Modern Icarus',
@@ -69,6 +72,7 @@ export const LOCATION_ALIASES: Record<string, string> = {
 
   // Lagrange Points - ArcCorp
   'arc l1': 'ARC-L1 Wide Forest', 'arc-l1': 'ARC-L1 Wide Forest',
+  'arc-l1 wide': 'ARC-L1 Wide Forest', 'arc-l1 wide f': 'ARC-L1 Wide Forest',
   'arc l2': 'ARC-L2', 'arc-l2': 'ARC-L2',
   'arc l3': 'ARC-L3 Modern Express', 'arc-l3': 'ARC-L3 Modern Express',
   'arc l4': 'ARC-L4 Feint Glen', 'arc-l4': 'ARC-L4 Feint Glen',
@@ -84,12 +88,19 @@ export const LOCATION_ALIASES: Record<string, string> = {
 
   // Lagrange Points - Crusader
   'cru l1': 'CRU-L1 Ambitious Dream', 'cru-l1': 'CRU-L1 Ambitious Dream',
+  'cru-l1 ambitious': 'CRU-L1 Ambitious Dream', 'cru-l1 ambi': 'CRU-L1 Ambitious Dream',
+  'cru-l1 ambitious d': 'CRU-L1 Ambitious Dream', 'cru-l1 ambi m': 'CRU-L1 Ambitious Dream',
+  'cru-l1 amb am': 'CRU-L1 Ambitious Dream', 'cru-l1 am dream': 'CRU-L1 Ambitious Dream',
+  'cru-l1 amb': 'CRU-L1 Ambitious Dream', 'cru-l1 am': 'CRU-L1 Ambitious Dream',
+  'cru-l1 ambitious dream station': 'CRU-L1 Ambitious Dream',
   'cru l2': 'CRU-L2', 'cru-l2': 'CRU-L2',
   'cru l3': 'CRU-L3', 'cru-l3': 'CRU-L3',
   'cru l4': 'CRU-L4 Shallow Fields', 'cru-l4': 'CRU-L4 Shallow Fields',
   'cru l5': 'CRU-L5 Beautiful Glen', 'cru-l5': 'CRU-L5 Beautiful Glen',
 
   // Major Stations & Cities
+  port: 'Port Tressler',
+  'port tress': 'Port Tressler',
   tressler: 'Port Tressler',
   'port olisar': 'Port Olisar',
   olisar: 'Port Olisar',
@@ -99,6 +110,8 @@ export const LOCATION_ALIASES: Record<string, string> = {
   'baijini point': 'Baijini Point',
   seraphim: 'Seraphim Station',
   'seraphim station': 'Seraphim Station',
+  'seraphim s': 'Seraphim Station',
+  'seraphim st': 'Seraphim Station',
   'grim hex': 'Grim HEX',
   grimhex: 'Grim HEX',
   'new babbage': 'New Babbage',
