@@ -22,7 +22,8 @@ function extractPayout(text: string): number | null {
 
 function preprocessText(text: string): string {
   // Remove leading < or similar bullet characters from lines (UI artifact)
-  text = text.replace(/^[<>[\]•-]\s*/gm, '');
+  // Includes : and ¢ which OCR sometimes produces for bullet markers
+  text = text.replace(/^[<>[\]•:¢-]\s*/gm, '');
 
   // Normalize lagrange point descriptions to simple format
   // "Wide Forest Station at ArcCorp's L1 Lagrange point" -> "ARC-L1 Wide Forest"
@@ -42,6 +43,12 @@ function preprocessText(text: string): string {
   // Fix lagrange station names that break across lines
   text = text.replace(/Red\s*\n\s*microTech-L4\s+Crossroads/gi, 'MIC-L4 Red Crossroads');
   text = text.replace(/microTech-L(\d)\s+([\w\s]+)/gi, 'MIC-L$1 $2');
+
+  // Fix "Covalex Distribution Center" breaking across lines
+  text = text.replace(/Covalex\s*\n\s*Distribution/gi, 'Covalex Distribution');
+
+  // Normalize S4DC facility codes: OCR reads 0 as O (e.g. S4DCO5 -> S4DC05, S4DCOS5 -> S4DC05)
+  text = text.replace(/S4DC[O0]S?(\d+)/gi, 'S4DC0$1');
 
   // Fix facility codes that break across lines
   text = text.replace(/SMO-\s*\n\s*(\d+)/gi, 'SMO-$1');

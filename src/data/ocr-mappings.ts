@@ -10,6 +10,8 @@ export const LOCATION_ALIASES: Record<string, string> = {
   s4dcos: 'Covalex S4DC05',
   's4dc0s': 'Covalex S4DC05',
   'covalex distribution center': 'Covalex S4DC05',
+  'covalex distribution center s4dc05': 'Covalex S4DC05',
+  'covalex distribution center s4dc5': 'Covalex S4DC05',
   'covalex distribution': 'Covalex S4DC05',
 
   // MicroTech Depots & Logistics
